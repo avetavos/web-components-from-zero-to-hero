@@ -1,6 +1,63 @@
 ---
 title: Web Components — From Zero to Hero
-description: Learn browser-native components — Custom Elements, Shadow DOM, templates & slots, styling, events, and Lit.
+description: เรียน component ที่เบราว์เซอร์รองรับโดยกำเนิดตั้งแต่พื้นฐาน — Custom Elements, lifecycle, Shadow DOM, template & slot, การจัดสไตล์, attribute/property/event, แพตเทิร์น และ Lit พร้อมตัวอย่างที่เรนเดอร์สดในเบราว์เซอร์
 template: splash
+hero:
+  tagline: คอร์ส Web Components แบบ standalone ตั้งแต่ผู้เริ่มต้นจนถึงขั้นสูง — โมเดล component ที่เบราว์เซอร์รองรับโดยกำเนิดและไม่ผูกกับเฟรมเวิร์ก Custom Elements, Shadow DOM, slot, การจัดสไตล์, event และ Lit ทุกตัวอย่างเรนเดอร์ในหน้าเลย
+  actions:
+    - text: เริ่มที่นี่
+      link: /web-components-from-zero-to-hero/th/intro-custom-elements/
+      icon: right-arrow
+      variant: primary
+    - text: ข้ามไปที่ Shadow DOM
+      link: /web-components-from-zero-to-hero/th/shadow-dom/
+      icon: open-book
 ---
-Coming soon.
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## สิ่งที่คุณจะได้เรียน
+
+<CardGrid>
+  <Card title="Intro & Custom Elements" icon="rocket">
+    สามเสาหลัก; การนิยามและใช้ custom element ตัวแรกของคุณ [เริ่ม →](/web-components-from-zero-to-hero/th/intro-custom-elements/)
+  </Card>
+  <Card title="Lifecycle Callbacks" icon="seti:clock">
+    constructor, connected/disconnected, observed attributes, upgrade [เรียน →](/web-components-from-zero-to-hero/th/lifecycle/)
+  </Card>
+  <Card title="Shadow DOM" icon="seti:shadow">
+    attachShadow, encapsulation, open กับ closed, :host และ boundary [เรียนรู้ →](/web-components-from-zero-to-hero/th/shadow-dom/)
+  </Card>
+  <Card title="Templates & Slots" icon="seti:html">
+    template ที่ inert, default & named slot, slotchange และ assigned nodes [โปรเจกต์ →](/web-components-from-zero-to-hero/th/templates-slots/)
+  </Card>
+  <Card title="Styling" icon="seti:css">
+    :host, ::slotted, ::part, custom properties, adoptedStyleSheets [จัดสไตล์ →](/web-components-from-zero-to-hero/th/styling/)
+  </Card>
+  <Card title="Attributes, Properties & Events" icon="random">
+    reflection, property กับ attribute, CustomEvent, composed event [เชื่อมต่อ →](/web-components-from-zero-to-hero/th/attributes-properties-events/)
+  </Card>
+  <Card title="Patterns & Composition" icon="puzzle">
+    composition, form-associated element, a11y, declarative shadow DOM [ประกอบ →](/web-components-from-zero-to-hero/th/patterns-composition/)
+  </Card>
+  <Card title="Lit & Tooling" icon="open-book">
+    Lit (reactive props, lit-html, scoped styles), การใช้ WC ในเฟรมเวิร์ก, การเผยแพร่ [ยกระดับ →](/web-components-from-zero-to-hero/th/lit-and-tooling/)
+  </Card>
+</CardGrid>
+
+## คอร์สนี้ทำงานยังไง
+
+<CardGrid>
+  <Card title="เรนเดอร์ในเบราว์เซอร์ของคุณ" icon="rocket">
+    live preview รัน custom element แต่ละตัว — Shadow DOM, slot และการจัดสไตล์ปรากฏตรงนั้นเลย ไม่ต้องตั้งค่า
+  </Card>
+  <Card title="ไดอะแกรมที่อธิบายชัด" icon="puzzle">
+    shadow tree, การ project ของ slot, การ reflect ระหว่าง attribute↔property และการประกอบ event เป็นไดอะแกรม Mermaid
+  </Card>
+  <Card title="vanilla ก่อน แล้วค่อย Lit" icon="approve-check">
+    เรียน API ของแพลตฟอร์มตั้งแต่ต้น แล้วดูว่า Lit ทำให้ใช้งานง่ายขึ้นอย่างไร — ทั้งคู่เรนเดอร์สด
+  </Card>
+  <Card title="สองภาษา + read mode" icon="translate">
+    ภาษาอังกฤษและไทย, แบบทดสอบที่บันทึกความคืบหน้า และโหมดอ่านแบบไร้สิ่งรบกวน
+  </Card>
+</CardGrid>

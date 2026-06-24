@@ -1,6 +1,63 @@
 ---
 title: Web Components — From Zero to Hero
-description: Learn browser-native components — Custom Elements, Shadow DOM, templates & slots, styling, events, and Lit.
+description: Learn browser-native components from first principles — Custom Elements, the lifecycle, Shadow DOM, templates & slots, styling, attributes/properties/events, patterns, and Lit — with every example rendering live in your browser.
 template: splash
+hero:
+  tagline: A standalone, beginner→advanced course on Web Components — the browser-native, framework-agnostic component model. Custom Elements, Shadow DOM, slots, styling, events, and Lit — every example renders right in the page.
+  actions:
+    - text: Start here
+      link: /web-components-from-zero-to-hero/en/intro-custom-elements/
+      icon: right-arrow
+      variant: primary
+    - text: Jump to Shadow DOM
+      link: /web-components-from-zero-to-hero/en/shadow-dom/
+      icon: open-book
 ---
-Coming soon.
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## What you'll learn
+
+<CardGrid>
+  <Card title="Intro & Custom Elements" icon="rocket">
+    The three pillars; defining and using your first custom element. [Start →](/web-components-from-zero-to-hero/en/intro-custom-elements/)
+  </Card>
+  <Card title="Lifecycle Callbacks" icon="seti:clock">
+    constructor, connected/disconnected, observed attributes, upgrade. [Learn →](/web-components-from-zero-to-hero/en/lifecycle/)
+  </Card>
+  <Card title="Shadow DOM" icon="seti:shadow">
+    attachShadow, encapsulation, open vs closed, :host & the boundary. [Encapsulate →](/web-components-from-zero-to-hero/en/shadow-dom/)
+  </Card>
+  <Card title="Templates & Slots" icon="seti:html">
+    Inert templates, default & named slots, slotchange & assigned nodes. [Project →](/web-components-from-zero-to-hero/en/templates-slots/)
+  </Card>
+  <Card title="Styling" icon="seti:css">
+    :host, ::slotted, ::part, custom properties, adoptedStyleSheets. [Style →](/web-components-from-zero-to-hero/en/styling/)
+  </Card>
+  <Card title="Attributes, Properties & Events" icon="random">
+    Reflection, properties vs attributes, CustomEvent, composed events. [Wire up →](/web-components-from-zero-to-hero/en/attributes-properties-events/)
+  </Card>
+  <Card title="Patterns & Composition" icon="puzzle">
+    Composition, form-associated elements, a11y, declarative shadow DOM. [Compose →](/web-components-from-zero-to-hero/en/patterns-composition/)
+  </Card>
+  <Card title="Lit & Tooling" icon="open-book">
+    Lit (reactive props, lit-html, scoped styles), using WC in frameworks, distribution. [Level up →](/web-components-from-zero-to-hero/en/lit-and-tooling/)
+  </Card>
+</CardGrid>
+
+## How this course works
+
+<CardGrid>
+  <Card title="Renders in your browser" icon="rocket">
+    A live preview runs each custom element — Shadow DOM, slots, and styling appear right there, no setup.
+  </Card>
+  <Card title="Diagrams that explain" icon="puzzle">
+    The shadow tree, slot projection, attribute↔property reflection, and event composition as Mermaid diagrams.
+  </Card>
+  <Card title="Vanilla first, then Lit" icon="approve-check">
+    Learn the platform APIs from scratch, then see how Lit makes them ergonomic — both render live.
+  </Card>
+  <Card title="Bilingual + read mode" icon="translate">
+    English and ไทย, quizzes with saved progress, and a distraction-free read mode.
+  </Card>
+</CardGrid>
