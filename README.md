@@ -1,6 +1,6 @@
-# Web for Designers
+# Web Components — From Zero to Hero
 
-A bilingual, interactive course that teaches **HTML, CSS, and a little JavaScript** to **UI designers with zero programming background**. Taught from scratch in plain language, anchored in tools designers already know (Figma). Every example runs in an **editable live preview** right on the page — no setup, no install.
+A bilingual (EN/TH), standalone, beginner→advanced course on **Web Components** — the browser-native, framework-agnostic component model: Custom Elements, the lifecycle, Shadow DOM, templates & slots, styling across the shadow boundary, attributes/properties/events, composition patterns (form-associated elements, a11y, declarative shadow DOM), and **Lit**. Every example **renders live in your browser**. Diagrams are **Mermaid**, and there's a **read-mode** toggle.
 
 ## Tech Stack
 
@@ -8,14 +8,13 @@ A bilingual, interactive course that teaches **HTML, CSS, and a little JavaScrip
 | ----- | ---------- |
 | Site framework | [Astro 6](https://astro.build) + [Starlight 0.40](https://starlight.astro.build) |
 | UI islands | [Preact](https://preactjs.com) (via `@astrojs/preact`) |
-| Live code preview | Editable `<textarea>` editors → a sandboxed `<iframe srcdoc>` that renders HTML/CSS/JS natively (no backend, no external service) |
+| Hands-on | **`<LivePreview>`** renders `{ html, css, js }` in a sandboxed (`allow-scripts`) iframe, so custom elements / Shadow DOM / slots / styling appear live. The `js` runs as a classic script — Lit lessons use a dynamic `import('https://esm.sh/lit')` wrapped in an async IIFE (no top-level await). |
+| Diagrams | Client-side, theme-aware **Mermaid** (`<Mermaid>` + `public/enhance.js`) |
+| Reading | **Read-mode** toggle (hides sidebar/TOC, widens content) via `public/enhance.js` |
 | Unit tests | [Vitest](https://vitest.dev) + `@testing-library/preact` |
-| Styling | Starlight default + custom CSS (`src/styles/custom.css`) |
 | i18n | Starlight built-in, `defaultLocale: 'en'`, locales: `en` + `th` |
 
 ## Commands
-
-Run all commands from the project root.
 
 ```bash
 npm install        # Install dependencies
@@ -25,81 +24,54 @@ npm run preview    # Preview the production build locally
 npm test           # Run Vitest unit tests
 ```
 
-> There is **no runner build step** — HTML/CSS/JS run natively in a sandboxed iframe in the reader's browser.
-
 ## Content Structure
-
-Lessons live at:
 
 ```
 src/content/docs/
-  en/              # English content — served at /en/...
-    how-web-works/
-    html/
-    css/
-    layout/
-    responsive/
-    javascript/
-    workflow/
-    index.mdx      # EN landing page (splash template)
-  th/              # Thai content — served at /th/...
+  en/                              # English — served at /en/...
+    intro-custom-elements/
+    lifecycle/
+    shadow-dom/
+    templates-slots/
+    styling/
+    attributes-properties-events/
+    patterns-composition/
+    lit-and-tooling/
+    index.mdx                      # EN landing (splash)
+  th/                              # Thai — served at /th/...
     (same module directories)
-    index.mdx      # TH landing page (splash template)
+    index.mdx
 ```
 
-### The 7 Modules
+### The 8 Modules
 
-| Directory | Module | Topics |
-| --------- | ------ | ------ |
-| `how-web-works` | How the Web Works | Browsers, pages, what HTML/CSS/JS each do |
-| `html` | HTML — Structure & Content | Elements, text, links, images, lists, semantics, forms |
-| `css` | CSS — Styling Basics | Selectors, colors/units, typography, box model, backgrounds/borders |
-| `layout` | CSS Layout — Flexbox & Grid | Flow, Flexbox, Grid, positioning, spacing systems |
-| `responsive` | Responsive Design | Relative units, media queries, mobile-first, responsive images |
-| `javascript` | A Little JavaScript | Variables/functions, selecting elements, events, DOM changes, interactions |
-| `workflow` | Design-to-Code Workflow | Figma → code, design tokens, scales, components, accessibility, handoff |
+| Directory | Module |
+| --------- | ------ |
+| `intro-custom-elements` | Intro & Custom Elements |
+| `lifecycle` | Lifecycle Callbacks |
+| `shadow-dom` | Shadow DOM |
+| `templates-slots` | Templates & Slots |
+| `styling` | Styling (`:host` / `::slotted` / `::part`) |
+| `attributes-properties-events` | Attributes, Properties & Events |
+| `patterns-composition` | Patterns & Composition (form-associated, a11y, declarative SDOM) |
+| `lit-and-tooling` | Lit & Tooling |
 
-### Lesson File IDs
+### Components & Lesson Template
 
-Content IDs follow the `<module>/<slug>` convention, e.g. `css/box-model`. The Starlight sidebar uses `autogenerate: { directory }` per locale root, so new `.mdx` files are picked up automatically.
+- **`LivePreview.tsx`** `{ html?, css?, js?, height? }` — renders a sandboxed iframe (`build-srcdoc.ts` builds the doc: `css` → `<style>`, `html` → body, `js` → classic `<script>`). Rendered demos are hoisted `export const ...Html` / `...Js` (/`...Css`) + `<LivePreview html={...} js={...} />`.
+- **`Mermaid.astro`** `{ code, title }`, **`Tip.astro`** `{ title }` (callout), **`Quiz.tsx`** `{ id, questions }` (0-based `answer`, field `q`), **`ProgressTracker.tsx`** `{ id }`.
 
-### Lesson Template
+Lesson order: frontmatter → imports → concept intro → prose (fenced `js`/`html`/`css` + `<Mermaid>`) → `export const ...Code` + `<LivePreview>` (where a rendered demo helps) → `<Tip>` → `<Quiz>` → `<ProgressTracker>` (last). IDs follow `<module>/<slug>`.
 
-Each lesson MDX file follows this structure:
-
-1. **Intro** — plain-language framing, anchored in design experience (Figma)
-2. **Concept** — jargon-light explanation
-3. **LivePreview** — `<LivePreview html={...} css={...} js={...} />` editable example with a live preview
-4. **Tip** — `<Tip>` callout for design/accessibility guidance
-5. **Quiz** — `<Quiz questions={...} />` comprehension check
-6. **ProgressTracker** — `<ProgressTracker id="module/slug" />` (always last)
-
-Code snippets are hoisted into `export const` template literals and passed by reference.
-
-> **⚠️ Authoring gotchas:**
-> - **Frontmatter `title`/`description` are single-quoted** when they contain a colon or backtick (YAML safety).
-> - **Escape sequences in code template literals must be double-backslashed** (`\\n`, `\\t`).
-> - **In JS examples, avoid JS template-literal `${...}`** (use string concatenation), or escape it as `\${...}` — a raw `${` breaks the MDX build. The JS module uses `+` concatenation throughout to sidestep this.
-
-## How the Live Preview Works
-
-`<LivePreview>` (`src/components/LivePreview.tsx`) shows an editable code box for each provided language (`html`/`css`/`js`, tabbed) next to a preview. As the learner types, it assembles a full document (`src/components/build-srcdoc.ts`) and feeds it to a `<iframe sandbox="allow-scripts" srcdoc=...>`, re-rendering live (debounced). Everything runs client-side in the reader's browser — no backend, no CDN, no WASM.
+> **⚠️ Authoring notes:**
+> - **In `export const` snippets:** escape `${`→`\${` and nested backticks as `` \` `` — **Lit `html\`...\`` / `css\`...\`` tagged templates use both**; double-escape `\\n`. Fenced blocks are literal.
+> - **Lit runs inline** via `(async () => { const { LitElement, html } = await import('https://esm.sh/lit'); ... })();` — the runner injects a classic script, so wrap in an async IIFE (no top-level await).
+> - **Never a bare `{...}`/`${...}` in prose** — keep JS/HTML/objects in code spans / fenced blocks / `export const`. **Diagrams are Mermaid, not ASCII** (typographic arrows `→`/`↔` in prose are fine).
+> - **Internal links include the base path** (`/web-components-from-zero-to-hero/en/...`); cross-course links use the full `https://avetavos.github.io/<course>/...` URL.
+> - Use **current Web Components** (Custom Elements v1, Shadow DOM v1, `::part`, form-associated elements via `ElementInternals`, declarative shadow DOM, current Lit).
 
 ## Deployment
 
-The site is fully static (`output: 'static'` in `astro.config.mjs`). Build output lands in `dist/`. Deploy to any static host (GitHub Pages, Netlify, Vercel, Cloudflare Pages).
+Fully static → `dist/`. Base path in `astro.config.mjs`: `site: 'https://avetavos.github.io'`, `base: '/web-components-from-zero-to-hero'`.
 
-### GitHub Pages (configured)
-
-This repo deploys to GitHub Pages via `.github/workflows/deploy.yml` (build with
-`withastro/action` on Node 22, publish with `actions/deploy-pages`).
-
-One-time setup:
-
-1. Create a GitHub repo and push (`main` branch).
-2. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
-3. Confirm the base path in `astro.config.mjs`:
-   - **Project site** (`https://USER.github.io/REPO/`): `site: 'https://USER.github.io'`, `base: '/REPO'` (currently `avetavos` / `web-for-designers`).
-   - **User/org site** or **custom domain**: set `site` and **remove `base`** (served at root).
-
-If you change `base`, update the base-prefixed links in `src/content/docs/{en,th}/index.mdx`.
+Deployed to GitHub Pages via **branch-source** (`gh-pages`): build `dist/`, add `.nojekyll`, push to `gh-pages`, set **Settings → Pages → Source: Deploy from a branch → `gh-pages` / `/`**, then **request a Pages build** (`gh api -X POST repos/<owner>/<repo>/pages/builds`) — flipping the source alone does not trigger one. If you change `base`, update the base-prefixed links in `src/content/docs/{en,th}/index.mdx`.
