@@ -1,0 +1,38 @@
+:root { --sl-color-accent: #7C3AED; --sl-color-accent-low: #2a1758; --sl-color-accent-high: #e9ddff; }
+
+.tsgo { display: grid; gap: 1rem; grid-template-columns: 1fr; margin: 1rem 0; }
+.tsgo__col header { display:flex; justify-content:space-between; align-items:center; font-weight:600; font-size:.85rem; padding:.25rem .5rem; background:var(--sl-color-gray-6); border-radius:6px 6px 0 0; }
+.tsgo__col pre { margin:0; border-radius:0 0 6px 6px; white-space:pre; overflow:auto; }
+.tsgo__copy, .pg__run { cursor:pointer; font-size:.75rem; border:1px solid var(--sl-color-gray-5); border-radius:4px; padding:.1rem .5rem; background:var(--sl-color-bg); color:inherit; }
+.pg__bar { display:flex; gap:.5rem; margin-bottom:.25rem; }
+.pg pre { white-space:pre; overflow:auto; }
+.pg__hint { font-size:.8rem; opacity:.7; margin:.25rem 0; }
+.pg__out { border-left:3px solid #7C3AED; } .pg__err { border-left:3px solid var(--sl-color-red); color:var(--sl-color-red-high); }
+.quiz__q { border:1px solid var(--sl-color-gray-5); border-radius:6px; margin:.5rem 0; padding:.25rem .75rem; }
+.quiz label { display:block; padding:.15rem .25rem; cursor:pointer; } .quiz label.ok { color:var(--sl-color-green-high); font-weight:600; } .quiz label.bad { color:var(--sl-color-red-high); }
+.quiz__score { font-weight:700; }
+.pt { margin:2rem 0; padding:.5rem 1rem; border-radius:6px; border:1px solid var(--sl-color-accent); background:var(--sl-color-bg); cursor:pointer; color:inherit; }
+.pt--done { background:var(--sl-color-accent); color:#001; }
+/* inline code chips inside the designer tip callout: dark text on light chip */
+.tip :not(pre) > code { background-color:#eceff4; color:#24292f; }
+/* editor on top, preview stacked underneath */
+.lp { display:grid; grid-template-columns:1fr; gap:.75rem; margin:1rem 0; }
+.lp__tabs { display:flex; gap:.25rem; margin-bottom:0; }
+.lp__tab { cursor:pointer; font-family:system-ui,sans-serif; font-size:.8rem; font-weight:600; line-height:1.2; border:1px solid var(--sl-color-gray-5); border-bottom:none; border-radius:6px 6px 0 0; padding:.35rem .85rem; background:var(--sl-color-gray-6); color:var(--sl-color-text); }
+.lp__tab--active { background:var(--sl-color-accent); color:#fff; border-color:var(--sl-color-accent); }
+.lp__code { display:block; width:100%; min-height:220px; font-family:ui-monospace,monospace; font-size:.85rem; padding:.5rem; border:1px solid var(--sl-color-gray-5); border-radius:0 6px 6px 6px; background:var(--sl-color-bg); color:var(--sl-color-text); resize:vertical; }
+.lp__preview { width:100%; min-height:200px; border:1px solid var(--sl-color-gray-5); border-radius:6px; background:#fff; }
+/* kill Starlight's inter-element top margin inside the live editor (selector specific enough to win) */
+.lp .lp__editor, .lp .lp__tabs, .lp .lp__tab, .lp .lp__code, .lp .lp__preview { margin-top:0; }
+
+/* Mermaid */
+.mermaid-figure { margin: 1.5rem 0; }
+.mermaid { display: flex; justify-content: center; overflow-x: auto; background: transparent; border: 0; padding: 0; }
+.mermaid svg { max-width: 100%; height: auto; }
+.mermaid-cap { text-align: center; font-size: .85rem; color: var(--sl-color-gray-3); margin-top: .4rem; }
+.readmode-toggle { position: fixed; right: 1rem; bottom: 1rem; z-index: 100; font-size: .8rem; font-weight: 600; cursor: pointer; padding: .45rem .8rem; border-radius: 999px; border: 1px solid var(--sl-color-gray-5); background: var(--sl-color-bg-nav, var(--sl-color-black)); color: var(--sl-color-text); box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.readmode-toggle:hover { border-color: var(--sl-color-accent); color: var(--sl-color-accent-high); }
+html.read-mode .sidebar, html.read-mode .sidebar-pane, html.read-mode .right-sidebar-container, html.read-mode .right-sidebar, html.read-mode starlight-toc, html.read-mode mobile-starlight-toc { display: none !important; }
+html.read-mode .main-frame { padding-inline-start: 0 !important; padding-top: 0 !important; }
+html.read-mode .main-pane { width: 100%; }
+html.read-mode .sl-container, html.read-mode .sl-markdown-content { max-width: 50rem; margin-inline: auto; }
