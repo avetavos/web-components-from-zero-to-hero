@@ -1,0 +1,97 @@
+---
+title: "CSS Custom Properties และ Constructable Stylesheets"
+description: "CSS custom properties ทะลุผ่านขอบเขตของ shadow และเป็น API หลักสำหรับการทำธีม รวมถึง Constructable Stylesheets สำหรับการแชร์สไตล์อย่างมีประสิทธิภาพ"
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+CSS custom properties (หรือที่เรียกว่า CSS variables) เป็น API หลักสำหรับการทำธีมให้กับ web components ต่างจาก CSS rules ทั่วไป custom properties จะ **สืบทอดผ่านขอบเขตของ shadow** ได้ host element หรือ ancestor ใด ๆ สามารถประกาศ `--color: blue` และ shadow root สามารถอ่านค่าได้ด้วย `color: var(--color, defaultValue)` โดยอาร์กิวเมนต์ที่สองคือค่า fallback ที่จะถูกใช้เมื่อ property นั้นไม่ได้ถูกตั้งค่าไว้
+
+```css
+/* Page or host sets the token */
+themed-badge {
+  --badge-bg: #7c3aed;
+  --badge-color: white;
+}
+
+/* Shadow root reads it */
+span {
+  background: var(--badge-bg, #6b7280);
+  color: var(--badge-color, white);
+}
+```
+
+การสืบทอดนี้เป็นไปโดยตั้งใจ เพราะ custom properties ถูกออกแบบมาให้ทะลุผ่าน encapsulation ทุกอย่างที่เหลือ (selectors, cascade) จะหยุดอยู่ที่ขอบเขตของ shadow แต่ตัวแปร `--` จะไหลผ่านได้อย่างอิสระ
+
+## Constructable Stylesheets
+
+Constructable Stylesheets ช่วยให้คุณสร้างอ็อบเจกต์ `CSSStyleSheet` ใน JavaScript ใส่ค่าเพียงครั้งเดียวด้วย `.replaceSync()` แล้วแชร์อ็อบเจกต์เดียวกันนั้นไปยัง shadow roots หลายตัวได้ด้วยการกำหนดให้กับ `shadowRoot.adoptedStyleSheets` shadow root แต่ละตัวที่ adopt sheet นี้จะได้สไตล์มาโดยไม่ต้องทำซ้ำ CSS ที่ parse แล้วในหน่วยความจำ
+
+```js
+const sheet = new CSSStyleSheet();
+sheet.replaceSync('span { font-weight: bold; color: steelblue; }');
+
+class MyEl extends HTMLElement {
+  connectedCallback() {
+    var shadow = this.attachShadow({ mode: 'open' });
+    shadow.adoptedStyleSheets = [sheet];
+  }
+}
+```
+
+สิ่งนี้มีประโยชน์อย่างยิ่งใน design systems ที่มี components หลายสิบตัวแชร์ stylesheet พื้นฐานร่วมกัน parse ครั้งเดียว แล้ว adopt ได้ทุกที่
+
+## Live Demo
+
+เดโมด้านล่างนิยาม element `<themed-badge>` ที่สีพื้นหลังและสีข้อความถูกควบคุมทั้งหมดด้วย CSS custom properties ที่ตั้งไว้บน host จาก page stylesheet ลองเปลี่ยนค่า `--badge-bg` ในแผง CSS เพื่อเปลี่ยนธีมได้โดยไม่ต้องแตะโค้ดของ component เลย
+
+export const themedHtml = `<themed-badge>Premium</themed-badge>
+<themed-badge>Gold</themed-badge>`;
+
+export const themedCss = `themed-badge { --badge-bg: #7c3aed; --badge-color: white; display: inline-block; margin: 4px; }
+themed-badge:nth-child(2) { --badge-bg: #d97706; }`;
+
+export const themedJs = 'class ThemedBadge extends HTMLElement {' +
+  '  connectedCallback() {' +
+  '    var shadow = this.attachShadow({mode: \'open\'});' +
+  '    var style = document.createElement(\'style\');' +
+  '    style.textContent = \':host{display:inline-block;} span{background:var(--badge-bg,#6b7280);color:var(--badge-color,white);padding:4px 14px;border-radius:20px;font-weight:600;font-size:.9rem;}\';' +
+  '    var span = document.createElement(\'span\');' +
+  '    span.textContent = this.textContent;' +
+  '    shadow.append(style, span);' +
+  '  }' +
+  '}' +
+  'customElements.define(\'themed-badge\', ThemedBadge);';
+
+<LivePreview client:visible html={themedHtml} css={themedCss} js={themedJs} />
+
+<Tip title="Custom properties คือ API สำหรับทำธีม">
+ออกแบบ components ของคุณด้วย custom properties แบบ `--component-name-property` สำหรับทุก visual token แล้วทำเอกสารกำกับไว้ วิธีนี้ทำให้ components ของคุณปรับธีมได้โดยไม่ต้องใช้ JavaScript เลย
+</Tip>
+
+export const quizCustomProps = [
+  {
+    q: "CSS custom properties (--vars) ข้ามขอบเขตของ shadow DOM ได้หรือไม่?",
+    options: ["ไม่ได้ มันถูกบล็อกทั้งหมดเหมือนสไตล์ทั่วไป", "ได้ มันสืบทอดผ่าน shadow roots", "ได้เฉพาะเมื่อกำหนดด้วย !important", "ได้เฉพาะใน shadow roots แบบ open mode"],
+    answer: 1,
+  },
+  {
+    q: "ไวยากรณ์ในการกำหนดค่า fallback ให้กับ custom property ภายใน shadow root คืออะไร?",
+    options: ["var(--color) fallback: blue", "var(--color, blue)", "--color: blue !fallback", "fallback(--color, blue)"],
+    answer: 1,
+  },
+  {
+    q: "adoptedStyleSheets บน shadow root ทำให้ทำอะไรได้?",
+    options: ["import ไฟล์ CSS ตอน runtime", "แชร์อ็อบเจกต์ CSSStyleSheet เพียงตัวเดียวข้ามหลาย roots โดยไม่ต้องทำซ้ำ", "override สไตล์ของ ::part()", "ตั้งค่าตัวแปรแบบ global"],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="styling/custom-properties-and-sheets" questions={quizCustomProps}/>
+
+<ProgressTracker client:visible id="styling/custom-properties-and-sheets"/>

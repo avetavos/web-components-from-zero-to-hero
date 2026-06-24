@@ -1,0 +1,103 @@
+---
+title: 'Default Slot'
+description: 'วิธีที่ slot ไร้ชื่อตัวเดียวฉายเนื้อหาลูกทั้งหมดจาก light DOM และวิธีกำหนด fallback content'
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## default slot ทำงานอย่างไร
+
+`<slot>` element ที่ไม่มี `name` attribute คือ **default slot** ลูกทั้งหมดใน light DOM ที่ **ไม่มี** `slot` attribute จะถูกกระจายไปอยู่ที่นั่น คุณวาง `<slot>` ไว้ภายใน shadow root ของคุณ แล้ว browser จะจัดการ render เนื้อหาลูกที่ถูกฉายเข้ามาให้ที่ตำแหน่งนั้น
+
+```html
+<my-box>
+  <p>This paragraph is projected into the default slot.</p>
+</my-box>
+```
+
+```js
+class MyBox extends HTMLElement {
+  connectedCallback() {
+    const shadow = this.attachShadow({ mode: 'open' });
+    shadow.innerHTML = `
+      <style>
+        :host { display: block; border: 2px solid #6366f1; padding: 1rem; border-radius: 8px; }
+      </style>
+      <slot><em>No content provided</em></slot>
+    `;
+  }
+}
+customElements.define('my-box', MyBox);
+```
+
+## Fallback content
+
+เนื้อหาที่วาง **ภายใน** `<slot>` element เองคือ fallback มันจะ render ก็ต่อเมื่อไม่มีเนื้อหาลูกจาก light DOM ถูกฉายเข้าไปใน slot นั้น หากผู้ใช้งานใส่ลูกเข้ามา fallback จะถูกซ่อน หากไม่ได้ใส่ลูกใด ๆ fallback จะแสดงขึ้นมา
+
+นี่เป็นวิธีที่ไม่มีต้นทุนในการทำให้คอมโพเนนต์อธิบายตัวเองได้ ตัว fallback text จะบอกว่าผู้ใช้งานควรจะใส่อะไรเข้ามา
+
+## การฉายเข้า slot ไม่ใช่การคัดลอก
+
+ลูกใน light DOM ยังคงอยู่ใน light DOM มีเพียง **ตำแหน่งการ render** เท่านั้นที่ย้ายไปอยู่ที่ slot ตัว node ไม่ได้ถูก clone หรือย้ายไปไหน ตัวอย่างเช่น `document.querySelector('my-box').firstChild` ยังคงคืนค่า `<p>` element แม้ว่ามันจะถูกฉายเข้าไปใน shadow root แล้วก็ตาม event listener ที่ผูกไว้กับ node ใน light DOM ก็ยังทำงานได้ตามปกติ
+
+export const defaultSlotHtml = `<my-box>
+  <p>Hello from light DOM!</p>
+</my-box>
+<hr>
+<my-box></my-box>`;
+
+export const defaultSlotJs = `class MyBox extends HTMLElement {
+  connectedCallback() {
+    var shadow = this.attachShadow({ mode: 'open' });
+    shadow.innerHTML = '<style>:host{display:block;border:2px solid #6366f1;border-radius:8px;padding:.75rem;margin:.5rem 0;font-family:sans-serif}em{color:#aaa}</style><slot><em>No content provided — this is fallback text.</em></slot>';
+  }
+}
+customElements.define('my-box', MyBox);`;
+
+<LivePreview client:visible html={defaultSlotHtml} js={defaultSlotJs} />
+
+<Tip title="Fallback content คือเอกสารฟรี">
+เนื้อหาที่วางไว้ภายใน `<slot>` element ทำหน้าที่เป็น fallback เมื่อไม่มีอะไรถูกฉายเข้ามา และยังทำหน้าที่เป็นเอกสารในตัวสำหรับผู้ใช้งานคอมโพเนนต์ไปพร้อมกัน
+</Tip>
+
+export const quizDefaultSlot = [
+  {
+    q: "ลูกใน light DOM แบบไหนที่ถูกฉายเข้า default slot?",
+    options: [
+      "ลูกที่มี slot='default'",
+      "ลูกที่ไม่มี slot attribute",
+      "เฉพาะลูกตัวแรกเท่านั้น",
+      "ลูกทั้งหมด ไม่ว่าจะมี slot attribute หรือไม่"
+    ],
+    answer: 1
+  },
+  {
+    q: "fallback content ภายใน `<slot>` render เมื่อใด?",
+    options: [
+      "ตลอดเวลา",
+      "เฉพาะเมื่อ element ไม่มี shadow root",
+      "เมื่อไม่มีลูกจาก light DOM ถูกฉายเข้า slot นั้น",
+      "เมื่อ slot มี fallback attribute"
+    ],
+    answer: 2
+  },
+  {
+    q: "หลังการฉายเข้า slot แล้ว node ลูกใน light DOM อยู่ที่ไหนใน DOM?",
+    options: [
+      "อยู่ภายใน shadow root",
+      "ถูกย้ายเข้าไปอยู่ใน shadow root อย่างถาวร",
+      "ยังคงอยู่ใน light DOM และถูก render ที่ตำแหน่ง slot เท่านั้น",
+      "ถูก clone เข้าไปใน shadow root"
+    ],
+    answer: 2
+  }
+];
+
+<Quiz client:visible id="templates-slots/default-slot" questions={quizDefaultSlot} />
+
+<ProgressTracker client:visible id="templates-slots/default-slot" />

@@ -1,0 +1,142 @@
+---
+title: 'Accessibility ใน Custom Element'
+description: 'เพิ่ม ARIA role, การจัดการคีย์บอร์ด และ delegatesFocus เพื่อทำให้ custom element เข้าถึงได้สำหรับผู้ใช้ทุกคน'
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## ทำไม custom element จึงต้องทำงานด้าน accessibility
+
+element แบบเนทีฟอย่าง `<button>` มี ARIA role, การจัดการ focus และการจัดการคีย์บอร์ดในตัวอยู่แล้ว แต่ custom element เริ่มต้นโดยไม่มีสิ่งเหล่านี้เลย คุณต้องเพิ่มสิ่งที่เบราว์เซอร์มักจัดให้ฟรีเข้าไปอย่างชัดเจน
+
+เมื่อผู้ใช้นำทางด้วยคีย์บอร์ดหรือใช้ screen reader เบราว์เซอร์จะเปิดเผย accessibility tree ซึ่งเป็นภาพแทนของ DOM ที่ขนานกันไป สำหรับให้เทคโนโลยีสิ่งอำนวยความสะดวก (assistive technology) อ่าน element แบบเนทีฟจะเติมข้อมูลลงใน tree นี้โดยอัตโนมัติ แต่ `<div>` หรือ custom element จะไม่ทำ ซึ่งหมายความว่าผู้ใช้ screen reader อาจไม่ได้รับข้อมูลใด ๆ เกี่ยวกับว่า element นั้นคืออะไรหรือจะโต้ตอบกับมันอย่างไร
+
+## ARIA role และ attribute บน host
+
+วิธีที่ง่ายที่สุดในการอธิบายจุดประสงค์ของ custom element คือการตั้งค่า attribute `role` และ `aria-*` ลงบน host element โดยตรง
+
+```js
+class AccessibleCard extends HTMLElement {
+  connectedCallback() {
+    this.setAttribute('role', 'region');
+    this.setAttribute('aria-label', this.getAttribute('label') || 'Card');
+  }
+}
+```
+
+การตั้งค่า `role="region"` บอกเทคโนโลยีสิ่งอำนวยความสะดวกว่า element นี้คือ landmark region ส่วน `aria-label` ให้ชื่อที่เข้าถึงได้ (accessible name) แก่มัน attribute ทั้งสองจะถูกสะท้อนเข้าไปใน accessibility tree ทันที
+
+## delegatesFocus ใน attachShadow
+
+เมื่อส่ง `delegatesFocus: true` ให้ `attachShadow` การคลิกบน shadow host (หรือส่วนใดก็ตามที่ focus ไม่ได้ภายในนั้น) จะย้าย focus ไปยัง element แรกที่ focus ได้ภายใน shadow root สิ่งนี้มีประโยชน์อย่างยิ่งสำหรับ custom input
+
+```js
+this.shadow = this.attachShadow({ mode: 'open', delegatesFocus: true });
+```
+
+หากไม่มี `delegatesFocus` การคลิก host element จะไม่ย้าย focus ของคีย์บอร์ดเข้าไปใน shadow DOM ลักษณะที่มองเห็นอาจดูเหมือนถูก focus แต่ accessibility tree ไม่เห็นด้วย และผู้ใช้คีย์บอร์ดจะไม่สามารถโต้ตอบกับ element ได้
+
+## การจัดการคีย์บอร์ด
+
+เพื่อให้ทำงานเหมือนปุ่ม ให้จัดการ `keydown` สำหรับ Enter และ Space ใน `connectedCallback` และเรียก action เดียวกันกับ click handler
+
+ปุ่มแบบเนทีฟจะยิง event `click` เมื่อกด Enter หรือ Space แต่ custom element ไม่ได้รับสิ่งนี้มาฟรี ๆ คุณต้องคอยฟัง `keydown` และตรวจสอบคีย์เหล่านั้นอย่างชัดเจน ให้เรียก `e.preventDefault()` กับ Space เสมอ เพื่อป้องกันไม่ให้หน้าเว็บเลื่อน (scroll)
+
+```js
+this.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    // same action as the click handler
+  }
+});
+```
+
+## internals.role และการสะท้อนค่า ARIA
+
+ผ่าน `ElementInternals` คุณสามารถตั้งค่า property ของ ARIA ได้โดยตรงโดยไม่ทำให้รายการ attribute ของ element เลอะเทอะ ตัวอย่างเช่น `internals.role = 'button'` และ `internals.ariaLabel = 'Close'` property ของ ARIA เหล่านี้จะสะท้อนไปยัง accessibility tree โดยไม่ปรากฏให้เห็นเป็น HTML attribute วิธีนี้ทำให้พื้นผิว attribute ของ element สะอาด และหลีกเลี่ยงความขัดแย้งกับ attribute ที่ผู้เขียนตั้งค่าไว้
+
+การสะท้อนค่า ARIA ผ่าน `ElementInternals` ต้องใช้ `attachInternals()` ซึ่งในทางกลับกันก็ต้องใช้ `static formAssociated = true` เฉพาะเมื่อคุณต้องการการเข้าร่วม form ด้วยเท่านั้น สำหรับการสะท้อนค่า ARIA ล้วน ๆ คุณสามารถเรียก `attachInternals()` ได้โดยไม่ต้องมี `formAssociated`
+
+## เดโมที่รันได้
+
+เดโมด้านล่างนิยาม element `<focus-btn>` ที่แนบ shadow root ด้วย `delegatesFocus: true` วาง `<button>` ไว้ภายใน ตั้งค่า `role="button"` บน host และจัดการคีย์บอร์ด Enter กับ Space
+
+export const a11yHtml = `<focus-btn label="Press me"></focus-btn><p id="a11y-out">Press the button or use Enter/Space</p>`;
+
+export const a11yJs = `var FocusBtn = function() { HTMLElement.call(this); };
+FocusBtn.prototype = Object.create(HTMLElement.prototype);
+FocusBtn.prototype.constructor = FocusBtn;
+FocusBtn.prototype.connectedCallback = function() {
+  var self = this;
+  if (this.shadowRoot) return;
+  var shadow = this.attachShadow({ mode: 'open', delegatesFocus: true });
+  var btn = document.createElement('button');
+  btn.textContent = this.getAttribute('label') || 'Click me';
+  btn.style.padding = '8px 16px';
+  btn.style.cursor = 'pointer';
+  shadow.appendChild(btn);
+  this.setAttribute('role', 'button');
+  this.setAttribute('tabindex', '0');
+  function activate() {
+    var out = document.getElementById('a11y-out');
+    if (out) out.textContent = 'Activated!';
+  }
+  btn.addEventListener('click', activate);
+  this.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      activate();
+    }
+  });
+};
+customElements.define('focus-btn', FocusBtn);`;
+
+<LivePreview client:visible html={a11yHtml} js={a11yJs} />
+
+คลิกปุ่มด้วยเมาส์ของคุณ จากนั้นลองกด Tab เพื่อ focus ไปที่มันและเรียกใช้งานด้วย Enter หรือ Space ทั้งสองเส้นทางควรอัปเดตย่อหน้าด้านล่าง
+
+<Tip title="Test with a keyboard">
+หลังจากสร้าง custom element แบบโต้ตอบได้แล้ว ให้นำทางไปยังมันโดยใช้แค่ Tab และเรียกใช้งานด้วย Enter และ Space หากคุณเข้าถึงมันไม่ได้หรือกระตุ้นมันไม่ได้โดยไม่ใช้เมาส์ ผู้ใช้ของคุณที่พึ่งพาคีย์บอร์ดหรือเทคโนโลยีสิ่งอำนวยความสะดวกก็จะทำไม่ได้เช่นกัน
+</Tip>
+
+export const quizA11y = [
+  {
+    q: 'delegatesFocus: true ทำอะไรเมื่อส่งให้ attachShadow?',
+    options: [
+      'ทำให้ child element ทั้งหมด focus ได้',
+      'ส่งต่อ focus ไปยัง element แรกที่ focus ได้ภายใน shadow root เมื่อ host ถูกคลิก',
+      'นำ focus ออกจาก element เมื่อถูกคลิก',
+      'ปิดการนำทางด้วยคีย์บอร์ดภายใน shadow root',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'custom element ที่ทำหน้าที่เป็นปุ่มควรตอบสนองต่อคีย์คีย์บอร์ดใด?',
+    options: [
+      'Tab และ Escape',
+      'Enter และ Space',
+      'ปุ่มลูกศรและ Tab',
+      'Enter เท่านั้น',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'internals.role ต่างจาก setAttribute("role", ...) อย่างไรได้บ้าง?',
+    options: [
+      'internals.role ตั้งค่า role เป็น HTML attribute',
+      'internals.role ตั้งค่า ARIA role ใน accessibility tree โดยไม่เพิ่ม HTML attribute ที่มองเห็นได้',
+      'ไม่มีความแตกต่าง',
+      'internals.role ทำงานได้เฉพาะใน Firefox เท่านั้น',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="patterns-composition/accessibility" questions={quizA11y} />
+
+<ProgressTracker client:visible id="patterns-composition/accessibility" />

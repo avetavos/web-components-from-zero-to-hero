@@ -1,0 +1,119 @@
+---
+title: 'Slotchange และ Assigned Nodes'
+description: 'การตอบสนองเมื่อเนื้อหาที่ถูกฉายเปลี่ยนแปลงด้วย slotchange event และ slot.assignedNodes()'
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## slotchange event
+
+`slotchange` event จะ fire บน `<slot>` element ทุกครั้งที่ชุดของ assigned nodes เปลี่ยนแปลง ซึ่งรวมถึงตอนที่ element เชื่อมต่อกับ DOM เป็นครั้งแรกพร้อมกับมีลูกอยู่แล้ว, ตอนที่มีการเพิ่มหรือลบลูกออกจาก host element และตอนที่ `slot` attribute ของลูกเปลี่ยนแปลง
+
+ฟังมันได้โดยตรงบน slot element
+
+```js
+const slot = shadow.querySelector('slot');
+slot.addEventListener('slotchange', () => {
+  console.log('Assigned nodes changed');
+});
+```
+
+## assignedNodes และ assignedElements
+
+`slot.assignedNodes()` คืน node ทั้งหมดที่ถูกฉายเข้า slot นั้นในปัจจุบัน รวมถึง text node และ comment node ส่วน `slot.assignedElements()` คืนเฉพาะ Element node ซึ่งมักจะเป็นสิ่งที่คุณต้องการเมื่อวนลูปดูลูกที่ถูกฉายเข้ามา
+
+ทั้งสองเมธอดรับ options object ที่มี property `flatten` การส่ง `{ flatten: true }` จะขยาย nested slot element ทั้งหมดแบบเรียกซ้ำเพื่อรวม assigned nodes ของมันด้วย ซึ่งมีประโยชน์เมื่อคุณมี slot ซ้อนอยู่ใน slot
+
+```js
+class MyList extends HTMLElement {
+  connectedCallback() {
+    const shadow = this.attachShadow({ mode: 'open' });
+    shadow.innerHTML = '<slot></slot>';
+    const slot = shadow.querySelector('slot');
+    slot.addEventListener('slotchange', () => {
+      const nodes = slot.assignedElements();
+      console.log('Slot has', nodes.length, 'elements');
+    });
+  }
+}
+customElements.define('my-list', MyList);
+```
+
+## การใช้งานในทางปฏิบัติ
+
+การตอบสนองต่อ `slotchange` ช่วยให้คอมโพเนนต์ของคุณซิงค์กับลูกที่ถูกฉายเข้ามาได้โดยไม่ต้อง poll หรือใช้ mutation observer แพทเทิร์นที่พบบ่อยได้แก่:
+
+- การนับจำนวน item ที่ถูกฉายเข้ามาและสะท้อนจำนวนนั้นใน shadow DOM หรือเป็น attribute
+- การตรวจสอบว่ามีเฉพาะ element ชนิดที่คาดหวังเท่านั้นที่ถูก slot เข้ามา
+- การซิงค์ `aria-label` หรือ accessibility attribute อื่น ๆ เมื่อจำนวน item เปลี่ยนแปลง
+- การผูก event listener เข้ากับลูกที่เพิ่งถูกฉายเข้ามา
+
+ประเด็นสำคัญคือ คอมโพเนนต์ของคุณไม่ได้เป็นเจ้าของลูกใน light DOM — ผู้ใช้งานต่างหากที่เป็นเจ้าของ `slotchange` event คือสะพานที่ช่วยให้คุณตอบสนองต่อการเปลี่ยนแปลงจากภายนอกเหล่านั้น
+
+export const slotchangeHtml = `<my-list id="ml">
+  <li>Item 1</li>
+  <li>Item 2</li>
+</my-list>
+<button onclick="document.getElementById('ml').appendChild(Object.assign(document.createElement('li'), {textContent: 'Item ' + (document.querySelectorAll('my-list li').length + 1)}))">Add item</button>`;
+
+export const slotchangeJs = `class MyList extends HTMLElement {
+  connectedCallback() {
+    var shadow = this.attachShadow({ mode: 'open' });
+    shadow.innerHTML = '<style>:host{display:block;font-family:sans-serif}ul{list-style:disc;padding-left:1.5rem}.count{font-weight:bold;color:#6366f1;margin-bottom:.5rem}</style>' +
+      '<p class="count" id="ct">Items: 0</p><ul><slot></slot></ul>';
+    var slot = shadow.querySelector('slot');
+    var ct = shadow.getElementById('ct');
+    var update = function() { ct.textContent = 'Items: ' + slot.assignedElements().length; };
+    slot.addEventListener('slotchange', update);
+    update();
+  }
+}
+customElements.define('my-list', MyList);`;
+
+<LivePreview client:visible html={slotchangeHtml} js={slotchangeJs} />
+
+<Tip title="slotchange fire ตอนเชื่อมต่อครั้งแรกด้วย">
+`slotchange` event จะ fire เมื่อ element เชื่อมต่อเป็นครั้งแรกพร้อมกับมีลูกอยู่ใน light DOM แล้ว คุณไม่จำเป็นต้องเรียก `connectedCallback` แยกต่างหากเพื่อ bootstrap สถานะเริ่มต้น — แค่พึ่งพา `slotchange` ครั้งแรกก็พอ
+</Tip>
+
+export const quizSlotchange = [
+  {
+    q: 'slotchange event fire บน slot element เมื่อใด?',
+    options: [
+      'เฉพาะเมื่อมีการ append ลูกตัวใหม่เข้ากับ host element',
+      'เมื่อชุดของ node ที่ assign ให้ slot นั้นเปลี่ยนแปลง รวมถึงตอนเชื่อมต่อครั้งแรก',
+      'ครั้งเดียวต่อการโหลดหน้า ไม่ว่า DOM จะเปลี่ยนแปลงอย่างไร',
+      'เฉพาะเมื่อ slot name attribute เปลี่ยนแปลง',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'slot.assignedElements() คืนค่าอะไรเมื่อเทียบกับ slot.assignedNodes()?',
+    options: [
+      'คืนผลลัพธ์เดียวกัน',
+      'คืนเฉพาะ Element node โดยกรอง text node และ comment node ออก',
+      'คืน list ที่ถูก flatten รวม nested slot ด้วย',
+      'คืนเฉพาะ element ที่มี slot attribute',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'เมื่อส่ง { flatten: true } เข้าไปใน assignedNodes() จะทำอะไร?',
+    options: [
+      'เรียง assigned nodes ตามตัวอักษร',
+      'ขยาย nested slot element ทั้งหมดแบบเรียกซ้ำเพื่อรวม assigned nodes ของมัน',
+      'แปลง NodeList เป็น array',
+      'ลบ node ที่ซ้ำกันออก',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="templates-slots/slotchange-and-assigned" questions={quizSlotchange} />
+
+<ProgressTracker client:visible id="templates-slots/slotchange-and-assigned" />

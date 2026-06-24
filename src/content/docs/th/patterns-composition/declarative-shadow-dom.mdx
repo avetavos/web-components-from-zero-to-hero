@@ -1,0 +1,130 @@
+---
+title: 'Declarative Shadow DOM'
+description: 'ใช้ attribute shadowrootmode บน element template เพื่อแนบ shadow DOM โดยไม่ต้องใช้ JavaScript — เหมาะอย่างยิ่งสำหรับ server-side rendering'
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Declarative Shadow DOM คืออะไร
+
+Declarative Shadow DOM (DSD) ช่วยให้คุณแนบ shadow root เข้ากับ element โดยใช้แค่ HTML โดยไม่ต้องใช้ JavaScript เลย สิ่งนี้เหมาะอย่างยิ่งสำหรับ server-side rendering (SSR) ที่ shadow tree สามารถถูกรวมไว้ใน HTML response เริ่มต้น และเบราว์เซอร์จะแนบมันก่อนที่ JavaScript ใด ๆ จะทำงาน
+
+## attribute shadowrootmode
+
+การวาง `<template shadowrootmode="open">` (หรือ `"closed"`) เป็น child โดยตรงของ element จะทำให้เบราว์เซอร์แนบ shadow root เข้ากับ element แม่โดยอัตโนมัติ และย้ายเนื้อหาของ template เข้าไปในนั้น
+
+```html
+<my-card>
+  <template shadowrootmode="open">
+    <style>
+      p { color: #0070f3; font-weight: bold; }
+    </style>
+    <p>This content lives in the shadow root.</p>
+    <slot></slot>
+  </template>
+  Light DOM content here (goes into the slot)
+</my-card>
+```
+
+แท็ก `<template>` จะถูกเบราว์เซอร์ใช้งานไปและถูกแทนที่ด้วย shadow root ที่ถูกแนบ ไม่ต้องใช้ JavaScript เลย element จะมี shadow root ทันทีตอน parse
+
+## เรื่องราวของการ hydration
+
+เมื่อ JavaScript โหลดขึ้นมา `customElements.define('my-card', MyCard)` จะอัปเกรด element หาก class เรียก `attachShadow` ใน constructor ของมัน เบราว์เซอร์จะข้ามการสร้าง shadow root ตัวที่สอง (เพราะมีอยู่แล้ว) และนำตัวที่มีอยู่กลับมาใช้ใหม่ ซึ่งหมายความว่าเนื้อหาที่ถูก render จากเซิร์ฟเวอร์จะถูกรักษาไว้ ซึ่งเป็นคุณสมบัติที่สำคัญยิ่งสำหรับ SSR hydration
+
+```js
+class MyCard extends HTMLElement {
+  connectedCallback() {
+    // Shadow root already attached declaratively — shadowRoot is available
+    const shadow = this.shadowRoot; // not null
+    if (shadow) {
+      // hydrate: add event listeners, update state, etc.
+    }
+  }
+}
+customElements.define('my-card', MyCard);
+```
+
+## หมายเหตุเรื่องการรองรับของเบราว์เซอร์
+
+Declarative Shadow DOM รองรับใน Chrome 90+, Edge 90+, Safari 16.4+ และ Firefox 123+ ในเบราว์เซอร์รุ่นเก่า attribute `<template shadowrootmode>` จะไม่เป็นที่รู้จัก และ template จะยังคงเฉื่อย (inert) อยู่ ให้ใส่ polyfill สำหรับเบราว์เซอร์รุ่นเก่า:
+
+```js
+// Polyfill for older browsers
+document.querySelectorAll('template[shadowrootmode]').forEach(function(t) {
+  t.parentElement.attachShadow({ mode: t.getAttribute('shadowrootmode') })
+    .appendChild(t.content.cloneNode(true));
+  t.remove();
+});
+```
+
+## เดโมที่รันได้
+
+LivePreview ด้านล่างแสดง `<dsd-card>` ที่มี `<template shadowrootmode="open">` อยู่ใน HTML แล้ว slot จะรับข้อความจาก light DOM ไม่ต้องใช้ JavaScript เพื่อให้ shadow แนบ
+
+export const dsdHtml = `<dsd-card>
+  <template shadowrootmode="open">
+    <style>
+      :host { display: block; border: 2px solid #0070f3; border-radius: 8px; padding: 1rem; }
+      h3 { margin: 0 0 0.5rem; color: #0070f3; }
+    </style>
+    <h3>Shadow-rendered heading</h3>
+    <slot></slot>
+  </template>
+  <p>This paragraph lives in light DOM, projected via the slot.</p>
+</dsd-card>`;
+
+export const dsdJs = `var out = document.createElement('p');
+out.style.marginTop = '0.5rem';
+out.style.fontSize = '0.8rem';
+out.style.color = '#666';
+out.textContent = 'No customElements.define needed — shadow root attached by HTML parser.';
+document.body.appendChild(out);`;
+
+<LivePreview client:visible html={dsdHtml} js={dsdJs} />
+
+<Tip title="Great for SSR">
+Declarative Shadow DOM โดดเด่นในสถานการณ์ server-side rendering ส่ง shadow tree ไปเป็น HTML แล้วเบราว์เซอร์จะ render มันทันที ก่อนที่ JavaScript ใด ๆ จะถูกดาวน์โหลด, parse หรือ execute จากนั้น JavaScript hydration จึงค่อยเพิ่มความสามารถในการโต้ตอบโดยไม่ต้อง render ซ้ำ
+</Tip>
+
+export const quizDsd = [
+  {
+    q: 'HTML attribute ใดบน element template ที่กระตุ้นให้เกิด Declarative Shadow DOM?',
+    options: [
+      'shadow-root',
+      'shadowrootmode',
+      'attachshadow',
+      'shadowmode',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'เบราว์เซอร์แนบ shadow root ใน Declarative Shadow DOM เมื่อใด?',
+    options: [
+      'เมื่อ customElements.define ถูกเรียก',
+      'ระหว่างการ parse HTML ก่อนที่ JavaScript จะทำงาน',
+      'เมื่อ connectedCallback ทำงาน',
+      'เมื่อ DOMContentLoaded ทำงาน',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'เกิดอะไรขึ้นกับ this.shadowRoot ใน class ของ custom element เมื่อมี declarative shadow root อยู่แล้ว?',
+    options: [
+      'มันเป็น null — คุณต้องเรียก attachShadow อีกครั้ง',
+      'มันคืน declarative shadow root ที่ถูกแนบไว้แล้ว',
+      'มันโยน InvalidStateError',
+      'มันเป็น undefined จนกว่าจะถึง connectedCallback',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="patterns-composition/declarative-shadow-dom" questions={quizDsd} />
+
+<ProgressTracker client:visible id="patterns-composition/declarative-shadow-dom" />

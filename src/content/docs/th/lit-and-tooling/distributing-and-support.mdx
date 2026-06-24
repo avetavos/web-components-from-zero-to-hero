@@ -1,0 +1,176 @@
+---
+title: 'การเผยแพร่และการรองรับบนเบราว์เซอร์'
+description: "การเผยแพร่ web component ขึ้น npm, Custom Elements Manifest และ baseline การรองรับบนเบราว์เซอร์ในปัจจุบัน"
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## การเผยแพร่ขึ้น npm
+
+web component ก็เป็นเพียง JavaScript module ตัวหนึ่ง เผยแพร่มันด้วยวิธีเดียวกับ ES module package ทั่วไป ตัวอย่าง `package.json` แบบขั้นต่ำ:
+
+```json
+{
+  "name": "my-counter",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/my-counter.js",
+  "module": "./dist/my-counter.js",
+  "exports": {
+    ".": "./dist/my-counter.js"
+  },
+  "files": ["dist"],
+  "keywords": ["web-components", "custom-element"]
+}
+```
+
+ผู้ใช้ติดตั้งด้วย `npm install my-counter` แล้ว import เพียงครั้งเดียว (การ import แบบ side-effect ก็เพียงพอที่จะลงทะเบียน tag):
+
+```js
+import 'my-counter';
+// <my-counter> is now usable anywhere in the document
+```
+
+## Custom Elements Manifest
+
+Custom Elements Manifest (`custom-elements.json`) เป็นไฟล์ JSON ที่เครื่องอ่านได้ ซึ่งทำเอกสารกำกับ custom element ทุกตัวในแพ็กเกจ ไม่ว่าจะเป็น tag name, properties, attributes, events และ CSS custom properties เครื่องมืออย่าง Storybook, IDEs และแดชบอร์ดของ design system ต่างนำมันไปใช้ทำ auto-complete และเอกสารประกอบ
+
+สร้างมันได้ด้วย CLI `@custom-elements-manifest/analyzer`:
+
+```bash
+npm install --save-dev @custom-elements-manifest/analyzer
+npx cem analyze --globs "src/**/*.js"
+```
+
+ตัวอย่างส่วนหนึ่งของผลลัพธ์ที่ได้:
+
+```json
+{
+  "schemaVersion": "1.0.0",
+  "modules": [{
+    "kind": "javascript-module",
+    "path": "src/my-counter.js",
+    "declarations": [{
+      "kind": "class",
+      "name": "MyCounter",
+      "customElement": true,
+      "tagName": "my-counter",
+      "attributes": [
+        { "name": "label", "type": { "text": "string" } }
+      ],
+      "members": [
+        { "kind": "field", "name": "count", "type": { "text": "number" } }
+      ]
+    }]
+  }]
+}
+```
+
+## การกำหนดเวอร์ชัน
+
+ปฏิบัติตาม semantic versioning การเปลี่ยนแปลงที่ถือว่าเป็น breaking changes ใน custom element ได้แก่:
+
+- การลบหรือเปลี่ยนชื่อ attribute, property หรือ event
+- การเปลี่ยน tag name ของ element
+- การเปลี่ยนรูปร่างของอ็อบเจกต์ `detail` ใน custom event
+
+ส่วนการเปลี่ยนแปลงที่ไม่ใช่ breaking ได้แก่ การเพิ่ม attribute ที่เป็น optional ตัวใหม่ การเพิ่ม CSS custom properties ใหม่ หรือการเพิ่ม public methods ใหม่
+
+## การรองรับบนเบราว์เซอร์และ baseline
+
+ณ ปี 2025 Custom Elements v1, Shadow DOM v1 และ HTML Templates ได้รับการรองรับในเบราว์เซอร์หลักทุกตัว ทั้ง Chrome, Firefox, Safari และ Edge (ทุกเวอร์ชันปัจจุบันและเวอร์ชันก่อนหน้าส่วนใหญ่) ป้าย "Baseline Widely Available" ครอบคลุมทั้งสามเสาหลักนี้
+
+ข้อยกเว้นหนึ่งเดียว: customized built-ins (element ที่ `extend` built-in อย่าง `HTMLButtonElement` ด้วย `is="..."`) **ไม่** รองรับใน Safari ควรเลือกใช้ autonomous custom elements (`extends HTMLElement`) เพื่อความเข้ากันได้สูงสุด
+
+ตัว Lit เองรองรับ Chrome 104+, Firefox 121+, Safari 16.4+ สำหรับแอปที่ใช้งานจริงซึ่งต้องรองรับเบราว์เซอร์เก่า แพ็กเกจ `@webcomponents/polyfills` จะช่วยอุดช่องว่างเหล่านั้นได้
+
+## เดโมที่รันได้
+
+เดโมด้านล่างแสดง badge element ที่เผยแพร่ได้แบบง่าย ๆ ซึ่งสะท้อน "ความรู้สึกของแพ็กเกจที่เผยแพร่แล้ว" คือสิ่งที่ผู้ใช้จะเห็นพอดีหลังติดตั้ง component ของคุณจาก npm
+
+export const distHtml = `<pkg-badge name="my-counter" version="1.0.0"></pkg-badge>`;
+
+export const distJs = `(async () => {
+  const { LitElement, html, css } = await import('https://esm.sh/lit');
+  class PkgBadge extends LitElement {
+    static properties = {
+      name: { type: String },
+      version: { type: String },
+    };
+    static styles = css\`
+      :host {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: monospace;
+        background: #1e1e2e;
+        color: #cdd6f4;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+      }
+      .name { color: #89b4fa; }
+      .version { color: #a6e3a1; }
+    \`;
+    constructor() {
+      super();
+      this.name = '';
+      this.version = '';
+    }
+    render() {
+      return html\`
+        <span class="name">\${this.name}</span>
+        <span class="version">v\${this.version}</span>
+      \`;
+    }
+  }
+  customElements.define('pkg-badge', PkgBadge);
+})();`;
+
+<LivePreview client:visible html={distHtml} js={distJs} />
+
+<Tip title="Side-effect imports">
+การ import โมดูลของ web component (เช่น `import 'my-counter'`) เป็นการ import แบบ side-effect คือมันจะรันโค้ดระดับบนสุดของไฟล์ (ซึ่งเรียก `customElements.define`) โดยไม่ได้ import ชื่อที่ export ออกมาเลย นี่คือรูปแบบมาตรฐานสำหรับการลงทะเบียน components จากภายนอก
+</Tip>
+
+export const quizDistributingAndSupport = [
+  {
+    q: 'จุดประสงค์ของไฟล์ Custom Elements Manifest คืออะไร?',
+    options: [
+      'เพื่อ polyfill เบราว์เซอร์รุ่นเก่า',
+      'เพื่อให้เอกสารที่เครื่องอ่านได้ของ API ของ component',
+      'เพื่อ bundle component สำหรับการใช้งานจริง',
+      'เพื่อลงทะเบียน element ในเบราว์เซอร์',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'custom element ประเภทใดที่ไม่รองรับใน Safari?',
+    options: [
+      'Autonomous custom elements (extends HTMLElement)',
+      'Customized built-ins (extends HTMLButtonElement)',
+      'Elements ที่ลงทะเบียนด้วย Lit',
+      'Elements ที่มี Shadow DOM',
+    ],
+    answer: 1,
+  },
+  {
+    q: "การ import 'my-counter' (การ import แบบ side-effect) ทำอะไร?",
+    options: [
+      'มัน export class constructor เพื่อนำไปใช้ใน JavaScript',
+      'มันรันโค้ดระดับบนสุดของโมดูล แล้วลงทะเบียน tag ของ custom element',
+      'มันเพิ่ม element เข้าไปใน document body',
+      'มันดึง element มาจาก CDN',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="lit-and-tooling/distributing-and-support" questions={quizDistributingAndSupport} />
+
+<ProgressTracker client:visible id="lit-and-tooling/distributing-and-support" />

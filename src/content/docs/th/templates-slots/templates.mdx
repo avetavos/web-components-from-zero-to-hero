@@ -1,0 +1,106 @@
+---
+title: 'Template Element'
+description: 'วิธีใช้ HTML template element: .content, cloneNode และเหตุผลที่ template เป็น inert และมีประสิทธิภาพ'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## template element คืออะไร
+
+`<template>` element เก็บ markup ของ HTML ที่จะไม่ถูก render เมื่อหน้าเว็บโหลด ต่างจาก `<div>` ที่ซ่อนไว้ เนื้อหาของ template ไม่มี side-effect เลย คือ script ภายในไม่ทำงาน รูปไม่โหลด และ style ไม่ถูกนำมาใช้ property `content` ของมันเปิดเผย markup ออกมาในรูปของ `DocumentFragment` ซึ่งเป็น container ที่เบาบรรจุ node ที่ถูก parse แล้ว และอยู่นอก document tree จริงจนกว่าคุณจะแทรกมันเข้าไปอย่างชัดเจน
+
+## การเข้าถึงและการ clone
+
+ใช้ `document.querySelector('template').content` (หรือ `getElementById`) เพื่อดึง `DocumentFragment` ออกมา เรียก `content.cloneNode(true)` เพื่อทำสำเนาแบบลึก (deep copy) ที่รวม node ลูกหลานทั้งหมด พร้อมแทรกได้ทุกที่ใน document
+
+```html
+<template id="card-tpl">
+  <div class="card"><p class="msg"></p></div>
+</template>
+```
+
+```js
+const tpl = document.getElementById('card-tpl');
+const clone = tpl.content.cloneNode(true);
+clone.querySelector('.msg').textContent = 'Hello from template!';
+document.body.appendChild(clone);
+```
+
+ทุกครั้งที่เรียก `cloneNode(true)` จะได้สำเนาที่เป็นอิสระต่อกัน การเปลี่ยนแปลง clone ตัวหนึ่งจะไม่กระทบ `DocumentFragment` ต้นฉบับหรือ clone ตัวอื่น
+
+## ทำไม template ถึงมีประสิทธิภาพ
+
+เนื่องจากเนื้อหาของ template อยู่ใน `DocumentFragment` ที่เป็น inert browser จึงไม่ทำ layout ไม่ทำ styling และไม่รัน script ให้มันเลยจนกว่าคุณจะ clone และแทรกมันเข้าไป ต้นทุนการ parse จ่ายเพียงครั้งเดียวตอนหน้าเว็บโหลด และทุก ๆ `cloneNode(true)` หลังจากนั้นเป็นการคัดลอกโครงสร้างที่รวดเร็ว สิ่งนี้ทำให้ `<template>` เหมาะอย่างยิ่งสำหรับการ stamp instance ของ markup เดียวกันจำนวนมาก เช่น list item, card หรือ custom element ที่ใช้ซ้ำ
+
+## เดโมที่รันได้
+
+custom element `my-card` ด้านล่างใช้ `<template>` ที่นิยามไว้ใน light DOM ภายใน `connectedCallback` มันจะ attach shadow root และ append clone ของเนื้อหา template เข้าไป ทั้งสอง instance ใช้ template ที่ถูก parse แล้วร่วมกัน เป็นการสาธิตแพทเทิร์น "parse once, stamp many"
+
+export const templatesHtml = `<template id="card-tpl">
+  <style>
+    .card { border: 2px solid #6366f1; border-radius: 8px; padding: 1rem; font-family: sans-serif; display: inline-block; }
+    .label { font-weight: bold; color: #6366f1; }
+  </style>
+  <div class="card"><span class="label">Template Card: </span><slot></slot></div>
+</template>
+<my-card>Hello from a template!</my-card>
+<my-card>Second instance</my-card>`;
+
+export const templatesJs = `var tpl = document.getElementById('card-tpl');
+class MyCard extends HTMLElement {
+  connectedCallback() {
+    var shadow = this.attachShadow({ mode: 'open' });
+    shadow.appendChild(tpl.content.cloneNode(true));
+  }
+}
+customElements.define('my-card', MyCard);`;
+
+<LivePreview client:visible html={templatesHtml} js={templatesJs} />
+
+`<template>` อยู่ใน light DOM และถูกเข้าถึงผ่าน ID แต่ละ instance ของ `my-card` จะได้ shadow root ของตัวเอง ที่ถูกเติมด้วย clone อิสระของเนื้อหา template
+
+<Tip title="หนึ่ง template หลาย instance">
+เนื่องจาก `cloneNode(true)` คัดลอก DocumentFragment ได้อย่างประหยัด คุณจึง stamp instance ได้หลายสิบตัวโดยไม่ต้อง parse string ของ HTML ซ้ำในแต่ละครั้ง
+</Tip>
+
+export const quizTemplates = [
+  {
+    q: "`template.content` คืนค่าอะไร?",
+    options: [
+      "HTMLElement",
+      "DocumentFragment",
+      "string ของ HTML",
+      "array ของ node"
+    ],
+    answer: 1
+  },
+  {
+    q: "ทำไมเนื้อหาของ `<template>` จึงไม่ถูก render โดย default?",
+    options: [
+      "Browser ข้าม element ที่ไม่รู้จัก",
+      "เนื้อหาของ template อยู่ใน DocumentFragment ที่เป็น inert — ไม่ได้เป็นส่วนหนึ่งของ document จริง",
+      "Template ต้องใช้ polyfill เพื่อเปิดใช้งาน",
+      "ต้องตั้งค่า style attribute ก่อน"
+    ],
+    answer: 1
+  },
+  {
+    q: "เมธอดใดที่สร้างสำเนาของเนื้อหา template ที่พร้อมแทรก?",
+    options: [
+      "template.innerHTML",
+      "template.content.cloneNode(true)",
+      "template.copy()",
+      "document.adoptNode(template.content)"
+    ],
+    answer: 1
+  }
+];
+
+<Quiz client:visible id="templates-slots/templates" questions={quizTemplates} />
+
+<ProgressTracker client:visible id="templates-slots/templates" />

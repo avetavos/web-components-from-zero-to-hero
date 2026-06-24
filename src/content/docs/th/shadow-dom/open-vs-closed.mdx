@@ -81,32 +81,32 @@ export const openClosedHtml = '<open-box></open-box><closed-box></closed-box><pr
 
 export const quizOpenVsClosed = [
   {
-    q: "element.shadowRoot คืนค่าอะไรเมื่อ mode เป็น 'open'?",
+    q: '`element.shadowRoot` คืนค่าอะไรเมื่อแนบ shadow root ด้วย `mode: "closed"`?',
     options: [
-      'null',
-      'shadow root object',
+      'ออบเจ็กต์ ShadowRoot',
+      'สตริงว่าง',
       'undefined',
-      'host element',
+      'null',
+    ],
+    answer: 3,
+  },
+  {
+    q: 'โหมดใดที่แนะนำสำหรับคอมโพเนนต์ที่ต้องทำงานร่วมกับ DevTools ของเบราว์เซอร์และเฟรมเวิร์กทดสอบ?',
+    options: [
+      'mode: "closed"',
+      'mode: "open"',
+      'mode: "public"',
+      'mode: "dev"',
     ],
     answer: 1,
   },
   {
-    q: "element.shadowRoot คืนค่าอะไรเมื่อ mode เป็น 'closed'?",
+    q: 'เมื่อใช้ `mode: "closed"` จะเก็บ reference ไปยัง shadow root ไว้ใช้ภายในคอมโพเนนต์ได้อย่างไร?',
     options: [
-      'shadow root object',
-      'DocumentFragment ที่ว่างเปล่า',
-      'null',
-      'undefined',
-    ],
-    answer: 2,
-  },
-  {
-    q: 'โหมดใดที่แนะนำสำหรับ web components ส่วนใหญ่?',
-    options: [
-      'closed เพื่อความปลอดภัย',
-      'open เพื่อการทำงานร่วมกัน',
-      'ทั้งสองโหมดเหมือนกัน',
-      'ไม่มีทั้งคู่ — หลีกเลี่ยง attachShadow',
+      'ใช้ this.shadowRoot — ยังใช้งานได้จากภายใน',
+      'เก็บค่าที่ attachShadow คืนมาไว้ในตัวแปร local หรือ instance',
+      'ใช้ document.getShadowRoot(this)',
+      'อิลิเมนต์โหมด closed ไม่มี shadow root — เนื้อหาอยู่ใน light DOM',
     ],
     answer: 1,
   },

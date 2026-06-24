@@ -1,0 +1,179 @@
+---
+title: 'การประกอบ Component'
+description: 'สร้าง custom element ขนาดใหญ่จากชิ้นส่วนเล็ก ๆ ด้วยการซ้อน (nesting), slot, attribute และ custom event'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## การซ้อน custom element
+
+รูปแบบที่ง่ายที่สุดของ composition คือการซ้อน (nesting) นั่นคือ custom element ชั้นนอกสร้าง custom element ชั้นในหนึ่งตัวหรือมากกว่าไว้ภายใน `connectedCallback` ให้นิยาม element ชั้นในก่อน เพื่อให้ registry รู้จักมันก่อนที่ element ชั้นนอกจะพยายามนำไปใช้
+
+```js
+// Inner element — defined first
+class InnerWidget extends HTMLElement {
+  connectedCallback() {
+    this.textContent = 'I am the inner widget';
+  }
+}
+customElements.define('inner-widget', InnerWidget);
+
+// Outer element — creates the inner one programmatically
+class OuterWidget extends HTMLElement {
+  connectedCallback() {
+    var inner = document.createElement('inner-widget');
+    this.appendChild(inner);
+  }
+}
+customElements.define('outer-widget', OuterWidget);
+```
+
+วาง element ชั้นนอกไว้ใน HTML แล้วเบราว์เซอร์จะจัดการส่วนที่เหลือให้เอง:
+
+```html
+<outer-widget></outer-widget>
+```
+
+## การสื่อสารผ่าน attribute
+
+วิธีที่ตรงไปตรงมาที่สุดในการที่ element แม่ส่งข้อมูลให้ลูกคือผ่าน HTML attribute element แม่เรียก `setAttribute` บน element ลูกที่มันสร้างขึ้น ส่วน element ลูกอ่านค่านั้นด้วย `getAttribute` ภายใน `connectedCallback` ของตัวเอง
+
+```js
+// Parent sets the child's attribute
+var child = document.createElement('name-tag');
+child.setAttribute('name', this.getAttribute('name') || 'friend');
+this.appendChild(child);
+
+// Child reads it
+NameTag.prototype.connectedCallback = function() {
+  var name = this.getAttribute('name') || 'stranger';
+  this.textContent = name;
+};
+```
+
+attribute เป็น string เสมอ ดังนั้นจึงต้องแปลงเป็นชนิดข้อมูลที่ต้องการ (เช่น `parseInt` สำหรับตัวเลข)
+
+## การสื่อสารผ่าน event
+
+เมื่อ element ลูกต้องการบอกแม่ว่ามีบางอย่างเกิดขึ้น เช่น ปุ่มถูกคลิก หรือมีค่าถูกเลือก มันจะส่ง (dispatch) `CustomEvent` ออกไป ส่วน element แม่จะคอยฟัง (listen) event นั้นภายใน `connectedCallback` ของตัวเอง
+
+มีสองออปชันบน constructor ของ event ที่สำคัญในที่นี้:
+
+- `bubbles: true` — event จะเดินทางขึ้นไปบน DOM tree ผ่าน element ลูก
+- `composed: true` — event จะข้ามขอบเขตของ shadow DOM ได้
+
+```js
+// Child dispatches an event
+this.addEventListener('click', function() {
+  self.dispatchEvent(new CustomEvent('item-selected', {
+    bubbles: true,
+    composed: true,
+    detail: { value: self.getAttribute('value') }
+  }));
+});
+
+// Parent listens in connectedCallback
+OuterWidget.prototype.connectedCallback = function() {
+  var self = this;
+  // ... build children ...
+  self.addEventListener('item-selected', function(e) {
+    console.log('selected:', e.detail.value);
+  });
+};
+```
+
+เพราะตั้งค่า `bubbles: true` ไว้ element แม่จึงสามารถผูก listener เพียงตัวเดียวบนตัวมันเอง และรับ event จาก element ลูกตัวใดก็ได้ที่ซ้อนอยู่ภายในโดยไม่ต้องอ้างอิงโดยตรง
+
+## เดโมที่รันได้
+
+เดโมด้านล่างประกอบ `<star-rating>` ขึ้นจาก `<rating-star>` ห้าตัว แต่ละดาวจะคอยฟังการคลิกและส่ง `star-select` CustomEvent ส่วน `<star-rating>` ชั้นนอกจะคอยฟัง event เหล่านั้นและอัปเดต span สำหรับแสดงผลด้วยคะแนนที่เลือก
+
+export const compositionHtml = `<star-rating></star-rating>`;
+
+export const compositionJs = `var RatingStar = function() { HTMLElement.call(this); };
+RatingStar.prototype = Object.create(HTMLElement.prototype);
+RatingStar.prototype.constructor = RatingStar;
+RatingStar.prototype.connectedCallback = function() {
+  var self = this;
+  var val = this.getAttribute('value') || '1';
+  this.textContent = '★';
+  this.style.cursor = 'pointer';
+  this.style.fontSize = '1.5rem';
+  this.style.marginRight = '2px';
+  this.addEventListener('click', function() {
+    self.dispatchEvent(new CustomEvent('star-select', {
+      bubbles: true,
+      composed: true,
+      detail: { value: parseInt(val, 10) }
+    }));
+  });
+};
+customElements.define('rating-star', RatingStar);
+
+var StarRating = function() { HTMLElement.call(this); };
+StarRating.prototype = Object.create(HTMLElement.prototype);
+StarRating.prototype.constructor = StarRating;
+StarRating.prototype.connectedCallback = function() {
+  var self = this;
+  for (var i = 1; i <= 5; i++) {
+    var star = document.createElement('rating-star');
+    star.setAttribute('value', String(i));
+    self.appendChild(star);
+  }
+  var display = document.createElement('span');
+  display.style.marginLeft = '0.5rem';
+  display.textContent = 'Click a star';
+  self.appendChild(display);
+  self.addEventListener('star-select', function(e) {
+    display.textContent = 'Rating: ' + e.detail.value + ' / 5';
+  });
+};
+customElements.define('star-rating', StarRating);`;
+
+<LivePreview client:visible html={compositionHtml} js={compositionJs} />
+
+<Tip title="bubbles + composed">
+ตั้งค่า `bubbles: true` เพื่อให้ event เดินทางขึ้นไปบน DOM tree และตั้งค่า `composed: true` เพื่อให้มันข้ามขอบเขตของ shadow DOM ได้ ทั้งสองค่ามีค่าเริ่มต้นเป็น `false`
+</Tip>
+
+export const quizComposition = [
+  {
+    q: 'property ใดบนออปชันของ CustomEvent ที่ทำให้ event ข้ามขอบเขตของ shadow DOM ได้?',
+    options: [
+      'bubbles',
+      'composed',
+      'cancelable',
+      'detail',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'ในเดโม star-rating element ใดเป็นตัวส่ง event star-select?',
+    options: [
+      'star-rating',
+      'rating-star',
+      'document',
+      'window',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'element แม่ใช้ method ใดในการ subscribe event ของลูกภายใน connectedCallback?',
+    options: [
+      'dispatchEvent',
+      'addEventListener',
+      'attachShadow',
+      'customElements.define',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="patterns-composition/composition" questions={quizComposition} />
+
+<ProgressTracker client:visible id="patterns-composition/composition" />

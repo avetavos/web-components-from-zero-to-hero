@@ -1,0 +1,145 @@
+---
+title: 'Form-Associated Element'
+description: "ใช้ static formAssociated และ attachInternals เพื่อให้ custom element เข้าร่วมเป็นส่วนหนึ่งของ form HTML แบบเนทีฟได้"
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## form-associated custom element คืออะไร
+
+Form-Associated Custom Elements API ช่วยให้ custom element เข้าร่วมใน `<form>` ได้เหมือนกับ input แบบเนทีฟทุกประการ element สามารถรายงานค่า (value) และความถูกต้อง (validity) ของตัวเอง รวมถึงถูกรวมเข้าไปใน `FormData` และ `form.submit()` ได้
+
+หากไม่มี API นี้ custom element ที่วางอยู่ภายใน `<form>` จะมองไม่เห็นโดยกลไกการ submit form ของเบราว์เซอร์ ค่าที่มันเก็บไว้จะไม่ถูก serialise และการตรวจสอบความถูกต้องในตัว (built-in validation) ก็จะไม่ทำงานกับมัน แต่เมื่อใช้ API นี้ element ของคุณจะกลายเป็นผู้ร่วมใน form ระดับเฟิร์สคลาสที่แยกไม่ออกจาก `<input>` แบบเนทีฟ
+
+## การเปิดใช้งาน API
+
+มีสองสิ่งที่จำเป็น: property แบบ static `formAssociated = true` บน class และการเรียก `this.attachInternals()` ใน constructor
+
+```js
+class MyInput extends HTMLElement {
+  static formAssociated = true;
+  constructor() {
+    super();
+    this.internals = this.attachInternals();
+  }
+}
+```
+
+ต้องประกาศ property แบบ static นี้ก่อนที่จะเรียก `attachInternals()` เพราะเบราว์เซอร์จะอ่านค่ามันในตอนที่สร้าง element (construction time) เพื่อตัดสินใจว่าจะมอบความสามารถในการเข้าร่วม form ให้หรือไม่
+
+## method ของ ElementInternals
+
+เมื่อคุณมี object internals แล้ว นี่คือ method ที่เกี่ยวข้องกับ form ที่สำคัญ:
+
+- `internals.setFormValue(value)` — กำหนดค่าที่จะถูกรวมเข้าไปใน `FormData` เมื่อ form ถูก submit
+- `internals.setValidity(flags, message, anchor)` — ควบคุมสถานะการตรวจสอบความถูกต้องของ element ส่ง object ว่างและ string ว่างเพื่อล้าง error ทั้งหมด
+- `internals.reportValidity()` — เรียก UI การตรวจสอบความถูกต้องในตัวของเบราว์เซอร์ (กล่อง tooltip) ในแบบเดียวกับที่ input แบบเนทีฟทำ
+- `internals.checkValidity()` — คืนค่า boolean ที่บอกว่าตอนนี้ element ผ่านการตรวจสอบความถูกต้องหรือไม่
+
+property `internals.role` และ property ที่สะท้อน (reflection) ค่า ARIA จะกล่าวถึงในบทเรียน Accessibility
+
+## เอกสารอ้างอิง API ฉบับเต็ม
+
+```js
+// Form-Associated Custom Elements API (Chrome 77+, Firefox 98+, Safari 16.4+)
+// static formAssociated = true  — must be on the class before attachInternals()
+// this.internals = this.attachInternals()
+//
+// internals.setFormValue(value)           — submittable value
+// internals.setFormValue(value, state)    — value + restore-state hint
+// internals.setValidity({}, '')           — clear validity errors
+// internals.setValidity({ valueMissing: true }, 'Required', anchorEl)
+// internals.reportValidity()              — show browser validation UI
+// internals.checkValidity()               — boolean
+// internals.form                          — the associated <form> element
+// internals.labels                        — NodeList of associated <label>s
+// internals.willValidate                  — boolean
+```
+
+## เดโมที่รันได้ — ตรวจจับฟีเจอร์ (feature-detected)
+
+เดโมด้านล่างตรวจจับฟีเจอร์ (feature-detect) ว่ารองรับ `attachInternals` และ `formAssociated` หรือไม่ หากเบราว์เซอร์ไม่รองรับ จะแสดงข้อความสำรอง (fallback) แทน
+
+export const formHtml = `<form id="demo-form"><fancy-input name="myfield"></fancy-input></form><p id="fi-out">Form value: (empty)</p>`;
+
+export const formJs = `var FancyInput = function() {
+  var el = HTMLElement.call(this) || this;
+  if (FancyInput.formAssociated && el.attachInternals) {
+    el._internals = el.attachInternals();
+  }
+  return el;
+};
+FancyInput.formAssociated = true;
+FancyInput.prototype = Object.create(HTMLElement.prototype);
+FancyInput.prototype.constructor = FancyInput;
+FancyInput.prototype.connectedCallback = function() {
+  if (!this._internals) {
+    this.textContent = 'Form-associated elements not supported in this browser.';
+    return;
+  }
+  var self = this;
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Type a value...';
+  input.style.border = '2px solid #0070f3';
+  input.style.borderRadius = '4px';
+  input.style.padding = '4px 8px';
+  this.appendChild(input);
+  input.addEventListener('input', function() {
+    self._internals.setFormValue(input.value);
+    var out = document.getElementById('fi-out');
+    if (out) out.textContent = 'Form value: ' + (input.value || '(empty)');
+  });
+  this._internals.setFormValue('');
+};
+customElements.define('fancy-input', FancyInput);`;
+
+<LivePreview client:visible html={formHtml} js={formJs} />
+
+พิมพ์ลงใน custom input แล้วดูย่อหน้าด้านล่าง form สะท้อนค่าที่จะถูก submit ไปพร้อมกับ form
+
+<Tip title="attachInternals before connectedCallback">
+เรียก `this.attachInternals()` ใน `constructor` ไม่ใช่ใน `connectedCallback` object internals ต้องถูกสร้างเพียงครั้งเดียวต่อ element และ constructor คือที่ที่เหมาะสมในการทำเช่นนั้น
+</Tip>
+
+export const quizFormAssociated = [
+  {
+    q: 'property แบบ static ใดที่ต้องตั้งค่าเป็น true เพื่อทำให้ custom element เป็น form-associated?',
+    options: [
+      'formEnabled',
+      'formAssociated',
+      'internalsEnabled',
+      'formParticipant',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'method ใดที่กำหนดค่าที่จะปรากฏใน FormData เมื่อ submit form?',
+    options: [
+      'internals.setValue()',
+      'internals.setFormValue()',
+      'internals.reportValidity()',
+      'internals.checkValidity()',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'form-associated element ควรทำอย่างไรเมื่อ attachInternals ไม่พร้อมใช้งาน?',
+    options: [
+      'โยน error ทันที',
+      'ตรวจจับฟีเจอร์และแสดงข้อความสำรอง (fallback)',
+      'เรียก super.attachInternals()',
+      'เพิกเฉยอย่างเงียบ ๆ',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="patterns-composition/form-associated" questions={quizFormAssociated} />
+
+<ProgressTracker client:visible id="patterns-composition/form-associated" />

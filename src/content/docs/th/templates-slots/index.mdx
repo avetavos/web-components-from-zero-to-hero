@@ -1,0 +1,89 @@
+---
+title: 'ภาพรวม Templates และ Slots'
+description: 'สิ่งที่โมดูล templates-slots ครอบคลุม: template element, default และ named slots และ slotchange event'
+sidebar:
+  order: 1
+---
+
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## template element
+
+`<template>` element เก็บ markup ของ HTML ที่อยู่ในสถานะ inert คือเนื้อหาถูก parse โดย browser แต่ไม่เคยถูก render เลย และไม่มี side-effect ใด ๆ (script ไม่ทำงาน รูปไม่โหลด style ไม่ถูกนำมาใช้) จนกว่าคุณจะ clone มันออกมาอย่างชัดเจน ใช้ `templateEl.content.cloneNode(true)` เพื่อ stamp instance เข้าไปใน document จริง วิธีนี้มีประสิทธิภาพเพราะ browser parse markup เพียงครั้งเดียว ไม่ว่าคุณจะสร้าง instance กี่ตัวก็ตาม
+
+## Slots — การฉายเนื้อหาจาก light DOM
+
+`<slot>` ที่อยู่ภายใน shadow tree คือจุดสำหรับฉายเนื้อหา (projection point) ลูก ๆ ใน light DOM ที่ถูกวางไว้ภายใน custom element จะถูก render ที่ตำแหน่งของ slot โดยไม่ได้ถูกย้ายไปไหนใน DOM named slot ช่วยให้คุณกำหนดเป้าหมายจุดแทรกเนื้อหาที่เจาะจงได้ ลูกที่มี `slot="header"` จะไปอยู่ใน `<slot name="header">` ส่วนลูกที่ไม่มี slot attribute จะตกลงไปอยู่ใน `<slot>` แบบ default
+
+export const mermaidCode = `flowchart LR
+  subgraph "Light DOM (author)"
+    H["slot='header' child"]
+    B["slot='body' child"]
+    U["(unslotted child)"]
+  end
+  subgraph "Shadow Tree (element)"
+    SH["<slot name='header'>"]
+    SB["<slot name='body'>"]
+    SD["<slot> (default)"]
+  end
+  H --> SH
+  B --> SB
+  U --> SD`;
+
+<Mermaid code={mermaidCode} title="เนื้อหาลูกใน light DOM ถูกฉายเข้าสู่ slot ใน shadow tree" />
+
+## โมดูลนี้ครอบคลุมอะไรบ้าง
+
+โมดูลนี้จะพาคุณไปดูทุกสิ่งที่คุณต้องรู้เกี่ยวกับ `<template>` element และ slot ของ shadow DOM ตั้งแต่การใช้งานพื้นฐานไปจนถึง slot change event แบบ dynamic
+
+| บทเรียน | คำอธิบาย |
+|--------|-------------|
+| ภาพรวม Templates และ Slots | บทนำของโมดูล, template element และ slots |
+| Template Element | เจาะลึก `.content`, `cloneNode` และเหตุผลที่ template เป็น inert |
+| Default และ Named Slots | วิธีใช้ `<slot>` และ `<slot name="...">` เพื่อฉายเนื้อหา |
+| Slot Fallback Content | การกำหนด markup เริ่มต้นภายใน slot เมื่อไม่มีเนื้อหาถูกฉายเข้ามา |
+| slotchange Event | การตอบสนองแบบ dynamic เมื่อ assigned nodes เปลี่ยนแปลง |
+
+<Tip title="Template ถูก parse เพียงครั้งเดียว">
+Browser parse markup ของ `<template>` element เพียงครั้งเดียว ทุกครั้งที่เรียก `cloneNode(true)` จะ stamp instance ใหม่อย่างประหยัด โดยไม่ต้อง parse ซ้ำ
+</Tip>
+
+export const quizIndex = [
+  {
+    q: "เกิดอะไรขึ้นกับเนื้อหาภายใน `<template>` element ก่อนที่มันจะถูก clone?",
+    options: [
+      "ถูก render ทันที",
+      "ถูกเพิกเฉยทั้งหมด",
+      "ถูก parse แต่อยู่ในสถานะ inert — ไม่ถูก render",
+      "มันโยน SyntaxError"
+    ],
+    answer: 2
+  },
+  {
+    q: "`<slot>` element ภายใน shadow tree ทำหน้าที่อะไร?",
+    options: [
+      "สร้าง HTML element ใหม่",
+      "ฉายเนื้อหาลูกจาก light DOM เข้าสู่การ render ของ shadow tree",
+      "คัดลอกเนื้อหาลูกเข้าไปใน shadow DOM",
+      "ป้องกันไม่ให้เนื้อหาลูกใน light DOM ถูก render"
+    ],
+    answer: 1
+  },
+  {
+    q: "เมธอดใดที่ stamp สำเนาที่นำกลับมาใช้ใหม่ได้ของเนื้อหาใน template?",
+    options: [
+      "template.innerHTML",
+      "template.content.cloneNode(true)",
+      "document.importNode(template)",
+      "template.render()"
+    ],
+    answer: 1
+  }
+];
+
+<Quiz client:visible id="templates-slots/index" questions={quizIndex} />
+
+<ProgressTracker client:visible id="templates-slots/index" />
