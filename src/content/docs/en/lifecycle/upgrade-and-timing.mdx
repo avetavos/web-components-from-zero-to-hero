@@ -1,0 +1,162 @@
+---
+title: 'Upgrade and Timing'
+description: "Element upgrade happens when the browser matches a parsed tag to a registered constructor — elements defined after they appear in HTML get upgraded asynchronously."
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## What "upgrade" means
+
+When the browser parses HTML it may encounter a tag like `<my-el>` before any JavaScript has run. At that point the browser has no registered constructor for `my-el`, so it creates the element as a plain `HTMLElement` — an *unknown element* with no special behaviour.
+
+Later, when your script calls `customElements.define('my-el', MyEl)`, the browser performs an **upgrade**: it walks every matching element already in the document, calls the `MyEl` constructor on each one, and then calls `connectedCallback` if the element is currently attached to the DOM.
+
+This means upgrade can happen in two different orders:
+
+- **Define before parse** — your `<script>` in `<head>` (with `defer`) runs before the parser reaches `<my-el>`. The element is constructed immediately when the parser reaches the tag.
+- **Define after parse** — a lazily loaded script runs after the HTML is already in the DOM. Every `<my-el>` already in the document is upgraded at the moment `define` is called.
+
+Both orders are intentional and supported. What you must *not* do is assume the element's custom behaviour is available before `define` has been called.
+
+## Waiting with `customElements.whenDefined`
+
+`customElements.whenDefined(tagName)` returns a `Promise` that resolves to the constructor class as soon as that tag name is registered. Use it to defer any code that depends on the element's upgraded interface:
+
+```js
+// Promise / .then() style
+customElements.whenDefined('my-el').then(function(Ctor) {
+  console.log('my-el is now defined:', Ctor);
+  document.querySelector('my-el').doSomething();
+});
+```
+
+```js
+// async / await style
+async function init() {
+  const Ctor = await customElements.whenDefined('my-el');
+  console.log('my-el is now defined:', Ctor);
+  document.querySelector('my-el').doSomething();
+}
+init();
+```
+
+If the element is already defined when you call `whenDefined`, the promise resolves immediately on the next microtask tick.
+
+## The `:defined` CSS pseudo-class
+
+Before upgrade, a custom element matches `:not(:defined)` in CSS. After `customElements.define` is called and the upgrade runs, the element matches `:defined`. This gives you a clean hook to hide partially-rendered elements until they are ready — preventing a **Flash of Undefined Content (FOUC)**:
+
+```css
+my-el:not(:defined) {
+  visibility: hidden;
+}
+```
+
+A more complete FOUC-prevention pattern that also shows a loading placeholder:
+
+```html
+<style>
+  upgrade-demo:not(:defined) {
+    visibility: hidden;
+  }
+
+  upgrade-demo:defined {
+    display: block;
+    border: 2px solid #059669;
+  }
+</style>
+
+<upgrade-demo>Loading…</upgrade-demo>
+```
+
+```css
+/* Optionally animate the reveal */
+upgrade-demo {
+  transition: opacity 0.3s ease;
+}
+upgrade-demo:not(:defined) {
+  opacity: 0;
+}
+upgrade-demo:defined {
+  opacity: 1;
+}
+```
+
+## Ordering caveats
+
+The timing of `define` relative to DOM parsing matters:
+
+- **Script in `<head>` without `defer`** — the script blocks parsing, so `define` is called before any body elements are parsed. Elements are constructed immediately when the parser reaches them.
+- **Script in `<head>` with `defer`** — the script runs after the full document is parsed. Every element already in the DOM is upgraded at once when `define` is called.
+- **Dynamically imported or lazily loaded scripts** — same as `defer`: all existing elements upgrade in a batch at `define` time.
+- **Elements added via JavaScript after `define`** — these are upgraded synchronously as they are inserted into the document.
+
+Always use `customElements.whenDefined` (or `customElements.upgrade(element)` for a single node) when you need to guarantee the element is ready before you access its custom API.
+
+## Runnable demo
+
+export const upgradeHtml = `<p id="status" style="font-style:italic;color:#6b7280">Waiting for upgrade...</p>
+<upgrade-demo style="display:block;padding:.75rem;border:2px dashed #d1d5db;border-radius:6px;color:#6b7280">Pre-upgrade placeholder</upgrade-demo>`;
+
+export const upgradeJs = `setTimeout(function() {
+  class UpgradeDemo extends HTMLElement {
+    connectedCallback() {
+      this.innerHTML = '<strong style="color:#059669">Upgraded!</strong> I am alive.';
+      this.style.borderColor = '#059669';
+      this.style.color = '#111827';
+      var status = document.getElementById('status');
+      if (status) { status.textContent = 'Element upgraded after 1.2 s'; }
+    }
+  }
+  customElements.define('upgrade-demo', UpgradeDemo);
+}, 1200);`;
+
+<LivePreview client:visible html={upgradeHtml} js={upgradeJs} />
+
+Watch the element start as a plain placeholder, then flip to its upgraded state after 1.2 seconds when `customElements.define` fires inside the `setTimeout`.
+
+<Tip title="Use :not(:defined) to prevent flash of undefined content">
+Hide custom elements with `my-el:not(:defined) { visibility: hidden; }` until they are upgraded. This prevents the browser from briefly flashing unstyled or partially rendered markup before the element's `connectedCallback` has a chance to run. Pair it with a CSS transition on `opacity` for a smooth reveal.
+</Tip>
+
+export const quizUpgradeAndTiming = [
+  {
+    q: 'What does "upgrading" a custom element mean?',
+    options: [
+      'Downloading a newer version of the element from a CDN',
+      'The browser replacing an unknown element with the registered constructor class and calling its lifecycle callbacks',
+      'Changing the element\'s tag name to a valid HTML5 element',
+      'Moving the element higher in the DOM tree',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What does customElements.whenDefined(tagName) return?',
+    options: [
+      'The element instance already in the DOM',
+      'A boolean indicating whether the element is defined',
+      'A Promise that resolves to the constructor class when the element is registered',
+      'The number of elements with that tag name in the document',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'What does the :defined CSS pseudo-class let you do?',
+    options: [
+      'Select only elements that have a shadow root attached',
+      'Apply styles only after the element has been registered and upgraded, enabling you to hide elements until they are ready',
+      'Select elements whose attributes match a schema definition',
+      'Target elements whose constructor name matches a CSS identifier',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="lifecycle/upgrade-and-timing" questions={quizUpgradeAndTiming} />
+
+<ProgressTracker client:visible id="lifecycle/upgrade-and-timing" />

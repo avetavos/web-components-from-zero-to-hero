@@ -1,0 +1,119 @@
+---
+title: 'Slotchange and Assigned Nodes'
+description: 'Reacting when projected content changes using the slotchange event and slot.assignedNodes().'
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## The slotchange event
+
+The `slotchange` event fires on a `<slot>` element whenever the set of assigned nodes changes. This includes the moment the element first connects to the DOM with children already present, when a child is added or removed from the host element, and when a child's `slot` attribute changes.
+
+Listen for it directly on the slot element:
+
+```js
+const slot = shadow.querySelector('slot');
+slot.addEventListener('slotchange', () => {
+  console.log('Assigned nodes changed');
+});
+```
+
+## assignedNodes and assignedElements
+
+`slot.assignedNodes()` returns all nodes currently projected into that slot, including text nodes and comment nodes. `slot.assignedElements()` returns only Element nodes, which is usually what you want when iterating over projected children.
+
+Both methods accept an options object with a `flatten` property. Passing `{ flatten: true }` recursively expands any nested slot elements to include their own assigned nodes, which is useful when you have slots inside slots.
+
+```js
+class MyList extends HTMLElement {
+  connectedCallback() {
+    const shadow = this.attachShadow({ mode: 'open' });
+    shadow.innerHTML = '<slot></slot>';
+    const slot = shadow.querySelector('slot');
+    slot.addEventListener('slotchange', () => {
+      const nodes = slot.assignedElements();
+      console.log('Slot has', nodes.length, 'elements');
+    });
+  }
+}
+customElements.define('my-list', MyList);
+```
+
+## Practical use
+
+Reacting to `slotchange` lets your component stay in sync with its projected children without polling or mutation observers. Common patterns include:
+
+- Counting projected items and reflecting that count in the shadow DOM or as an attribute
+- Validating that only expected element types are slotted in
+- Synchronising `aria-label` or other accessibility attributes when the number of items changes
+- Wiring up event listeners to newly projected children
+
+The key insight is that your component does not own the light DOM children — the consumer does. The `slotchange` event is the bridge that lets you react to those external changes.
+
+export const slotchangeHtml = `<my-list id="ml">
+  <li>Item 1</li>
+  <li>Item 2</li>
+</my-list>
+<button onclick="document.getElementById('ml').appendChild(Object.assign(document.createElement('li'), {textContent: 'Item ' + (document.querySelectorAll('my-list li').length + 1)}))">Add item</button>`;
+
+export const slotchangeJs = `class MyList extends HTMLElement {
+  connectedCallback() {
+    var shadow = this.attachShadow({ mode: 'open' });
+    shadow.innerHTML = '<style>:host{display:block;font-family:sans-serif}ul{list-style:disc;padding-left:1.5rem}.count{font-weight:bold;color:#6366f1;margin-bottom:.5rem}</style>' +
+      '<p class="count" id="ct">Items: 0</p><ul><slot></slot></ul>';
+    var slot = shadow.querySelector('slot');
+    var ct = shadow.getElementById('ct');
+    var update = function() { ct.textContent = 'Items: ' + slot.assignedElements().length; };
+    slot.addEventListener('slotchange', update);
+    update();
+  }
+}
+customElements.define('my-list', MyList);`;
+
+<LivePreview client:visible html={slotchangeHtml} js={slotchangeJs} />
+
+<Tip title="slotchange fires on first connection too">
+The `slotchange` event fires when the element first connects with children already in the light DOM. You do not need a separate `connectedCallback` call to bootstrap the initial state — just rely on the first `slotchange`.
+</Tip>
+
+export const quizSlotchange = [
+  {
+    q: 'When does the slotchange event fire on a slot element?',
+    options: [
+      'Only when a new child is appended to the host element',
+      'When the set of nodes assigned to that slot changes, including on first connect',
+      'Once per page load, regardless of DOM changes',
+      'Only when the slot name attribute changes',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What does slot.assignedElements() return compared to slot.assignedNodes()?',
+    options: [
+      'It returns the same result',
+      'It returns only Element nodes, filtering out text and comment nodes',
+      'It returns a flattened list including nested slots',
+      'It returns only elements that have a slot attribute',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What does { flatten: true } do when passed to assignedNodes()?',
+    options: [
+      'It sorts the assigned nodes alphabetically',
+      'It recursively expands any nested slot elements to include their assigned nodes',
+      'It converts NodeList to an array',
+      'It removes duplicate nodes',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="templates-slots/slotchange-and-assigned" questions={quizSlotchange} />
+
+<ProgressTracker client:visible id="templates-slots/slotchange-and-assigned" />

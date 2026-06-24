@@ -1,0 +1,205 @@
+---
+title: 'Reflecting Attributes'
+description: 'The reflection pattern keeps JS properties and HTML attributes in sync: getters read getAttribute, setters write setAttribute, and attributeChangedCallback reacts to both.'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## What is attribute reflection?
+
+A custom element exposes its state in two ways at the same time: as a **JavaScript property** (e.g. `element.label`) and as an **HTML attribute** (e.g. `label="Hello"`). Reflection means keeping both in sync — writing to one automatically updates the other.
+
+The native `<input>` element does this for `value`, `disabled`, `checked`, and others. You can give your own elements the same ergonomics.
+
+## The getter / setter pair
+
+The reflection pattern is a JavaScript getter and setter pair that delegates to `getAttribute` and `setAttribute`:
+
+```js
+get label() {
+  return this.getAttribute('label') || '';
+}
+
+set label(v) {
+  this.setAttribute('label', v);
+}
+```
+
+When external code reads `element.label`, the getter returns the current attribute value. When code assigns `element.label = 'X'`, the setter calls `setAttribute`, so the HTML attribute is updated immediately. `getAttribute('label')` and `element.label` will always agree.
+
+## Declaring observed attributes
+
+For `attributeChangedCallback` to fire — whether the attribute was changed from HTML, DevTools, or JavaScript — the attribute name must be listed in the static `observedAttributes` getter:
+
+```js
+static get observedAttributes() {
+  return ['label', 'color'];
+}
+```
+
+The browser reads this list once when the class is registered. Attributes not in the list are silently ignored.
+
+## attributeChangedCallback
+
+When a watched attribute is added, changed, or removed the browser calls:
+
+```js
+attributeChangedCallback(name, oldValue, newValue) {
+  // name     — which attribute changed, e.g. 'label'
+  // oldValue — previous value string, or null on first set
+  // newValue — new value string, or null when removed
+  this._render();
+}
+```
+
+Because the setter calls `setAttribute`, setting `element.label = 'X'` triggers `attributeChangedCallback` just as if you had written `element.setAttribute('label', 'X')` directly. The callback is your single source of truth for re-rendering.
+
+## Full pattern
+
+```js
+class MyBadge extends HTMLElement {
+  static get observedAttributes() { return ['label', 'color']; }
+
+  get label() { return this.getAttribute('label') || ''; }
+  set label(v) { this.setAttribute('label', v); }
+
+  get color() { return this.getAttribute('color') || 'blue'; }
+  set color(v) { this.setAttribute('color', v); }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    this._render();
+  }
+
+  connectedCallback() { this._render(); }
+
+  _render() {
+    this.textContent = this.label;
+    this.style.color = this.color;
+  }
+}
+customElements.define('my-badge', MyBadge);
+```
+
+## Why reflection matters
+
+Reflecting attributes gives your element several practical advantages:
+
+- **DevTools visibility** — attribute values appear directly in the Elements panel without expanding any shadow DOM.
+- **CSS attribute selectors** — you can style `reflect-badge[color="#7c3aed"]` or `reflect-badge[label]` without any extra classes.
+- **Server-side HTML** — the initial state can be baked into the markup; no JavaScript is needed to set the first value.
+- **Framework interoperability** — frameworks like Vue, Svelte, and Angular bind to attributes by default. Reflected properties mean `<my-badge label={x}>` just works.
+
+## Live demo
+
+export const reflectHtml = `<reflect-badge label="Hello from HTML" color="#7c3aed"></reflect-badge>\n<div id="log" style="margin-top:.75rem;font-family:sans-serif;font-size:.875rem;color:#374151;"></div>`;
+
+export const reflectJs = `var ReflectBadge = (function() {
+  function ReflectBadge() {
+    var _this = HTMLElement.call(this);
+    return _this;
+  }
+  ReflectBadge.prototype = Object.create(HTMLElement.prototype);
+  ReflectBadge.prototype.constructor = ReflectBadge;
+
+  Object.defineProperty(ReflectBadge, 'observedAttributes', {
+    get: function() { return ['label', 'color']; }
+  });
+
+  Object.defineProperty(ReflectBadge.prototype, 'label', {
+    get: function() { return this.getAttribute('label') || ''; },
+    set: function(v) { this.setAttribute('label', v); }
+  });
+
+  Object.defineProperty(ReflectBadge.prototype, 'color', {
+    get: function() { return this.getAttribute('color') || '#6366f1'; },
+    set: function(v) { this.setAttribute('color', v); }
+  });
+
+  ReflectBadge.prototype.connectedCallback = function() {
+    this._render();
+    var self = this;
+    setTimeout(function() {
+      self.label = 'Changed via JS!';
+      var log = document.getElementById('log');
+      if (log) {
+        log.innerHTML =
+          '<strong>After JS set:</strong> ' +
+          'element.label === ' + JSON.stringify(self.label) +
+          ' | getAttribute("label") === ' + JSON.stringify(self.getAttribute('label'));
+      }
+    }, 1200);
+  };
+
+  ReflectBadge.prototype.attributeChangedCallback = function(name, oldValue, newValue) {
+    this._render();
+  };
+
+  ReflectBadge.prototype._render = function() {
+    var lbl = this.label;
+    var clr = this.color;
+    this.innerHTML =
+      '<span style="' +
+        'display:inline-block;' +
+        'padding:.25rem .9rem;' +
+        'border-radius:9999px;' +
+        'background:' + clr + ';' +
+        'color:#fff;' +
+        'font-weight:600;' +
+        'font-family:sans-serif;' +
+        'font-size:.875rem' +
+      '">' + lbl + '</span>';
+  };
+
+  return ReflectBadge;
+})();
+customElements.define('reflect-badge', ReflectBadge);`;
+
+<LivePreview client:visible html={reflectHtml} js={reflectJs} />
+
+After 1.2 seconds the element's `label` property is set from JavaScript. The `#log` line confirms that `element.label` and `getAttribute('label')` return the same string — proof that the setter and the attribute are perfectly in sync.
+
+<Tip title="Avoid infinite loops">
+If your setter does any extra work before calling `setAttribute`, and `attributeChangedCallback` calls the setter again, you can get an infinite loop. Guard against it by checking `if (this.getAttribute(name) !== v)` before calling `setAttribute`, or by only reading from attributes in `_render` instead of calling the setter.
+</Tip>
+
+export const quizReflect = [
+  {
+    q: 'What does the `set label(v)` setter do in the reflection pattern?',
+    options: [
+      'It stores the value in a private field only',
+      'It calls setAttribute so the HTML attribute stays in sync with the property',
+      'It dispatches a change event',
+      'It calls connectedCallback again',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What is required for `attributeChangedCallback` to fire?',
+    options: [
+      'The attribute must be set via JavaScript only',
+      'The element must have a shadow DOM',
+      'The attribute name must be listed in the static `observedAttributes` getter',
+      'The element must be in the viewport',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'Which CSS selector can you use when an attribute is reflected?',
+    options: [
+      "reflect-badge[label='Hello']",
+      'reflect-badge.label-Hello',
+      "reflect-badge:label('Hello')",
+      'reflect-badge#label',
+    ],
+    answer: 0,
+  },
+];
+
+<Quiz client:visible id="attributes-properties-events/reflecting-attributes" questions={quizReflect} />
+
+<ProgressTracker client:visible id="attributes-properties-events/reflecting-attributes" />

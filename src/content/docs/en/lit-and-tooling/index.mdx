@@ -1,0 +1,98 @@
+---
+title: 'Lit and Tooling'
+description: 'Why Lit exists, what it adds to Custom Elements, and what this module covers.'
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+Vanilla Custom Elements are powerful but verbose — updating the DOM on every state change requires manual work. Lit is a ~5 KB library that adds three things: reactive properties (declare once, re-render automatically), declarative `lit-html` templates (efficient DOM diffing), and scoped styles (Shadow DOM CSS with zero leakage).
+
+## How Lit updates the DOM
+
+When a reactive property changes, Lit does not immediately re-render. Instead it schedules a microtask update, checks whether an update is needed, runs your `render()` method, diffs the result with the previous render, and then calls the `updated()` hook if you defined one.
+
+export const litCycleDiagram = `
+flowchart LR
+  PropChange["Property\nchanges"] --> Schedule["Schedule\nmicrotask\nupdate"]
+  Schedule --> ShouldUpdate["shouldUpdate()"]
+  ShouldUpdate --> Render["render()\nlit-html diff"]
+  Render --> Updated["updated()\noptional hook"]
+`;
+
+<Mermaid code={litCycleDiagram} title="Lit reactive update cycle" />
+
+## What this module covers
+
+| Lesson | What you learn |
+|---|---|
+| Why Lit | Vanilla pain points and when Lit helps |
+| LitElement | Reactive properties, render, scoped styles |
+| Using in Frameworks | Drop web components into React, Vue, Angular |
+| Distributing | npm publishing, Custom Elements Manifest, browser support |
+
+## A working Lit component
+
+Here is the simplest possible Lit element to confirm the library loads and renders correctly in the playground runner.
+
+export const litHelloHtml = `<lit-hello></lit-hello>`;
+
+export const litHelloJs = `(async () => {
+  const { LitElement, html } = await import('https://esm.sh/lit');
+  class LitHello extends LitElement {
+    static properties = { name: { type: String } };
+    constructor() { super(); this.name = 'World'; }
+    render() {
+      return html\`<p style="font-family:sans-serif;padding:8px">Hello from Lit, <strong>\${this.name}</strong>!</p>\`;
+    }
+  }
+  customElements.define('lit-hello', LitHello);
+})();`;
+
+<LivePreview client:visible html={litHelloHtml} js={litHelloJs} />
+
+<Tip title="Lit is just the platform">
+Lit does not replace Custom Elements or Shadow DOM — it wraps them. Every `LitElement` is a standard `HTMLElement` that works in any browser and any framework.
+</Tip>
+
+export const quizLitIndex = [
+  {
+    q: 'What does Lit add on top of the standard Custom Elements API?',
+    options: [
+      'A virtual DOM abstraction',
+      'Reactive properties and declarative templates',
+      'A server-side rendering framework',
+      'A CSS preprocessor',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Approximately how large is the Lit library?',
+    options: [
+      '50 KB',
+      '200 KB',
+      '~5 KB',
+      '~500 KB',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'What triggers a re-render in a LitElement?',
+    options: [
+      'Calling document.createElement()',
+      'A reactive property changing its value',
+      'Calling window.requestAnimationFrame()',
+      'Adding a CSS class',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="lit-and-tooling/index" questions={quizLitIndex} />
+
+<ProgressTracker client:visible id="lit-and-tooling/index" />

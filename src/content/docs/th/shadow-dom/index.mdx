@@ -1,0 +1,103 @@
+---
+title: 'Shadow DOM'
+description: 'Shadow DOM คืออะไร — ซับทรีที่มีขอบเขตและการ encapsulate; การแยก DOM และสไตล์; Mermaid diagram; และบทเรียนในโมดูลนี้'
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Shadow DOM คืออะไร?
+
+Shadow DOM คือ browser API ที่ให้คุณแนบ **private DOM tree ที่มีขอบเขต** กับ HTML element ใดก็ได้ tree ส่วนตัวนั้นเรียกว่า **shadow tree** และ element ที่ถูกแนบเรียกว่า **host element** ส่วนที่เหลือของหน้า — document tree ปกติ — เรียกว่า **light DOM**
+
+shadow tree แยกออกจาก light DOM อย่างสมบูรณ์ สไตล์ที่เขียนภายในจะไม่รั่วออกไปสู่หน้า และสไตล์ของหน้าไม่สามารถสไตล์ element ภายใน shadow tree ได้โดยไม่ตั้งใจ นี่คือความหมายของ "encapsulation" ในบริบทของ web components
+
+## แนวคิดหลัก
+
+| คำศัพท์ | ความหมาย |
+|---|---|
+| **Host element** | Element ที่เป็นเจ้าของ shadow root (เช่น `<my-card>`) |
+| **Shadow root** | โหนดรากของ shadow tree ที่ได้รับคืนจาก `attachShadow()` |
+| **Shadow tree** | โหนดทั้งหมดภายใน shadow root |
+| **Light DOM** | document tree หลัก — ทุกอย่างนอก shadow root |
+| **Encapsulated styles** | CSS ที่ประกาศภายใน shadow root ซึ่งมีขอบเขตเฉพาะใน shadow tree เท่านั้น |
+
+## โครงสร้าง Shadow DOM
+
+export const shadowDomDiagram = `flowchart LR\n  LD["Light DOM"]\n  HE["Host Element"]\n  SR["Shadow Root"]\n  ST["Shadow Tree"]\n  IS["Internal <style>"]\n  LD --> HE\n  HE --> SR\n  SR --> ST\n  SR --> IS`;
+
+<Mermaid code={shadowDomDiagram} title="โครงสร้าง Shadow DOM" />
+
+## บทเรียนในโมดูลนี้
+
+| บทเรียน | หัวข้อ |
+|---|---|
+| 1 | Shadow DOM — ภาพรวมและโครงสร้าง (หน้านี้) |
+| 2 | การแนบ Shadow Root — `attachShadow`, `shadowRoot.innerHTML` |
+| 3 | การ Encapsulate สไตล์ — shadow boundary, scoped CSS |
+| 4 | โหมด Open และ Closed — `mode: 'open'` กับ `mode: 'closed'` |
+| 5 | Host Element และ Shadow Boundary — `:host`, `:host(selector)`, event retargeting |
+
+## ตัวอย่างที่รันได้
+
+element ด้านล่างแนบ shadow root และแสดงข้อความทักทายพร้อมสไตล์ทั้งหมดภายใน shadow tree สีน้ำเงินมาจาก `<style>` tag ที่วางไว้ภายใน shadow root — ไม่ใช่จากหน้า
+
+export const shadowHelloJs = 'class ShadowHello extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    this.attachShadow({ mode: \'open\' });\n' +
+  '    this.shadowRoot.innerHTML =\n' +
+  '      \'<style>p { color: #4f46e5; font-weight: bold; }</style>\' +\n' +
+  '      \'<p>Hello from Shadow DOM!</p>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'shadow-hello\', ShadowHello);';
+
+export const shadowHelloHtml = '<shadow-hello></shadow-hello>';
+
+<LivePreview client:visible html={shadowHelloHtml} js={shadowHelloJs} />
+
+<Tip title="Shadow DOM สร้าง DOM tree ส่วนตัว">
+สไตล์และโครงสร้างภายใน shadow root จะถูกแยกออกจากส่วนที่เหลือของหน้า
+</Tip>
+
+export const quizShadowDomIndex = [
+  {
+    q: 'element ที่เป็นเจ้าของ shadow root เรียกว่าอะไร?',
+    options: [
+      'Shadow node',
+      'Root element',
+      'Host element',
+      'Container element',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'คำใดที่อธิบาย document tree ปกติที่อยู่ภายนอก shadow root?',
+    options: [
+      'Dark DOM',
+      'Light DOM',
+      'Outer DOM',
+      'Page tree',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'ประโยชน์หลักของการวาง `<style>` ไว้ภายใน shadow root แทนที่จะวางใน document head คืออะไร?',
+    options: [
+      'โหลดเร็วขึ้น',
+      'ใช้ CSS variables ได้',
+      'สไตล์จะมีขอบเขตเฉพาะใน shadow tree และไม่กระทบส่วนที่เหลือของหน้า',
+      'รองรับ server-side rendering',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="shadow-dom/index" questions={quizShadowDomIndex} />
+
+<ProgressTracker client:visible id="shadow-dom/index" />

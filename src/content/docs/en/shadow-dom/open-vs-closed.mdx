@@ -1,0 +1,146 @@
+---
+title: 'Open vs Closed Mode'
+description: 'The difference between mode open and mode closed in attachShadow, and their trade-offs.'
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## The mode option
+
+`attachShadow` requires a `mode` option. There are exactly two values: `'open'` and `'closed'`. The choice determines whether external JavaScript can access the shadow root through the `element.shadowRoot` property.
+
+## mode: 'open'
+
+With `mode: 'open'`, the shadow root is exposed via `element.shadowRoot`:
+
+```js
+class OpenBox extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({ mode: 'open' });
+    this.shadowRoot.innerHTML = '<p>Open shadow root</p>';
+  }
+}
+customElements.define('open-box', OpenBox);
+
+var el = document.querySelector('open-box');
+console.log(el.shadowRoot); // ShadowRoot { ... }
+```
+
+External scripts, browser DevTools, and testing frameworks can all read and query the shadow root. This is the community standard and what libraries like Lit use.
+
+## mode: 'closed'
+
+With `mode: 'closed'`, `element.shadowRoot` returns `null` from outside the component:
+
+```js
+class ClosedBox extends HTMLElement {
+  connectedCallback() {
+    var root = this.attachShadow({ mode: 'closed' });
+    // store root internally if you still need it
+    root.innerHTML = '<p>Closed shadow root</p>';
+  }
+}
+customElements.define('closed-box', ClosedBox);
+
+var el = document.querySelector('closed-box');
+console.log(el.shadowRoot); // null
+```
+
+Note: you must capture the return value of `attachShadow` in a local variable — `this.shadowRoot` will be `null` for closed mode elements accessed from outside.
+
+## Trade-offs
+
+| | `mode: 'open'` | `mode: 'closed'` |
+|---|---|---|
+| `element.shadowRoot` | Returns `ShadowRoot` | Returns `null` |
+| DevTools inspection | Yes | Limited |
+| Testing (querySelector on shadow) | Easy | Harder |
+| Library support (Lit, etc.) | Full | Requires workarounds |
+| Security | None beyond open | Marginal (not a sandbox) |
+
+Closed mode does **not** provide true security. Determined code can still work around it via monkey-patching `Element.prototype.attachShadow`. Use closed mode only when you have a specific API-hiding reason, not as a security measure.
+
+## Runnable demo
+
+The demo defines two elements: `<open-box>` (mode: 'open') and `<closed-box>` (mode: 'closed'). After they render, a small script reads `element.shadowRoot` on each and prints the result.
+
+export const openClosedJs = 'class OpenBox extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    this.attachShadow({ mode: \'open\' });\n' +
+  '    this.shadowRoot.innerHTML =\n' +
+  '      \'<style>p { color: #16a34a; font-weight: bold; border: 2px solid #16a34a; padding: 0.5rem; border-radius: 6px; }</style>\' +\n' +
+  '      \'<p>I am an open shadow root</p>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'open-box\', OpenBox);\n' +
+  '\n' +
+  'class ClosedBox extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    var root = this.attachShadow({ mode: \'closed\' });\n' +
+  '    root.innerHTML =\n' +
+  '      \'<style>p { color: #dc2626; font-weight: bold; border: 2px solid #dc2626; padding: 0.5rem; border-radius: 6px; }</style>\' +\n' +
+  '      \'<p>I am a closed shadow root</p>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'closed-box\', ClosedBox);\n' +
+  '\n' +
+  'document.addEventListener(\'DOMContentLoaded\', function() {\n' +
+  '  var openEl = document.querySelector(\'open-box\');\n' +
+  '  var closedEl = document.querySelector(\'closed-box\');\n' +
+  '  var out = document.getElementById(\'out\');\n' +
+  '  out.textContent =\n' +
+  '    \'open-box.shadowRoot   = \' + openEl.shadowRoot + \'\\n\' +\n' +
+  '    \'closed-box.shadowRoot = \' + closedEl.shadowRoot;\n' +
+  '});';
+
+export const openClosedHtml = '<open-box></open-box><closed-box></closed-box><pre id="out" style="margin-top:1rem;padding:0.75rem;background:#f1f5f9;border-radius:6px;font-size:0.9rem;"></pre>';
+
+<LivePreview client:visible html={openClosedHtml} js={openClosedJs} />
+
+The `<pre>` output shows `[object ShadowRoot]` for the open element and `null` for the closed element.
+
+<Tip title="Prefer open mode">
+Use `mode: 'open'` for components you want other code (DevTools, tests, Lit) to introspect. Closed mode is rarely needed and provides no real security guarantee.
+</Tip>
+
+export const quizOpenVsClosed = [
+  {
+    q: 'What does `element.shadowRoot` return when the shadow root was attached with `mode: "closed"`?',
+    options: [
+      'The ShadowRoot object',
+      'An empty string',
+      'undefined',
+      'null',
+    ],
+    answer: 3,
+  },
+  {
+    q: 'Which mode is recommended for components that need to work with browser DevTools and testing frameworks?',
+    options: [
+      'mode: "closed"',
+      'mode: "open"',
+      'mode: "public"',
+      'mode: "dev"',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'When using `mode: "closed"`, how do you keep a reference to the shadow root inside the component?',
+    options: [
+      'Use this.shadowRoot — it still works internally',
+      'Store the return value of attachShadow in a local or instance variable',
+      'Use document.getShadowRoot(this)',
+      'Closed mode elements have no shadow root — content goes in light DOM',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="shadow-dom/open-vs-closed" questions={quizOpenVsClosed} />
+
+<ProgressTracker client:visible id="shadow-dom/open-vs-closed" />

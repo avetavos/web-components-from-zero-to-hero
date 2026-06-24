@@ -1,0 +1,213 @@
+---
+title: 'Composed Events'
+description: 'Events dispatched inside a shadow root stop at the shadow boundary unless composed: true is set. Learn how composed events cross that boundary, how composedPath() works, and how target retargeting protects encapsulation.'
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Shadow DOM creates an event boundary
+
+Every shadow root is an event boundary. An event that originates inside a shadow root will **not** bubble past the shadow host by default — it is trapped inside the shadow tree. This is part of the encapsulation guarantee: the outside world cannot see what is happening inside your component unless you explicitly allow it.
+
+To let an event cross that boundary you must set `composed: true` when dispatching it.
+
+## The `composed` flag
+
+### Without `composed` — event stops at the shadow root
+
+```js
+// Inside shadow root — this event will NOT reach the document
+this._shadow.querySelector('button').addEventListener('click', () => {
+  this.dispatchEvent(new CustomEvent('shadow-click', {
+    bubbles: true,
+    // composed is false by default — event stops at shadow boundary
+  }));
+});
+```
+
+Even though `bubbles: true` is set, the event will not leave the shadow tree. Any listener on `document` or a light-DOM ancestor will never see it.
+
+### With `composed: true` — event crosses the shadow boundary
+
+```js
+// Composed — this event WILL cross the shadow boundary
+this._shadow.querySelector('button').addEventListener('click', () => {
+  this.dispatchEvent(new CustomEvent('shadow-click', {
+    bubbles: true,
+    composed: true,   // ← allows crossing the shadow boundary
+  }));
+});
+```
+
+Now the event bubbles normally through all light-DOM ancestors all the way to `window`.
+
+## `event.composedPath()`
+
+`composedPath()` returns the full array of nodes the event travels through, including nodes inside shadow roots. This is only useful while the event is being dispatched — once the event handler returns, the array is cleared.
+
+```js
+// Reading composedPath
+document.addEventListener('shadow-click', (e) => {
+  console.log(e.composedPath()); // includes shadow nodes
+  console.log(e.target);         // retargeted to the host element from outside
+});
+```
+
+When you read `e.target` from outside the shadow tree you will see the **shadow host**, not the original element that fired the event. This is called **target retargeting** — it hides the internal structure of your component from outside listeners.
+
+## Target retargeting
+
+Target retargeting is a deliberate privacy mechanism. Imagine a complex component with many internal buttons. Outside code should not be able to tell which internal node was clicked — only that the component itself was interacted with. The browser automatically rewrites `event.target` to the host element when the event is observed from outside the shadow tree.
+
+Inside the shadow tree the original target is still visible. From outside, `event.target` always points to the shadow host.
+
+## When to use `composed: true`
+
+A good rule of thumb: use `composed: true` for events that represent **user-facing actions** your component publishes as part of its public API (for example, `value-change`, `submit`, `close`). Keep lower-level internal events without `composed` so they stay private to the component.
+
+<Tip title="Native events are already composed">
+Most native DOM events like `click`, `focus`, `input`, and `change` are dispatched with `composed: true` by the browser. That is why clicking a button inside a shadow root still triggers a `click` listener on `document`. Only `CustomEvent` defaults to `composed: false`.
+</Tip>
+
+## Live demo
+
+export const composedHtml = '<composed-demo></composed-demo><div id="log" style="margin-top:.75rem;font-family:sans-serif;font-size:.875rem;color:#374151;padding:.5rem;border:1px solid #e5e7eb;border-radius:.375rem;min-height:2.5rem;">Click a button above...</div>';
+
+export const composedJs = 'var ComposedDemo = (function() {\n' +
+  '  function ComposedDemo() {\n' +
+  '    var _this = HTMLElement.call(this);\n' +
+  '    return _this;\n' +
+  '  }\n' +
+  '  ComposedDemo.prototype = Object.create(HTMLElement.prototype);\n' +
+  '  ComposedDemo.prototype.constructor = ComposedDemo;\n' +
+  '\n' +
+  '  ComposedDemo.prototype.connectedCallback = function() {\n' +
+  '    var shadow = this.attachShadow({ mode: "open" });\n' +
+  '    shadow.innerHTML =\n' +
+  '      "<style>" +\n' +
+  '        "button {" +\n' +
+  '          "margin: .25rem;" +\n' +
+  '          "padding: .4rem 1rem;" +\n' +
+  '          "border: none;" +\n' +
+  '          "border-radius: .375rem;" +\n' +
+  '          "font-size: .875rem;" +\n' +
+  '          "font-weight: 600;" +\n' +
+  '          "cursor: pointer;" +\n' +
+  '        "}" +\n' +
+  '        "#b1 { background: #6366f1; color: #fff; }" +\n' +
+  '        "#b2 { background: #e5e7eb; color: #374151; }" +\n' +
+  '      "</style>" +\n' +
+  '      "<button id=\\"b1\\">Composed (crosses boundary)</button>" +\n' +
+  '      "<button id=\\"b2\\">Not composed (stops at boundary)</button>";\n' +
+  '\n' +
+  '    var self = this;\n' +
+  '    var log = document.getElementById("log");\n' +
+  '\n' +
+  '    shadow.getElementById("b1").addEventListener("click", function() {\n' +
+  '      self.dispatchEvent(new CustomEvent("composed-click", {\n' +
+  '        bubbles: true,\n' +
+  '        composed: true,\n' +
+  '        detail: { type: "composed" }\n' +
+  '      }));\n' +
+  '    });\n' +
+  '\n' +
+  '    shadow.getElementById("b2").addEventListener("click", function() {\n' +
+  '      self.dispatchEvent(new CustomEvent("not-composed-click", {\n' +
+  '        bubbles: true,\n' +
+  '        detail: { type: "not-composed" }\n' +
+  '      }));\n' +
+  '      if (log) {\n' +
+  '        log.innerHTML =\n' +
+  '          "<span style=\\"color:#b45309;font-weight:600;\\">" +\n' +
+  '          "not-composed-click reached the host element only — it never made it to document." +\n' +
+  '          "</span>";\n' +
+  '      }\n' +
+  '    });\n' +
+  '  };\n' +
+  '\n' +
+  '  return ComposedDemo;\n' +
+  '})();\n' +
+  'customElements.define("composed-demo", ComposedDemo);\n' +
+  '\n' +
+  'document.addEventListener("composed-click", function(e) {\n' +
+  '  var log = document.getElementById("log");\n' +
+  '  if (log) {\n' +
+  '    log.innerHTML =\n' +
+  '      "<span style=\\"color:#16a34a;font-weight:600;\\">" +\n' +
+  '      "composed-click reached document! " +\n' +
+  '      "event.target = &lt;" + e.target.tagName.toLowerCase() + "&gt; (shadow host)" +\n' +
+  '      "</span>";\n' +
+  '  }\n' +
+  '});\n' +
+  '\n' +
+  'document.addEventListener("not-composed-click", function(e) {\n' +
+  '  var log = document.getElementById("log");\n' +
+  '  if (log) {\n' +
+  '    log.innerHTML =\n' +
+  '      "<span style=\\"color:#dc2626;font-weight:600;\\">" +\n' +
+  '      "not-composed-click reached document (this should not happen!)" +\n' +
+  '      "</span>";\n' +
+  '  }\n' +
+  '});';
+
+<LivePreview client:visible html={composedHtml} js={composedJs} />
+
+The purple button dispatches a `composed-click` event with `composed: true`. The document listener fires and confirms the event arrived, showing that `event.target` has been retargeted to the `<composed-demo>` host element.
+
+The grey button dispatches a `not-composed-click` event without `composed: true`. The document listener for that event name is registered — but it never fires. The message you see is set directly on the host element's own listener, proving the event was stopped at the shadow boundary.
+
+<Tip title="composedPath() empties after dispatch">
+`event.composedPath()` only returns nodes while an event handler is actively running. Store the array in a variable if you need it later — after the handler returns the array is empty.
+</Tip>
+
+export const quizComposed = [
+  {
+    q: 'What option must be set for a CustomEvent to cross the shadow DOM boundary?',
+    options: [
+      'bubbles: true',
+      'capture: true',
+      'composed: true',
+      'detail: true',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'By default, `bubbles: true` without `composed: true` — where does the event stop?',
+    options: [
+      'At the document root',
+      'At the shadow host element',
+      'At the shadow root boundary',
+      'At the closest ancestor with a shadow root',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'What does `event.composedPath()` return?',
+    options: [
+      'Only the shadow host element',
+      'The path of nodes from the event target to the window, including shadow DOM nodes',
+      'Only the light DOM ancestors',
+      'The event type name',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'When you listen to a composed event from outside the shadow root, what does `event.target` point to?',
+    options: [
+      'The button inside the shadow root',
+      'The shadow root itself',
+      'The shadow host element (target retargeting)',
+      'The document',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="attributes-properties-events/composed-events" questions={quizComposed} />
+
+<ProgressTracker client:visible id="attributes-properties-events/composed-events" />

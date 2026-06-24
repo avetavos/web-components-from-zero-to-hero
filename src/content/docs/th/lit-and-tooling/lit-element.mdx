@@ -1,0 +1,135 @@
+---
+title: 'LitElement'
+description: "LitElement, reactive properties, render() และ scoped styles — แกนหลักของ Lit API"
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+export const litCardHtml = `<lit-card label="Score" count="0"></lit-card>`;
+
+export const litCardJs = `(async () => {
+  const { LitElement, html, css } = await import('https://esm.sh/lit');
+  class LitCard extends LitElement {
+    static properties = { label: { type: String }, count: { type: Number } };
+    static styles = css\`
+      :host { display: block; font-family: sans-serif; background: #f3f3f3; border-radius: 8px; padding: 12px 16px; max-width: 200px; }
+      h3 { margin: 0 0 8px; color: #333; }
+      button { background: #6200ee; color: #fff; border: none; border-radius: 4px; padding: 6px 14px; cursor: pointer; margin: 2px; }
+      span.val { font-size: 1.4rem; font-weight: bold; color: #6200ee; display: block; margin: 8px 0; }
+    \`;
+    constructor() { super(); this.label = ''; this.count = 0; }
+    render() {
+      return html\`
+        <h3>\${this.label}</h3>
+        <span class="val">\${this.count}</span>
+        <button @click=\${() => this.count++}>+1</button>
+        <button @click=\${() => this.count = 0}>Reset</button>
+      \`;
+    }
+  }
+  customElements.define('lit-card', LitCard);
+})();`;
+
+export const quizLitElement = [
+  {
+    q: 'การประกาศ property ใน static properties ทำอะไร?',
+    options: [
+      'ทำให้ property เป็น read-only',
+      'บอก Lit ให้ watch property และ re-render เมื่อมันเปลี่ยน',
+      'ผูก property กับ CSS variable',
+      'สร้าง HTML attribute ที่มีชื่อเดียวกัน',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'html tagged template literal คืนค่าอะไร?',
+    options: [
+      'string ของ HTML ธรรมดา',
+      'TemplateResult ที่ Lit ใช้เปรียบเทียบกับการ render ครั้งก่อน',
+      'DOM Node',
+      'Shadow Root',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Lit กำหนดขอบเขต CSS ให้กับ shadow tree ของ component ได้อย่างไร?',
+    options: [
+      'โดยเพิ่ม tag name เป็น prefix ของทุก selector',
+      'โดยใช้ inline style attributes',
+      'โดยนำ stylesheet เข้าสู่ Shadow DOM ของ element',
+      'โดยเพิ่ม unique class ให้กับทุก element',
+    ],
+    answer: 2,
+  },
+];
+
+## LitElement คืออะไร
+
+`LitElement` คือ base class ที่ extend จาก `HTMLElement` มาตรฐาน ซึ่งให้สามสิ่งหลัก:
+
+1. **Reactive properties** — ประกาศใน `static properties` และ Lit จะ watch การเปลี่ยนแปลงเพื่อ schedule re-render
+2. **Declarative render** — เมธอด `render()` คืน `TemplateResult` จาก `html` tagged template literal
+3. **Scoped styles** — ประกาศใน `static styles` ด้วย `css` tagged template literal และ Lit จะนำเข้าสู่ Shadow DOM
+
+## Reactive Properties
+
+การประกาศ property ใน `static properties` ทำให้ Lit รู้ว่าต้อง watch property นั้น:
+
+```js
+static properties = {
+  label: { type: String },
+  count: { type: Number },
+};
+```
+
+เมื่อ `this.count` เปลี่ยนค่า Lit จะ schedule microtask update และเรียก `render()` โดยอัตโนมัติ
+
+## เมธอด render()
+
+`render()` ต้องคืน `TemplateResult` ที่สร้างด้วย `html` tagged template literal:
+
+```js
+render() {
+  return html`
+    <h3>${this.label}</h3>
+    <span>${this.count}</span>
+    <button @click=${() => this.count++}>+1</button>
+  `;
+}
+```
+
+Lit จะ diff `TemplateResult` นี้กับ DOM ที่มีอยู่ และอัปเดตเฉพาะส่วนที่เปลี่ยนแปลง
+
+## Scoped Styles
+
+ใช้ `css` tagged template literal ใน `static styles` เพื่อกำหนด styles:
+
+```js
+static styles = css`
+  :host { display: block; padding: 12px; }
+  button { background: #6200ee; color: #fff; }
+`;
+```
+
+Lit จะนำ stylesheet นี้เข้าสู่ Shadow DOM ของ element ทำให้ styles ไม่รั่วออกไปหรือถูกรบกวนจากภายนอก
+
+## ตัวอย่าง: LitCard
+
+ดู component ที่รวม reactive properties, render และ scoped styles เข้าด้วยกัน:
+
+<LivePreview client:visible js={litCardJs} html={litCardHtml} />
+
+<Tip title="Properties vs attributes">
+Lit ซิงค์ property (`this.count`) กับ attribute (`count="0"`) โดยอัตโนมัติเมื่อตั้ง `reflect: true` ในออปชันของ property โดยไม่มี `reflect` property จะเป็นแหล่งความจริงหลัก และ attribute จะถูกใช้เฉพาะตอนเริ่มต้นเท่านั้น
+</Tip>
+
+## ทดสอบความเข้าใจ
+
+<Quiz client:visible id="lit-and-tooling/lit-element" questions={quizLitElement} />
+
+<ProgressTracker client:visible id="lit-and-tooling/lit-element" />

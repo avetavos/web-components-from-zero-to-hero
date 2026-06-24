@@ -1,0 +1,140 @@
+---
+title: 'Customized Built-ins'
+description: 'การ extend element ที่มีมาในตัว เช่น HTMLButtonElement, attribute is= และข้อควรระวังเรื่องการรองรับของ Safari'
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## custom element สองแบบ
+
+สเปกของ Web Components นิยาม custom element ไว้สองแบบ:
+
+| แบบ | extend จาก | ลงทะเบียนเป็น | ใช้ใน HTML |
+|---|---|---|---|
+| Autonomous | `HTMLElement` | `customElements.define('x-btn', XBtn)` | `<x-btn>` |
+| Customized built-in | เช่น `HTMLButtonElement` | `customElements.define('x-btn', XBtn, { extends: 'button' })` | `<button is="x-btn">` |
+
+## Customized built-ins: ไวยากรณ์
+
+customized built-in extend จาก class ของ HTML element ตัวใดตัวหนึ่งโดยเฉพาะ และประกาศว่ามัน extend element ที่มีมาในตัวตัวใดในอาร์กิวเมนต์ตัวที่สามของ `define`:
+
+```js
+class FancyButton extends HTMLButtonElement {
+  connectedCallback() {
+    this.style.background = '#4f46e5';
+    this.style.color = '#fff';
+    this.style.borderRadius = '6px';
+    this.style.padding = '.4rem 1rem';
+    this.style.border = 'none';
+    this.style.cursor = 'pointer';
+  }
+}
+
+customElements.define('fancy-button', FancyButton, { extends: 'button' });
+```
+
+ใน HTML attribute `is` จะเปิดใช้ customized built-in บน element มาตรฐาน:
+
+```html
+<button is="fancy-button">Click me</button>
+```
+
+element นี้ยังคงเป็น `<button>` อยู่ — มันสืบทอด semantics ที่มีมาในตัวทั้งหมด (โฟกัสได้ ส่ง form ได้ ตอบสนองต่อ `disabled`) บวกกับพฤติกรรมที่คุณกำหนดเอง
+
+## ข้อควรระวังเรื่องการรองรับ
+
+**Safari ไม่รองรับ customized built-ins** และได้ปฏิเสธอย่างชัดเจนว่าจะไม่ทำการรองรับ นี่เป็นปัญหาด้านการพกพาที่สำคัญ: `<button is="fancy-button">` จะถูกเรนเดอร์เป็นปุ่มธรรมดาที่ไม่มีสไตล์ใน Safari
+
+มี polyfill อยู่ (เช่น `@ungap/custom-elements`) แต่มันเพิ่มน้ำหนักและความซับซ้อน
+
+```html
+<!-- This renders correctly in Chrome/Firefox but NOT in Safari: -->
+<button is="fancy-button">Safari renders this as a plain button</button>
+```
+
+## ตัวเลือกที่พกพาได้: autonomous elements
+
+autonomous custom elements (`extends HTMLElement`) ได้รับการรองรับอย่างเต็มที่ในทุกที่ สำหรับตัวอย่างปุ่ม นี่คือ autonomous element ที่เทียบเท่ากัน:
+
+```js
+class XButton extends HTMLElement {
+  connectedCallback() {
+    this.innerHTML =
+      '<button style="background:#4f46e5;color:#fff;border-radius:6px;' +
+      'padding:.4rem 1rem;border:none;cursor:pointer">' +
+      (this.textContent || 'Click me') + '</button>';
+  }
+}
+customElements.define('x-button', XButton);
+```
+
+คุณจะเสียการสืบทอด semantics ของ `<button>` เนทีฟแบบอัตโนมัติไป (คุณต้องเพิ่ม `role="button"` และจัดการคีย์บอร์ดด้วยตัวเอง) แต่คุณจะได้การรองรับข้ามเบราว์เซอร์อย่างเต็มที่
+
+## เดโมที่รันได้ (autonomous element)
+
+เดโมด้านล่างใช้ autonomous element — มันทำงานได้ในทุกเบราว์เซอร์ ส่วนไวยากรณ์ของ customized built-in แสดงไว้เพื่อเป็นข้อมูลอ้างอิงเท่านั้น
+
+export const cbiJs = `class XButton extends HTMLElement {
+  connectedCallback() {
+    var label = this.getAttribute('label') || 'Click me';
+    var color = this.getAttribute('color') || '#4f46e5';
+    this.innerHTML =
+      '<button style="background:' + color + ';color:#fff;border-radius:6px;' +
+      'padding:.4rem 1rem;border:none;cursor:pointer;font-size:1rem">' +
+      label + '</button>';
+  }
+}
+customElements.define('x-button', XButton);`;
+
+export const cbiHtml = `<x-button label="Autonomous element" color="#059669"></x-button>
+<x-button label="Another one" color="#dc2626"></x-button>`;
+
+<LivePreview client:visible html={cbiHtml} js={cbiJs} height="120px" />
+
+> **หมายเหตุเรื่องเบราว์เซอร์:** รูปแบบ customized built-in (`class extends HTMLButtonElement` + `<button is="...">`) ไม่รองรับใน Safari ให้ใช้ autonomous elements (`class extends HTMLElement`) เพื่อให้ได้ Web Components ที่พกพาได้และทำงานข้ามเบราว์เซอร์
+
+<Tip title="autonomous elements คือตัวเลือกที่พกพาได้">
+autonomous custom elements (`extends HTMLElement`) ทำงานได้ในเบราว์เซอร์หลักทุกตัว ส่วน customized built-ins (`extends HTMLButtonElement` ใช้คู่กับ `is="..."`) ไม่รองรับใน Safari — ใช้มันเฉพาะเมื่อคุณสามารถ polyfill ได้ หรือเจาะจงเป้าหมายเฉพาะ Chromium/Firefox เท่านั้น
+</Tip>
+
+export const quizCbi = [
+  {
+    q: 'คุณเปิดใช้ customized built-in element ใน HTML ได้อย่างไร?',
+    options: [
+      'ใช้ชื่อ tag แบบกำหนดเองโดยตรง เช่น <fancy-button>',
+      'เพิ่ม attribute is="fancy-button" เข้าไปใน element เนทีฟ',
+      'import class ด้วย script type="module"',
+      'เรียก document.upgrade("button", FancyButton)',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'อาร์กิวเมนต์ตัวที่สามของ customElements.define ตัวใดที่บ่งบอกว่าเป็น customized built-in?',
+    options: [
+      '{ type: "built-in" }',
+      '{ autonomous: false }',
+      '{ extends: "button" }',
+      '{ base: HTMLButtonElement }',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'เบราว์เซอร์ตัวใดที่ไม่รองรับ customized built-in elements?',
+    options: [
+      'Chrome',
+      'Edge',
+      'Firefox',
+      'Safari',
+    ],
+    answer: 3,
+  },
+];
+
+<Quiz client:visible id="intro-custom-elements/customized-built-ins" questions={quizCbi} />
+
+<ProgressTracker client:visible id="intro-custom-elements/customized-built-ins" />

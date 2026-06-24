@@ -1,0 +1,113 @@
+---
+title: 'Named Slots'
+description: 'Using slot name attributes and multiple insertion points to build card-like layouts.'
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Named slots
+
+A **named slot** is a `<slot>` element with a `name` attribute in the shadow tree, paired with a `slot` attribute on a light-DOM child. The browser matches them by name and renders each light-DOM child at its corresponding insertion point. Using multiple named slots lets a single component expose several distinct content areas — a common pattern for card, dialog, and layout components.
+
+```html
+<my-card>
+  <span slot="header">Card Title</span>
+  <p slot="body">Card body text here.</p>
+</my-card>
+```
+
+```js
+class MyCard extends HTMLElement {
+  connectedCallback() {
+    const shadow = this.attachShadow({ mode: 'open' });
+    shadow.innerHTML = `
+      <style>...</style>
+      <div class="card">
+        <header><slot name="header">Untitled</slot></header>
+        <section><slot name="body">No body.</slot></section>
+      </div>
+    `;
+  }
+}
+customElements.define('my-card', MyCard);
+```
+
+## Unmatched slot attributes
+
+Light-DOM children with a `slot` attribute that does **not** match any named slot in the shadow tree are silently skipped — they are not rendered anywhere. This means typos in slot names cause invisible content, so double-check your slot names when debugging missing content.
+
+## Default and named together
+
+An element can have both named slots and a default slot at the same time. Named-slot children are distributed to their matching named slots, while any remaining children without a `slot` attribute fall through to the default slot. This makes it easy to build components that have structured sections (header, footer) plus a freeform content area.
+
+export const namedSlotsHtml = `<my-card>
+  <span slot="header">My Card Title</span>
+  <p slot="body">This is the card body. Named slots let you define multiple insertion points.</p>
+</my-card>
+<my-card>
+  <span slot="header">Fallback demo</span>
+</my-card>`;
+
+export const namedSlotsJs = `class MyCard extends HTMLElement {
+  connectedCallback() {
+    var shadow = this.attachShadow({ mode: 'open' });
+    shadow.innerHTML = '<style>:host{display:block;font-family:sans-serif;margin:.5rem 0}'+
+      '.card{border:2px solid #6366f1;border-radius:8px;overflow:hidden}'+
+      'header{background:#6366f1;color:#fff;padding:.5rem 1rem;font-weight:bold}'+
+      'section{padding:.75rem 1rem;color:#333}'+
+      'em{color:#aaa;font-style:italic}</style>'+
+      '<div class="card">'+
+      '<header><slot name="header">Untitled Card</slot></header>'+
+      '<section><slot name="body"><em>No body provided.</em></slot></section>'+
+      '</div>';
+  }
+}
+customElements.define('my-card', MyCard);`;
+
+<LivePreview client:visible html={namedSlotsHtml} js={namedSlotsJs} />
+
+<Tip title="Named slots are insertion-point contracts">
+Treat named slots as the public API of your component. A consumer fills `slot='header'` and `slot='body'` — the component controls how those pieces are presented.
+</Tip>
+
+export const quizNamedSlots = [
+  {
+    q: "How do you assign a light-DOM child to a named slot called 'header'?",
+    options: [
+      "Add class='header' to the child",
+      "Add slot='header' attribute to the child",
+      "Wrap the child in a slot element",
+      "Call shadowRoot.assignSlot('header', child)"
+    ],
+    answer: 1
+  },
+  {
+    q: "What happens to a light-DOM child whose slot attribute does not match any named slot in the shadow tree?",
+    options: [
+      "It falls through to the default slot",
+      "It is rendered in its original position",
+      "It is not rendered",
+      "It throws a SlotError"
+    ],
+    answer: 2
+  },
+  {
+    q: "An element with two named slots — 'header' and 'footer' — and one default slot can accept how many light-DOM children simultaneously?",
+    options: [
+      "Only one",
+      "Exactly two",
+      "Any number — named slots each take their matched children, default slot takes the rest",
+      "None — named and default slots cannot coexist"
+    ],
+    answer: 2
+  }
+];
+
+<Quiz client:visible id="templates-slots/named-slots" questions={quizNamedSlots} />
+
+<ProgressTracker client:visible id="templates-slots/named-slots" />

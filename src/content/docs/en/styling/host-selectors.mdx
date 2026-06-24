@@ -1,0 +1,72 @@
+---
+title: "The :host Selector"
+description: "Style the custom element itself from inside its shadow root using :host, :host(.modifier), and :host-context()."
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+The `:host` pseudo-class lets you style the custom element itself from inside its own shadow root. There are three forms you'll use regularly:
+
+- **`:host`** — always applies to the host element, regardless of context
+- **`:host(.modifier)`** — applies only when the host element carries a specific class
+- **`:host-context(selector)`** — applies when any ancestor of the host matches the given selector
+
+```css
+:host { display: block; }
+:host(.primary) { background: #3b82f6; }
+:host-context(.dark-bg) { color: white; }
+```
+
+The `:host` rule is the right place to establish the element's layout participation — whether it renders as `block`, `inline-block`, or `flex`. Without it, custom elements default to `display: inline`, which is rarely what you want.
+
+The conditional form `:host(.modifier)` is the idiomatic way to handle variants (primary, danger, small, large) without JavaScript toggling internal styles. The host's class list drives the shadow styles.
+
+`:host-context(selector)` is useful for automatic theming: a component can adapt to a dark-mode ancestor class without the page needing to know the component's internals.
+
+export const hostHtml = '<badge-host>Default</badge-host>\n' +
+  '<badge-host class="primary">Primary</badge-host>\n' +
+  '<badge-host class="danger">Danger</badge-host>';
+
+export const hostJs = 'class BadgeHost extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    var shadow = this.attachShadow({mode: \'open\'});\n' +
+  '    var style = document.createElement(\'style\');\n' +
+  '    style.textContent = \':host { display: inline-block; padding: 4px 12px; border-radius: 20px; background: #e2e8f0; color: #1a202c; font-family: system-ui, sans-serif; margin: 4px; } :host(.primary) { background: #3b82f6; color: white; } :host(.danger) { background: #ef4444; color: white; }\';\n' +
+  '    var slot = document.createElement(\'slot\');\n' +
+  '    shadow.append(style, slot);\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'badge-host\', BadgeHost);';
+
+<LivePreview client:visible html={hostHtml} js={hostJs} />
+
+<Tip title="Host selector scope">
+`:host` styles apply to the outer custom element tag as seen in the document. They have lower specificity than page styles targeting the same element — so a page rule like `badge-host { background: pink }` will override `:host { background: blue }`.
+</Tip>
+
+export const quizHost = [
+  {
+    q: "What does :host refer to inside a shadow root?",
+    options: ["The document body", "The shadow root node", "The custom element itself", "The first child element"],
+    answer: 2,
+  },
+  {
+    q: "When does :host(.active) apply styles?",
+    options: ["When any child has class active", "When the host element has class active", "When the shadow root has class active", "Always"],
+    answer: 1,
+  },
+  {
+    q: "What does :host-context(dark-theme) do?",
+    options: ["Styles the element only when it is a dark-theme element", "Styles the element when an ancestor matches the dark-theme selector", "Styles all children inside a dark-theme", "Is not a valid CSS selector"],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="styling/host-selectors" questions={quizHost}/>
+
+<ProgressTracker client:visible id="styling/host-selectors"/>

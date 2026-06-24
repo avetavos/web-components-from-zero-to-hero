@@ -1,0 +1,73 @@
+---
+title: "การจัดสไตล์เนื้อหาใน Slot"
+description: "ใช้ ::slotted(selector) เพื่อจัดสไตล์ node ใน light DOM ที่ถูก project เข้ามาจากภายใน shadow root"
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+pseudo-element `::slotted(selector)` ช่วยให้คุณเขียน CSS rules **ภายใน shadow root** เพื่อกำหนดเป้าหมาย node ใน light DOM ที่ถูก project เข้าไปใน `<slot>` เมื่อผู้ใช้วาง `<p>` หรือ `<strong>` ไว้ภายใน custom element ของคุณ node เหล่านั้นยังคงอยู่ใน light DOM แต่ถูก render ให้เห็นภายใน shadow tree — `::slotted()` คือวิธีที่คุณจัดสไตล์พวกมันจากภายใน
+
+```css
+::slotted(p) { color: steelblue; }
+::slotted(strong) { color: #e11d48; }
+```
+
+rule ข้างต้นอยู่ภายในบล็อก `<style>` ของ shadow ของ component element `<p>` หรือ `<strong>` ใดๆ ที่ผู้ใช้ slot เข้ามาใน component จะได้รับสไตล์เหล่านั้น
+
+## ข้อจำกัด
+
+`::slotted()` สามารถ match ได้เฉพาะ **node ที่ถูก slot โดยตรงระดับบนสุด** — children โดยตรงของ host ที่ตกลงไปอยู่ใน slot มันไม่สามารถเข้าถึง subtree ของ element ที่ถูก slot ได้:
+
+- `::slotted(div span)` **ไม่** ทำงาน — คุณไม่สามารถกำหนดเป้าหมาย `<span>` ที่ซ้อนอยู่ภายใน `<div>` ที่ถูก slot ได้
+- เฉพาะ compound selectors ที่มี slotted element ระดับเดียวเท่านั้นที่ถูกต้อง
+- specificity ของ `::slotted()` ต่ำ — เทียบเท่ากับ `(0,0,1,0)` — ดังนั้นสไตล์ของหน้าบน element เดียวกันสามารถชนะได้
+
+หากคุณต้องการควบคุม subtree ที่ถูก slot ในระดับลึกขึ้น ให้ปรับโครงสร้าง HTML ของคุณเพื่อ slot element ในสุดโดยตรง หรือส่ง CSS custom properties เข้าไปใน shadow root จากหน้า
+
+## เดโม
+
+export const slottedHtml = `<card-slot>
+  <p>Paragraph inside slot</p>
+  <strong>Bold inside slot</strong>
+</card-slot>`;
+
+export const slottedJs = 'class CardSlot extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    var shadow = this.attachShadow({mode: \'open\'});\n' +
+  '    shadow.innerHTML = \'<style>::slotted(p){color:steelblue;margin:0} ::slotted(strong){color:#e11d48;} .card{border:2px solid #e2e8f0;padding:1rem;border-radius:8px;}</style><div class="card"><slot></slot></div>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'card-slot\', CardSlot);';
+
+<LivePreview client:visible html={slottedHtml} js={slottedJs} />
+
+<Tip title="ขีดจำกัดความลึกของ slotted">
+`::slotted(selector)` สามารถ match ได้เฉพาะ children ที่ถูก slot โดยตรง — มันไม่สามารถเข้าถึง subtree ของพวกมันได้ ในการจัดสไตล์เนื้อหาที่ลึกขึ้น ให้ปรับโครงสร้าง HTML ของคุณ หรือใช้ CSS custom properties ที่ส่งเข้ามาจากภายนอก
+</Tip>
+
+export const quizSlotted = [
+  {
+    q: "::slotted(p) กำหนดเป้าหมายอะไร?",
+    options: ["p ทั้งหมดใน shadow root", "p ทั้งหมดใน document", "p elements ที่ถูก project เข้า slot จาก light DOM", "p elements ที่เป็น children ของ host"],
+    answer: 2,
+  },
+  {
+    q: "::slotted(div span) สามารถกำหนดเป้าหมาย span ที่ซ้อนอยู่ใน div ที่ถูก slot ได้หรือไม่?",
+    options: ["ได้ ทุก descendant", "ไม่ได้ กำหนดเป้าหมายได้เฉพาะ node ที่ถูก slot โดยตรงระดับบนสุด", "เฉพาะใน Chrome", "เฉพาะกับ :is()"],
+    answer: 1,
+  },
+  {
+    q: "rule ::slotted() เขียนไว้ที่ไหน?",
+    options: ["ใน CSS ของหน้า", "ภายใน stylesheet ของ shadow root", "ใน CSS ของ element ที่ถูก slot", "ใน link element"],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="styling/slotted" questions={quizSlotted}/>
+
+<ProgressTracker client:visible id="styling/slotted"/>

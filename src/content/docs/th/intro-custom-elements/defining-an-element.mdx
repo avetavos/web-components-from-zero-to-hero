@@ -1,0 +1,125 @@
+---
+title: 'การนิยาม Element'
+description: 'วิธี extend HTMLElement ลงทะเบียน tag ด้วย customElements.define และนำไปใช้ใน HTML'
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## การ extend HTMLElement
+
+autonomous custom element ทุกตัวเริ่มต้นจาก ES class ที่ extend `HTMLElement`:
+
+```js
+class HelloBadge extends HTMLElement {
+  // lifecycle callbacks go here
+}
+```
+
+class จะไม่มีชื่อหรือมีชื่อก็ได้ — ชื่อนั้นถูกใช้ภายในโดย JavaScript เท่านั้น ตัวตนสาธารณะของ element คือชื่อ tag ที่คุณลงทะเบียนไว้
+
+## การลงทะเบียนด้วย customElements.define
+
+เมธอด `customElements.define` รับอาร์กิวเมนต์ที่จำเป็นสองตัวและอาร์กิวเมนต์เสริมหนึ่งตัว:
+
+```js
+customElements.define(tagName, constructor, options);
+//                    ^string  ^class       ^optional { extends: '...' }
+```
+
+```js
+customElements.define('hello-badge', HelloBadge);
+```
+
+หลังจากการเรียกนี้ เบราว์เซอร์จะรู้ว่า `<hello-badge>` ทุกตัวในเอกสารคืออินสแตนซ์ของ `HelloBadge`
+
+## กฎบังคับว่าต้องมีเครื่องหมายขีด
+
+ชื่อ tag ของ custom element **ต้องมีเครื่องหมายขีด (hyphen) อย่างน้อยหนึ่งตัว** นี่คือวิธีที่เบราว์เซอร์ใช้แยกแยะ element ของคุณออกจาก element ที่มีมาในตัวทั้งในปัจจุบันและอนาคต:
+
+```html
+<!-- valid custom element names -->
+<hello-badge></hello-badge>
+<my-app></my-app>
+<x-button></x-button>
+
+<!-- INVALID — no hyphen — the browser treats these as unknown built-ins -->
+<hellobadge></hellobadge>
+<mybadge></mybadge>
+```
+
+คำนำหน้าที่สงวนไว้และคุณใช้ไม่ได้: `annotation-xml`, `color-profile`, `font-face`, `font-face-*`
+
+## การนำ element ไปใช้ใน HTML
+
+เมื่อนิยามแล้ว element จะทำงานเหมือน element เนทีฟทุกประการ — วางมันในมาร์กอัป กำหนด attribute และ query มันด้วย JavaScript:
+
+```html
+<hello-badge name="Alice"></hello-badge>
+<hello-badge name="Bob"></hello-badge>
+```
+
+```js
+const badge = document.querySelector('hello-badge');
+badge.getAttribute('name'); // 'Alice'
+```
+
+## เดโมที่รันได้
+
+export const defJs = `class HelloBadge extends HTMLElement {
+  connectedCallback() {
+    this.textContent = 'Hello, ' + (this.getAttribute('name') || 'world') + '!';
+  }
+}
+customElements.define('hello-badge', HelloBadge);`;
+
+export const defHtml = `<hello-badge name="Web Components"></hello-badge>`;
+
+<LivePreview client:visible html={defHtml} js={defJs} />
+
+ลองเปลี่ยนค่า attribute `name` ในแผง HTML แล้วดูผลลัพธ์อัปเดตตาม
+
+<Tip title="เครื่องหมายขีดเป็นสิ่งที่บังคับ">
+ชื่อ tag ต้องมีเครื่องหมายขีด — ตัวอย่างเช่น `hello-badge` นี่คือวิธีที่เบราว์เซอร์ใช้แยกแยะ custom element ออกจาก element ที่มีมาในตัว ชื่อที่ไม่มีเครื่องหมายขีดจะถูกถือว่าเป็น `HTMLUnknownElement` แบบเงียบ ๆ
+</Tip>
+
+export const quizDef = [
+  {
+    q: 'ชื่อ tag ใดเป็นชื่อ autonomous custom element ที่ถูกต้อง?',
+    options: [
+      'mybadge',
+      'BADGE',
+      'x-badge',
+      'badge-',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'อาร์กิวเมนต์ตัวแรกของ customElements.define คืออะไร?',
+    options: [
+      'ตัว constructor ของ class',
+      'สตริงชื่อ tag',
+      'อ็อบเจกต์ options',
+      'element แม่',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'เบราว์เซอร์ทำอะไรเมื่อพบชื่อ tag ที่ถูกลงทะเบียนไว้กับ customElements.define แล้ว?',
+    options: [
+      'มันละเลยและไม่เรนเดอร์อะไรเลย',
+      'มันโยน SyntaxError',
+      'มันสร้างอินสแตนซ์ของ class ที่ลงทะเบียนไว้ให้กับ element นั้น',
+      'มันแทนที่ tag นั้นด้วย div',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="intro-custom-elements/defining-an-element" questions={quizDef} />
+
+<ProgressTracker client:visible id="intro-custom-elements/defining-an-element" />

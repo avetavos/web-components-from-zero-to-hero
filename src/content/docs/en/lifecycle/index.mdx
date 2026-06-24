@@ -1,0 +1,148 @@
+---
+title: 'Lifecycle Callbacks'
+description: 'Overview of the four Web Component lifecycle callbacks and when each fires.'
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+Custom elements are not just inert tags — they have a lifecycle. The browser calls specific methods on your class at well-defined moments: when the element is created, when it is inserted into the document, when its attributes change, and when it is removed. Handling these moments correctly is the foundation of a well-behaved custom element.
+
+This module covers four lifecycle callbacks:
+
+- `constructor` — element is created (class instantiated)
+- `connectedCallback` — element is inserted into a document
+- `attributeChangedCallback` — an observed attribute is added, changed, or removed
+- `disconnectedCallback` — element is removed from a document
+
+It also covers **upgrading** — what happens when the browser encounters a custom element tag before the class is registered.
+
+## Lifecycle sequence
+
+export const lifecycleDiagram = `
+flowchart LR
+  C["constructor\n(element created)"]
+  CC["connectedCallback\n(inserted into DOM)"]
+  AC["attributeChangedCallback\n(attribute changed)\n— fires each time —"]
+  DC["disconnectedCallback\n(removed from DOM)"]
+  C --> CC
+  CC --> AC
+  AC --> AC
+  CC --> DC
+`;
+
+<Mermaid code={lifecycleDiagram} title="Web Component lifecycle callback sequence" />
+
+| Callback | When it fires |
+|---|---|
+| `constructor` | Element is instantiated — via `new` or HTML parsing |
+| `connectedCallback` | Element is inserted into any document (or shadow root) |
+| `attributeChangedCallback` | An observed attribute is set, changed, or removed |
+| `disconnectedCallback` | Element is removed from the document |
+
+The `attributeChangedCallback` can fire multiple times — once per attribute change — and it fires both before and after the element is connected depending on when attributes are set.
+
+## Upgrading existing elements
+
+If the browser encounters `<my-widget>` in the HTML before the class is registered, it creates a plain `HTMLElement` first. When `customElements.define('my-widget', MyWidget)` is later called, the browser **upgrades** those elements by running their constructor and, if they are already in the DOM, their `connectedCallback`. You can await an upgrade with `customElements.whenDefined('my-widget')`.
+
+## Live demo
+
+The element below logs each lifecycle event it observes. Click **Remove element** to trigger `disconnectedCallback`, then re-add it to see `connectedCallback` fire again.
+
+export const indexHtml = '<div id="log" style="font-family:monospace;font-size:.85rem;background:#f3f4f6;padding:.5rem;border-radius:4px;margin-bottom:.5rem;min-height:2rem"></div>' +
+'<lifecycle-demo style="display:block;padding:.5rem;border:2px solid #6366f1;border-radius:4px;margin-bottom:.5rem"></lifecycle-demo>' +
+'<button id="btn-remove" style="margin-right:.5rem">Remove element</button>' +
+'<button id="btn-add">Re-add element</button>';
+
+export const indexJs = 'var container = null;' +
+'\nvar removed = null;' +
+'\nfunction log(msg) {' +
+'\n  var el = document.getElementById("log");' +
+'\n  if (!el) return;' +
+'\n  var p = document.createElement("p");' +
+'\n  p.style.margin = "0 0 .15rem 0";' +
+'\n  p.textContent = new Date().toLocaleTimeString() + " → " + msg;' +
+'\n  el.appendChild(p);' +
+'\n}' +
+'\nclass LifecycleDemo extends HTMLElement {' +
+'\n  constructor() {' +
+'\n    super();' +
+'\n    log("constructor called");' +
+'\n    this.textContent = "lifecycle-demo element";' +
+'\n  }' +
+'\n  connectedCallback() {' +
+'\n    log("connectedCallback called");' +
+'\n    this.textContent = "connected ✔";' +
+'\n  }' +
+'\n  disconnectedCallback() {' +
+'\n    log("disconnectedCallback called");' +
+'\n  }' +
+'\n  static get observedAttributes() { return ["data-label"]; }' +
+'\n  attributeChangedCallback(name, oldVal, newVal) {' +
+'\n    log("attributeChangedCallback: " + name + " = " + newVal);' +
+'\n  }' +
+'\n}' +
+'\ncustomElements.define("lifecycle-demo", LifecycleDemo);' +
+'\ndocument.getElementById("btn-remove").addEventListener("click", function() {' +
+'\n  var el = document.querySelector("lifecycle-demo");' +
+'\n  if (el && el.parentNode) {' +
+'\n    container = el.parentNode;' +
+'\n    removed = el;' +
+'\n    el.parentNode.removeChild(el);' +
+'\n  }' +
+'\n});' +
+'\ndocument.getElementById("btn-add").addEventListener("click", function() {' +
+'\n  if (removed && container) {' +
+'\n    container.insertBefore(removed, document.getElementById("btn-remove"));' +
+'\n    removed = null;' +
+'\n  }' +
+'\n});';
+
+<LivePreview client:visible html={indexHtml} js={indexJs} />
+
+<Tip title="observedAttributes is required">
+`attributeChangedCallback` only fires for attributes listed in the static `observedAttributes` array. If an attribute is not in that list, changes to it are silently ignored.
+</Tip>
+
+export const quizLifecycleIndex = [
+  {
+    q: 'Which lifecycle callback fires when a custom element is inserted into the DOM?',
+    options: [
+      'constructor',
+      'connectedCallback',
+      'attributeChangedCallback',
+      'adoptedCallback',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What is required for attributeChangedCallback to receive notifications?',
+    options: [
+      'The attribute name must start with "data-"',
+      'The element must be connected to the document first',
+      'The attribute name must be listed in the static observedAttributes array',
+      'You must call super.attributeChangedCallback() in the constructor',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'Which callback fires when a custom element is removed from the document?',
+    options: [
+      'connectedCallback',
+      'destroyedCallback',
+      'attributeChangedCallback',
+      'disconnectedCallback',
+    ],
+    answer: 3,
+  },
+];
+
+<Quiz client:visible id="lifecycle/index" questions={quizLifecycleIndex} />
+
+<ProgressTracker client:visible id="lifecycle/index" />

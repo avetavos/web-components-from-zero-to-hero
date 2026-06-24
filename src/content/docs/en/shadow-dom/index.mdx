@@ -1,0 +1,103 @@
+---
+title: 'Shadow DOM'
+description: 'What Shadow DOM is — a scoped, encapsulated subtree; DOM and style isolation; a Mermaid diagram; and what this module covers.'
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## What is Shadow DOM?
+
+Shadow DOM is a browser API that lets you attach a **private, scoped DOM tree** to any HTML element. That private tree is called the **shadow tree**, and the element it is attached to is called the **host element**. The rest of the page — the normal document tree — is called the **light DOM**.
+
+The shadow tree is completely separate from the light DOM. Styles written inside it cannot leak out to the page, and page styles cannot accidentally style elements inside it. This is what "encapsulation" means in the context of web components.
+
+## Key concepts
+
+| Term | Meaning |
+|---|---|
+| **Host element** | The element that owns the shadow root (e.g., `<my-card>`) |
+| **Shadow root** | The root node of the shadow tree, returned by `attachShadow()` |
+| **Shadow tree** | All the nodes inside the shadow root |
+| **Light DOM** | The main document tree — everything outside the shadow root |
+| **Encapsulated styles** | CSS declared inside the shadow root that is scoped to the shadow tree only |
+
+## Shadow DOM structure
+
+export const shadowDomDiagram = `flowchart LR\n  LD["Light DOM"]\n  HE["Host Element"]\n  SR["Shadow Root"]\n  ST["Shadow Tree"]\n  IS["Internal <style>"]\n  LD --> HE\n  HE --> SR\n  SR --> ST\n  SR --> IS`;
+
+<Mermaid code={shadowDomDiagram} title="Shadow DOM structure" />
+
+## What this module covers
+
+| Lesson | Topic |
+|---|---|
+| 1 | Shadow DOM — overview and structure (this page) |
+| 2 | Attaching a Shadow Root — `attachShadow`, `shadowRoot.innerHTML` |
+| 3 | Style Encapsulation — shadow boundary, scoped CSS |
+| 4 | Open vs Closed Mode — `mode: 'open'` vs `mode: 'closed'` |
+| 5 | Host Element and Shadow Boundary — `:host`, `:host(selector)`, event retargeting |
+
+## Runnable demo
+
+The element below attaches a shadow root and renders a styled greeting entirely inside the shadow tree. The blue color comes from a `<style>` tag placed inside the shadow root — not from the page.
+
+export const shadowHelloJs = 'class ShadowHello extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    this.attachShadow({ mode: \'open\' });\n' +
+  '    this.shadowRoot.innerHTML =\n' +
+  '      \'<style>p { color: #4f46e5; font-weight: bold; }</style>\' +\n' +
+  '      \'<p>Hello from Shadow DOM!</p>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'shadow-hello\', ShadowHello);';
+
+export const shadowHelloHtml = '<shadow-hello></shadow-hello>';
+
+<LivePreview client:visible html={shadowHelloHtml} js={shadowHelloJs} />
+
+<Tip title="Shadow DOM creates a private DOM tree">
+Shadow DOM creates a private DOM tree — styles and structure inside it are isolated from the rest of the page.
+</Tip>
+
+export const quizShadowDomIndex = [
+  {
+    q: 'What is the element that owns a shadow root called?',
+    options: [
+      'Shadow node',
+      'Root element',
+      'Host element',
+      'Container element',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'Which term describes the normal document tree that exists outside the shadow root?',
+    options: [
+      'Dark DOM',
+      'Light DOM',
+      'Outer DOM',
+      'Page tree',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What is the main benefit of placing a `<style>` tag inside a shadow root rather than in the document head?',
+    options: [
+      'It loads faster',
+      'It allows the use of CSS variables',
+      'The styles are scoped to the shadow tree and cannot affect the rest of the page',
+      'It enables server-side rendering',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="shadow-dom/index" questions={quizShadowDomIndex} />
+
+<ProgressTracker client:visible id="shadow-dom/index" />

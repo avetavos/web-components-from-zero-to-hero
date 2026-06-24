@@ -1,0 +1,178 @@
+---
+title: 'Attributes, Properties & Events'
+description: 'ภาพรวมของโมเดลข้อมูลเข้า/ออกสำหรับ custom elements: attributes และ properties รับข้อมูลเข้า ส่วน events ส่งข้อมูลออก'
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+Custom element ทุกตัวมีสองช่องทางสำหรับรับข้อมูลและหนึ่งช่องทางสำหรับส่งข้อมูลออก **Attributes** เข้ามาในรูปแบบ string ผ่าน HTML markup **Properties** เข้ามาในรูปแบบ JavaScript value ที่กำหนดโดยโค้ด ส่วน **Events** พาข้อมูลออกสู่ส่วนอื่นของ application การเข้าใจว่าควรใช้ช่องทางไหน — และเมื่อใด — คือกุญแจสำคัญในการเขียน custom elements ที่ทำงานได้เป็นธรรมชาติและผสานกับ framework ใดก็ได้หรือ JavaScript ล้วน
+
+โมดูลนี้ครอบคลุมห้าบทเรียน:
+
+- `index` — ภาพรวม attributes vs properties vs events (หน้านี้)
+- `reflecting-attributes` — การซิงก์ attributes และ properties ให้ตรงกัน
+- `properties-vs-attributes` — เมื่อไหร่ควรใช้อะไร และข้อควรระวังเรื่อง type-coercion
+- `custom-events` — การ dispatch และ listen `CustomEvent`
+- `composed-events` — การข้าม shadow-DOM boundary ด้วย `composed: true`
+
+## กระแสข้อมูลเข้าและออกจาก Custom Element
+
+export const attrPropEvtDiagram = `
+flowchart LR
+  HTML["HTML Markup"] -->|attributes| CE["Custom Element"]
+  JS["JavaScript"] -->|properties| CE
+  CE -->|events| App["App / Parent"]
+`;
+
+<Mermaid code={attrPropEvtDiagram} title="กระแสข้อมูลเข้าและออกจาก Custom Element" />
+
+| ช่องทาง | ทิศทาง | ประเภทข้อมูล | กำหนดจาก |
+|---|---|---|---|
+| Attribute | เข้า | string | HTML หรือ `setAttribute()` |
+| Property | เข้า | JS value ใดก็ได้ | การ assign ใน JavaScript |
+| Event | ออก | `Event` / `CustomEvent` | `dispatchEvent()` ภายใน element |
+
+Attributes คือ interface ตามธรรมชาติจาก HTML — เป็นสิ่งที่เราเขียนใน markup และ HTML parser เข้าใจได้ Properties คือ JavaScript interface — รองรับ type ใดก็ได้: ตัวเลข, boolean, array, object ส่วน Events คือวิธีเดียวที่ถูกต้องสำหรับ element ในการสื่อสารออกไปภายนอก ซึ่งทำให้ element แยกออกจากผู้ใช้งานอย่างสมบูรณ์
+
+## Attributes เป็น string เสมอ
+
+เมื่อ browser แปลง `<attr-demo label="42">` ค่า `"42"` คือ string หาก element ต้องการตัวเลข โค้ดของคุณต้องแปลงค่าเอง นี่คือสาเหตุที่พบบ่อยที่สุดของบัก subtle เมื่อย้ายจาก framework component (ที่ props มี type ใดก็ได้) มาสู่ custom elements
+
+```js
+class AttrDemo extends HTMLElement {
+  static get observedAttributes() { return ['count']; }
+
+  attributeChangedCallback(name, oldVal, newVal) {
+    // newVal is always a string — coerce explicitly
+    var count = Number(newVal);
+    this.textContent = 'Count: ' + count;
+  }
+}
+customElements.define('attr-demo', AttrDemo);
+```
+
+## Properties ข้ามข้อจำกัดเรื่อง string
+
+การกำหนด property โดยตรงใน JavaScript ช่วยให้ส่งค่าที่ซับซ้อนได้โดยไม่ต้องแปลงเป็น string:
+
+```js
+var el = document.querySelector('my-chart');
+el.data = [{ x: 1, y: 2 }, { x: 3, y: 4 }]; // object, not a string
+```
+
+setter ของ element จะรับค่าตามที่ส่งมา ไม่มีการแปลงเป็น string เว้นแต่คุณจะเขียนเองอย่างชัดเจน นี่คือเหตุผลที่การกำหนดค่าที่ซับซ้อน — array, object, function — ควรอยู่บน properties ไม่ใช่ attributes
+
+## Events พาข้อมูลออก
+
+Element ไม่ควรเข้าถึง DOM เพื่อแก้ไข parent โดยตรง แต่ควร dispatch event และปล่อยให้ parent ตัดสินใจว่าจะทำอะไร:
+
+```js
+this.dispatchEvent(new CustomEvent('demo-click', {
+  bubbles: true,
+  composed: true,
+  detail: { label: this.getAttribute('label') }
+}));
+```
+
+Parent ฟังด้วย `addEventListener('demo-click', handler)` Element และ parent แยกออกจากกันอย่างสมบูรณ์
+
+## Live demo
+
+Element ด้านล่างอ่าน attribute `label` และแสดงผลในกล่องที่มีสไตล์ คลิกที่กล่องเพื่อ dispatch event `demo-click` — หน้าเพจจะจับ event นั้นและแสดง log entry
+
+export const indexHtml = '<style>' +
+'\n  attr-demo {' +
+'\n    display: inline-block;' +
+'\n    padding: .5rem 1rem;' +
+'\n    background: #6366f1;' +
+'\n    color: #fff;' +
+'\n    border-radius: 6px;' +
+'\n    cursor: pointer;' +
+'\n    font-family: sans-serif;' +
+'\n    user-select: none;' +
+'\n  }' +
+'\n</style>' +
+'\n<attr-demo label="Hello from HTML"></attr-demo>' +
+'\n<div id="log" style="margin-top:.75rem;font-family:monospace;font-size:.85rem;background:#f3f4f6;padding:.5rem;border-radius:4px;min-height:2rem"></div>';
+
+export const indexJs = 'function addLog(msg) {' +
+'\n  var el = document.getElementById("log");' +
+'\n  if (!el) return;' +
+'\n  var p = document.createElement("p");' +
+'\n  p.style.margin = "0 0 .15rem 0";' +
+'\n  p.textContent = new Date().toLocaleTimeString() + " → " + msg;' +
+'\n  el.appendChild(p);' +
+'\n}' +
+'\nclass AttrDemo extends HTMLElement {' +
+'\n  static get observedAttributes() { return ["label"]; }' +
+'\n  connectedCallback() {' +
+'\n    this.render();' +
+'\n    this.addEventListener("click", this._onClick.bind(this));' +
+'\n  }' +
+'\n  attributeChangedCallback(name, oldVal, newVal) {' +
+'\n    if (name === "label") this.render();' +
+'\n  }' +
+'\n  render() {' +
+'\n    this.textContent = this.getAttribute("label") || "(no label)";' +
+'\n  }' +
+'\n  _onClick() {' +
+'\n    this.dispatchEvent(new CustomEvent("demo-click", {' +
+'\n      bubbles: true,' +
+'\n      composed: true,' +
+'\n      detail: { label: this.getAttribute("label") }' +
+'\n    }));' +
+'\n  }' +
+'\n}' +
+'\ncustomElements.define("attr-demo", AttrDemo);' +
+'\ndocument.addEventListener("demo-click", function(e) {' +
+'\n  addLog("demo-click fired — detail.label: \\"" + e.detail.label + "\\"");' +
+'\n});';
+
+<LivePreview client:visible html={indexHtml} js={indexJs} />
+
+<Tip title="ใช้ observedAttributes เพื่อเลือก attribute ที่ต้องการติดตาม">
+`attributeChangedCallback` จะ fire เฉพาะ attribute ที่ระบุไว้ใน static array `observedAttributes` เท่านั้น Attribute ที่ไม่อยู่ในรายการนั้นจะถูกเพิกเฉยอย่างเงียบๆ ไม่ว่าจะเรียก `setAttribute()` กี่ครั้งก็ตาม
+</Tip>
+
+export const quizAttrPropEvtIndex = [
+  {
+    q: 'ความแตกต่างหลักระหว่าง attribute และ property บน custom element คืออะไร?',
+    options: [
+      'Attributes เป็น string เสมอ; properties เป็น JavaScript value',
+      'Properties กำหนดใน HTML; attributes กำหนดใน JavaScript',
+      'ทั้งสองเหมือนกันแต่ชื่อต่างกัน',
+      'Attributes เป็น read-only; properties สามารถเขียนได้',
+    ],
+    answer: 0,
+  },
+  {
+    q: 'Events ไหลไปในทิศทางใดในโมเดลข้อมูลของ custom element?',
+    options: [
+      'จาก parent ไปยัง child',
+      'จาก attribute ไปยัง property',
+      'จาก element ออกสู่ parent หรือ document',
+      'Events ไม่มีทิศทาง',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'observedAttributes ใช้สำหรับอะไร?',
+    options: [
+      'ระบุ attribute ทั้งหมดที่ custom element สามารถมีใน HTML',
+      'บอก browser ว่า attribute ใดควร trigger attributeChangedCallback',
+      'ป้องกันไม่ให้กำหนด attributes',
+      'แมป attributes ไปยัง CSS custom properties',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="attributes-properties-events/index" questions={quizAttrPropEvtIndex} />
+
+<ProgressTracker client:visible id="attributes-properties-events/index" />

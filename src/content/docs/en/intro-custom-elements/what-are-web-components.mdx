@@ -1,0 +1,131 @@
+---
+title: 'What Are Web Components?'
+description: 'The problem Web Components solve, how they differ from framework components, and browser support today.'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## The problem: reuse without a framework
+
+Before Web Components, sharing a UI widget between projects meant either copying and pasting markup, or committing to a specific framework. A React button component cannot be dropped into a Vue app. A Svelte card cannot be reused in an Angular project.
+
+Web Components solve this with three browser-native standards:
+
+- **Custom Elements** — define new HTML tags as ES classes
+- **Shadow DOM** — encapsulate the element's DOM and CSS so styles cannot leak in or out
+- **HTML Templates and Slots** — declare reusable markup fragments and insertion points declaratively
+
+The result is a component that is:
+
+| Property | Meaning |
+|---|---|
+| **Reusable** | Works in any HTML context, with any framework or none |
+| **Encapsulated** | Internal markup and styles are isolated from the page |
+| **Native** | No transpilation, no virtual DOM, no runtime library required |
+
+## Framework components vs Web Components
+
+Framework components (React, Vue, Svelte) live entirely inside their framework's runtime. The browser never sees a `<MyButton>` — it sees whatever the framework renders in its place.
+
+```html
+<!-- React JSX — compiled away, never in the DOM -->
+<MyButton variant="primary">Save</MyButton>
+
+<!-- Web Component — a real DOM node the browser owns -->
+<my-button variant="primary">Save</my-button>
+```
+
+Web Components are actual DOM nodes. You can query them with `document.querySelector`, listen to their events with `addEventListener`, and inspect them in DevTools — just like any built-in element.
+
+## Browser support today
+
+All four major rendering engines support the complete Web Components v1 specification:
+
+- **Chrome / Edge** — full support since 2018
+- **Firefox** — full support since 2018
+- **Safari** — full support since Safari 10.1 (2017) for Custom Elements; Shadow DOM v1 since Safari 10 (2016)
+
+The one exception is **customized built-ins** (extending existing elements like `HTMLButtonElement`). Safari does not support them and has stated it will not — autonomous custom elements (extending `HTMLElement`) are the portable choice. This is covered in the final lesson of this module.
+
+## A custom element is just a class
+
+At its core, a custom element is an ES class that extends `HTMLElement` and is registered with a tag name:
+
+```js
+class MyGreeting extends HTMLElement {
+  connectedCallback() {
+    this.textContent = 'Hello from a custom element!';
+  }
+}
+
+customElements.define('my-greeting', MyGreeting);
+```
+
+After `define`, any `<my-greeting>` tag in the document — present or future — is automatically upgraded to an instance of `MyGreeting`.
+
+export const wacJs = `class MyGreeting extends HTMLElement {
+  connectedCallback() {
+    this.textContent = 'Hello from a custom element!';
+  }
+}
+customElements.define('my-greeting', MyGreeting);`;
+
+export const wacHtml = `<my-greeting></my-greeting>`;
+
+<LivePreview client:visible html={wacHtml} js={wacJs} />
+
+<Tip title="A class extending HTMLElement">
+A custom element is just a class extending `HTMLElement`, registered via `customElements.define`. No framework, no build tool, no virtual DOM — just the browser's own extension point.
+</Tip>
+
+export const quizWac = [
+  {
+    q: 'Which of the following is a correct description of a custom element?',
+    options: [
+      'A React component compiled to a Web Component',
+      'An ES class extending HTMLElement registered with a tag name',
+      'A special HTML attribute that activates framework behavior',
+      'A browser plugin that intercepts DOM mutations',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Which browser does NOT support customized built-in elements?',
+    options: [
+      'Chrome',
+      'Firefox',
+      'Safari',
+      'Edge',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'What is the main advantage of Web Components over framework components?',
+    options: [
+      'They compile faster than JSX',
+      'They work in any HTML context without a shared framework runtime',
+      'They automatically lazy-load their dependencies',
+      'They replace the need for CSS entirely',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'After calling customElements.define, what happens to existing matching tags in the document?',
+    options: [
+      'Nothing — only future tags are affected',
+      'They throw a TypeError',
+      'They are upgraded to instances of the registered class',
+      'They are removed and re-inserted',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="intro-custom-elements/what-are-web-components" questions={quizWac} />
+
+<ProgressTracker client:visible id="intro-custom-elements/what-are-web-components" />

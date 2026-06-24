@@ -1,0 +1,133 @@
+---
+title: 'Attaching a Shadow Root'
+description: 'How to call attachShadow, access shadowRoot, and render content into the shadow tree.'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Calling attachShadow
+
+To create a shadow tree, call `this.attachShadow()` on the host element and pass a mode option. The method returns the new shadow root and also stores it as `this.shadowRoot`.
+
+```js
+class ScopedCard extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({ mode: 'open' });
+  }
+}
+```
+
+You can call `attachShadow` in the constructor or in `connectedCallback`. The constructor is preferred when you want the shadow root available immediately; `connectedCallback` is fine when you also need access to attributes set in HTML.
+
+## Accessing the shadow root
+
+After calling `attachShadow`, the shadow root is available two ways:
+
+```js
+// returned directly by the call
+var root = this.attachShadow({ mode: 'open' });
+
+// also stored as a property on the element
+var root = this.shadowRoot;
+```
+
+Both references point to the same `ShadowRoot` object. The `ShadowRoot` behaves like a `DocumentFragment` — you can call `querySelector`, `getElementById`, and set `innerHTML` on it.
+
+## Rendering content with innerHTML
+
+The simplest way to populate the shadow tree is to set `this.shadowRoot.innerHTML`. Place your `<style>` tag first, followed by your markup:
+
+```js
+this.shadowRoot.innerHTML =
+  '<style>' +
+  '  .card { border: 2px solid #6366f1; border-radius: 8px; padding: 1rem; background: #eef2ff; }' +
+  '  h2 { color: #4f46e5; margin: 0 0 0.5rem; }' +
+  '</style>' +
+  '<div class="card"><h2>Shadow Card</h2><p>Styles scoped inside shadow root</p></div>';
+```
+
+The styles only apply inside the shadow tree. Any `.card` element that exists in the light DOM is unaffected.
+
+## Full class example
+
+```js
+class ScopedCard extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({ mode: 'open' });
+    this.shadowRoot.innerHTML =
+      '<style>' +
+      '  .card { border: 2px solid #6366f1; border-radius: 8px; padding: 1rem; background: #eef2ff; }' +
+      '  h2 { color: #4f46e5; margin: 0 0 0.5rem; }' +
+      '  p { color: #3730a3; margin: 0; }' +
+      '</style>' +
+      '<div class="card"><h2>Shadow Card</h2><p>Styles scoped inside shadow root</p></div>';
+  }
+}
+customElements.define('scoped-card', ScopedCard);
+```
+
+## Runnable demo
+
+export const attachShadowJs = 'class ScopedCard extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    this.attachShadow({ mode: \'open\' });\n' +
+  '    this.shadowRoot.innerHTML =\n' +
+  '      \'<style>\' +\n' +
+  '      \'.card { border: 2px solid #6366f1; border-radius: 8px; padding: 1rem; background: #eef2ff; margin: 1rem 0; }\' +\n' +
+  '      \'h2 { color: #4f46e5; margin: 0 0 0.5rem; }\' +\n' +
+  '      \'p { color: #3730a3; margin: 0; }\' +\n' +
+  '      \'</style>\' +\n' +
+  '      \'<div class="card"><h2>Shadow Card</h2><p>Styles scoped inside shadow root</p></div>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'scoped-card\', ScopedCard);';
+
+export const attachShadowHtml = '<scoped-card></scoped-card>';
+
+<LivePreview client:visible html={attachShadowHtml} js={attachShadowJs} />
+
+<Tip title="attachShadow is permanent">
+Call `attachShadow` before setting `shadowRoot.innerHTML`. Once a shadow root is attached it is permanent — you cannot remove or replace it.
+</Tip>
+
+export const quizAttachShadow = [
+  {
+    q: 'What does `this.attachShadow({ mode: "open" })` return?',
+    options: [
+      'The host element itself',
+      'A new HTMLElement',
+      'The shadow root of the element',
+      'A DocumentFragment clone',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'After calling `this.attachShadow({ mode: "open" })`, how do you access the shadow root later?',
+    options: [
+      'this.shadowTree',
+      'this.shadowRoot',
+      'this.root',
+      'document.shadowRoot',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Where must you place the `<style>` tag to scope styles to the shadow tree?',
+    options: [
+      'In the document `<head>`',
+      'As an external stylesheet linked in the host element',
+      'Inside `this.shadowRoot.innerHTML`',
+      'In the constructor before attachShadow',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="shadow-dom/attach-shadow" questions={quizAttachShadow} />
+
+<ProgressTracker client:visible id="shadow-dom/attach-shadow" />

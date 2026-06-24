@@ -1,0 +1,125 @@
+---
+title: 'Defining an Element'
+description: 'How to extend HTMLElement, register a tag with customElements.define, and use it in HTML.'
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Extending HTMLElement
+
+Every autonomous custom element starts as an ES class that extends `HTMLElement`:
+
+```js
+class HelloBadge extends HTMLElement {
+  // lifecycle callbacks go here
+}
+```
+
+The class can be anonymous or named — the name is only used internally by JavaScript. The public identity of the element is the tag name you register.
+
+## Registering with customElements.define
+
+The `customElements.define` method takes two required arguments and one optional argument:
+
+```js
+customElements.define(tagName, constructor, options);
+//                    ^string  ^class       ^optional { extends: '...' }
+```
+
+```js
+customElements.define('hello-badge', HelloBadge);
+```
+
+After this call, the browser knows that every `<hello-badge>` in the document is an instance of `HelloBadge`.
+
+## The mandatory hyphen rule
+
+Custom element tag names **must contain at least one hyphen**. This is how the browser distinguishes your elements from current and future built-in elements:
+
+```html
+<!-- valid custom element names -->
+<hello-badge></hello-badge>
+<my-app></my-app>
+<x-button></x-button>
+
+<!-- INVALID — no hyphen — the browser treats these as unknown built-ins -->
+<hellobadge></hellobadge>
+<mybadge></mybadge>
+```
+
+Reserved prefixes you cannot use: `annotation-xml`, `color-profile`, `font-face`, `font-face-*`.
+
+## Using the element in HTML
+
+Once defined, the element works like any native element — place it in markup, set attributes, query it with JavaScript:
+
+```html
+<hello-badge name="Alice"></hello-badge>
+<hello-badge name="Bob"></hello-badge>
+```
+
+```js
+const badge = document.querySelector('hello-badge');
+badge.getAttribute('name'); // 'Alice'
+```
+
+## Runnable demo
+
+export const defJs = `class HelloBadge extends HTMLElement {
+  connectedCallback() {
+    this.textContent = 'Hello, ' + (this.getAttribute('name') || 'world') + '!';
+  }
+}
+customElements.define('hello-badge', HelloBadge);`;
+
+export const defHtml = `<hello-badge name="Web Components"></hello-badge>`;
+
+<LivePreview client:visible html={defHtml} js={defJs} />
+
+Try changing the `name` attribute value in the HTML panel and watch the output update.
+
+<Tip title="The hyphen is mandatory">
+The tag name must contain a hyphen — for example `hello-badge`. This is how the browser distinguishes custom elements from built-in elements. A name without a hyphen is silently treated as an `HTMLUnknownElement`.
+</Tip>
+
+export const quizDef = [
+  {
+    q: 'Which tag name is a valid autonomous custom element name?',
+    options: [
+      'mybadge',
+      'BADGE',
+      'x-badge',
+      'badge-',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'What is the first argument to customElements.define?',
+    options: [
+      'The class constructor',
+      'The tag name string',
+      'An options object',
+      'The parent element',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What does the browser do when it encounters a tag name that has been registered with customElements.define?',
+    options: [
+      'It ignores it and renders nothing',
+      'It throws a SyntaxError',
+      'It creates an instance of the registered class for that element',
+      'It replaces the tag with a div',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="intro-custom-elements/defining-an-element" questions={quizDef} />
+
+<ProgressTracker client:visible id="intro-custom-elements/defining-an-element" />

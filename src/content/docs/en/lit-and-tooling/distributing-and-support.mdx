@@ -1,0 +1,176 @@
+---
+title: 'Distributing and Browser Support'
+description: "Publishing a web component to npm, the Custom Elements Manifest, and today's browser baseline."
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Publishing to npm
+
+A web component is just a JavaScript module. Publish it the same way you would any ES module package. A minimal `package.json`:
+
+```json
+{
+  "name": "my-counter",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/my-counter.js",
+  "module": "./dist/my-counter.js",
+  "exports": {
+    ".": "./dist/my-counter.js"
+  },
+  "files": ["dist"],
+  "keywords": ["web-components", "custom-element"]
+}
+```
+
+Consumers install it with `npm install my-counter` and import it once (a side-effect import is enough to register the tag):
+
+```js
+import 'my-counter';
+// <my-counter> is now usable anywhere in the document
+```
+
+## The Custom Elements Manifest
+
+The Custom Elements Manifest (`custom-elements.json`) is a machine-readable JSON file that documents every custom element in a package — its tag name, properties, attributes, events, and CSS custom properties. Tools like Storybook, IDEs, and design-system dashboards consume it for auto-complete and documentation.
+
+Generate one with the `@custom-elements-manifest/analyzer` CLI:
+
+```bash
+npm install --save-dev @custom-elements-manifest/analyzer
+npx cem analyze --globs "src/**/*.js"
+```
+
+A fragment of what it produces:
+
+```json
+{
+  "schemaVersion": "1.0.0",
+  "modules": [{
+    "kind": "javascript-module",
+    "path": "src/my-counter.js",
+    "declarations": [{
+      "kind": "class",
+      "name": "MyCounter",
+      "customElement": true,
+      "tagName": "my-counter",
+      "attributes": [
+        { "name": "label", "type": { "text": "string" } }
+      ],
+      "members": [
+        { "kind": "field", "name": "count", "type": { "text": "number" } }
+      ]
+    }]
+  }]
+}
+```
+
+## Versioning
+
+Follow semantic versioning. Breaking changes in a custom element are:
+
+- Removing or renaming an attribute, property, or event.
+- Changing the element's tag name.
+- Changing the shape of a custom event's `detail` object.
+
+Non-breaking changes include adding new optional attributes, new CSS custom properties, or new public methods.
+
+## Browser support and baseline
+
+As of 2025, Custom Elements v1, Shadow DOM v1, and HTML Templates are supported in every major browser — Chrome, Firefox, Safari, and Edge (all current and most previous versions). The "Baseline Widely Available" badge applies to all three pillars.
+
+The one exception: customized built-ins (elements that `extend` a built-in like `HTMLButtonElement` with `is="..."`) are **not** supported in Safari. Prefer autonomous custom elements (`extends HTMLElement`) for maximum portability.
+
+Lit itself supports Chrome 104+, Firefox 121+, Safari 16.4+. For production apps targeting older browsers, the `@webcomponents/polyfills` package fills gaps.
+
+## Runnable demo
+
+The demo below shows a simple distributable badge element that illustrates the "published package feel" — exactly what a consumer would see after installing your component from npm.
+
+export const distHtml = `<pkg-badge name="my-counter" version="1.0.0"></pkg-badge>`;
+
+export const distJs = `(async () => {
+  const { LitElement, html, css } = await import('https://esm.sh/lit');
+  class PkgBadge extends LitElement {
+    static properties = {
+      name: { type: String },
+      version: { type: String },
+    };
+    static styles = css\`
+      :host {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: monospace;
+        background: #1e1e2e;
+        color: #cdd6f4;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+      }
+      .name { color: #89b4fa; }
+      .version { color: #a6e3a1; }
+    \`;
+    constructor() {
+      super();
+      this.name = '';
+      this.version = '';
+    }
+    render() {
+      return html\`
+        <span class="name">\${this.name}</span>
+        <span class="version">v\${this.version}</span>
+      \`;
+    }
+  }
+  customElements.define('pkg-badge', PkgBadge);
+})();`;
+
+<LivePreview client:visible html={distHtml} js={distJs} />
+
+<Tip title="Side-effect imports">
+Importing a web component module (e.g., `import 'my-counter'`) is a side-effect import — it runs the file's top-level code (which calls `customElements.define`) without importing any exported names. It is the standard pattern for registering third-party components.
+</Tip>
+
+export const quizDistributingAndSupport = [
+  {
+    q: 'What is the purpose of the Custom Elements Manifest file?',
+    options: [
+      'To polyfill older browsers',
+      "To provide machine-readable documentation of a component's API",
+      'To bundle the component for production',
+      'To register the element in the browser',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Which type of custom element is NOT supported in Safari?',
+    options: [
+      'Autonomous custom elements (extends HTMLElement)',
+      'Customized built-ins (extends HTMLButtonElement)',
+      'Elements registered with Lit',
+      'Elements with Shadow DOM',
+    ],
+    answer: 1,
+  },
+  {
+    q: "What does importing 'my-counter' (a side-effect import) do?",
+    options: [
+      'It exports the class constructor for use in JavaScript',
+      "It runs the module's top-level code, registering the custom element tag",
+      'It adds the element to the document body',
+      'It fetches the element from a CDN',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="lit-and-tooling/distributing-and-support" questions={quizDistributingAndSupport} />
+
+<ProgressTracker client:visible id="lit-and-tooling/distributing-and-support" />

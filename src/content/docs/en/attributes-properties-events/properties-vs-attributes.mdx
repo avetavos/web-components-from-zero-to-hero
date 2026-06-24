@@ -1,0 +1,211 @@
+---
+title: "Properties vs Attributes"
+description: "Attributes are always strings in HTML; properties are JS values. Learn when to use each, how to handle booleans, and when to pass rich data via a property setter."
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Attributes live in HTML and are always strings
+
+When you write `<my-card count="5" label="hello">` in HTML, the browser stores those as **attribute nodes** — and every attribute value is a string, no matter what you type. Calling `element.getAttribute('count')` returns the string `"5"`, not the number `5`.
+
+```js
+const el = document.querySelector('my-card');
+console.log(el.getAttribute('count'));   // "5"   (string)
+console.log(el.getAttribute('label'));   // "hello" (string)
+console.log(el.getAttribute('missing')); // null   (not present)
+```
+
+This is important: `getAttribute` returns either a **string** or **null** — never a boolean, number, array, or object.
+
+## Properties are JavaScript values
+
+**Properties** are regular JavaScript object properties on the element instance. They can be any JS type: booleans, numbers, arrays, objects, or functions. You access them with dot notation, not `getAttribute`.
+
+```js
+el.count = 5;           // number
+el.rows = [{ id: 1 }];  // array
+el.config = { theme: 'dark', size: 'lg' }; // object
+el.disabled = true;     // boolean
+```
+
+These property values are not serialised back into the DOM unless your component explicitly does so. A property set on an element instance lives only in JavaScript memory.
+
+## Boolean attributes: check presence, not value
+
+HTML boolean attributes work by **presence or absence** — if the attribute exists on the element, it is true; if it is absent, it is false. The value of the attribute string does not matter.
+
+That means `<my-btn disabled="">` and `<my-btn disabled="false">` are both **disabled** because the attribute is present. Only `<my-btn>` (no attribute at all) means not disabled.
+
+Never compare `getAttribute('disabled') === 'true'` or `=== true`. Always use `hasAttribute` or check the return value against `null`.
+
+```js
+// Boolean attribute — check presence, not value
+class MyButton extends HTMLElement {
+  get disabled() { return this.hasAttribute('disabled'); }
+  set disabled(v) { v ? this.setAttribute('disabled', '') : this.removeAttribute('disabled'); }
+}
+```
+
+Notice the setter sets the attribute to the empty string `''` when truthy — that is the idiomatic HTML pattern. The getter ignores whatever string is stored; it just asks: is the attribute there at all?
+
+<Tip title="hasAttribute vs getAttribute for booleans">
+`this.hasAttribute('disabled')` returns `true` or `false` based on presence alone — it is the correct tool for boolean attributes. `this.getAttribute('disabled')` returns `""` (empty string) when the attribute is set with no value, which is truthy but easy to misread. Stick to `hasAttribute` for booleans.
+</Tip>
+
+## Rich data: use a property, not an attribute
+
+When you need to pass an array, an object, or any non-string value into a component, a **JS property setter** is the right tool. Trying to serialize objects into attribute strings (e.g. `data="[object Object]"`) is fragile and lossy.
+
+```js
+// Rich data — use a property, not an attribute
+class DataTable extends HTMLElement {
+  set rows(data) {        // data is an array of objects
+    this._rows = data;
+    this._render();
+  }
+  get rows() { return this._rows || []; }
+  _render() { /* ... */ }
+}
+```
+
+Then from JavaScript:
+
+```js
+const table = document.querySelector('data-table');
+table.rows = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+];
+```
+
+The setter receives the actual array — no parsing required. When the data changes, just assign the property again and `_render` runs.
+
+## Live demo
+
+The `<user-card>` element below combines both techniques:
+
+- A **boolean attribute** `premium` — when present it renders a crown
+- A **property setter** `profile` — accepts an object `{ name, role }` and re-renders
+
+export const userCardHtml = '<user-card premium></user-card>' +
+'<div id="log" style="margin-top:.75rem;font-family:monospace;font-size:.85rem;color:#6b7280"></div>';
+
+export const userCardJs = 'class UserCard extends HTMLElement {' +
+'\n  constructor() {' +
+'\n    super();' +
+'\n    this._profile = null;' +
+'\n  }' +
+'\n' +
+'\n  connectedCallback() {' +
+'\n    this._render();' +
+'\n  }' +
+'\n' +
+'\n  get premium() {' +
+'\n    return this.hasAttribute("premium");' +
+'\n  }' +
+'\n' +
+'\n  set premium(v) {' +
+'\n    if (v) {' +
+'\n      this.setAttribute("premium", "");' +
+'\n    } else {' +
+'\n      this.removeAttribute("premium");' +
+'\n    }' +
+'\n  }' +
+'\n' +
+'\n  set profile(data) {' +
+'\n    this._profile = data;' +
+'\n    this._render();' +
+'\n    var log = document.getElementById("log");' +
+'\n    if (log) {' +
+'\n      log.textContent = "profile setter called — name: " + data.name + ", role: " + data.role;' +
+'\n    }' +
+'\n  }' +
+'\n' +
+'\n  get profile() {' +
+'\n    return this._profile;' +
+'\n  }' +
+'\n' +
+'\n  _render() {' +
+'\n    var crown = this.premium ? "👑 " : "";' +
+'\n    var name = this._profile ? this._profile.name : "(no profile yet)";' +
+'\n    var role = this._profile ? " — " + this._profile.role : "";' +
+'\n    this.style.display = "inline-block";' +
+'\n    this.style.padding = ".4rem .75rem";' +
+'\n    this.style.border = "2px solid #10b981";' +
+'\n    this.style.borderRadius = "6px";' +
+'\n    this.style.fontFamily = "sans-serif";' +
+'\n    this.textContent = crown + name + role;' +
+'\n  }' +
+'\n}' +
+'\n' +
+'\ncustomElements.define("user-card", UserCard);' +
+'\n' +
+'\nvar el = document.querySelector("user-card");' +
+'\nel.profile = { name: "Alice", role: "Admin" };';
+
+<LivePreview client:visible html={userCardHtml} js={userCardJs} />
+
+The HTML sets the `premium` attribute directly in markup. The JavaScript then assigns `el.profile = { name: 'Alice', role: 'Admin' }` — a plain object — triggering the property setter and re-rendering the card.
+
+## Summary: which to use?
+
+| Scenario | Use |
+|---|---|
+| Simple string config (label, type, variant) | Attribute |
+| Boolean flag (disabled, hidden, selected) | Boolean attribute + `hasAttribute` |
+| Number, object, array, or function | Property setter |
+| Value set from HTML markup only | Attribute |
+| Value set from JavaScript | Either — prefer property for non-strings |
+
+export const quizPropAttr = [
+  {
+    q: 'What type does `getAttribute` always return?',
+    options: [
+      'boolean',
+      'number',
+      'string or null',
+      'object',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'How should you check if a boolean attribute like `disabled` is present?',
+    options: [
+      "this.getAttribute('disabled') === true",
+      "this.getAttribute('disabled') === 'true'",
+      "this.hasAttribute('disabled')",
+      'this.disabled !== undefined',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'When is using a JS property better than an HTML attribute?',
+    options: [
+      'When the value is a short string',
+      'When the value is an object, array, or a boolean',
+      'When the element has a shadow root',
+      'When the element is not yet connected',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Setting `<my-el count="5">` — what is the type of `this.getAttribute(\'count\')`?',
+    options: [
+      'number 5',
+      'boolean true',
+      "string '5'",
+      'undefined',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="attributes-properties-events/properties-vs-attributes" questions={quizPropAttr} />
+
+<ProgressTracker client:visible id="attributes-properties-events/properties-vs-attributes" />

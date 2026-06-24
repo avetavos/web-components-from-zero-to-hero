@@ -1,0 +1,112 @@
+---
+title: 'Patterns & Composition'
+description: 'Composition patterns and advanced techniques: building bigger components from smaller custom elements, form-associated elements, accessibility, and declarative shadow DOM.'
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## What is composition in Web Components?
+
+Composition means building a larger, more capable custom element by assembling smaller, focused custom elements inside it. Instead of writing one monolithic element that does everything, you break the work into pieces — each piece is its own custom element — and then nest them together to form the complete widget.
+
+This mirrors how native HTML already works: a `<form>` contains `<input>`, `<label>`, and `<button>` elements, each responsible for a small slice of the overall experience. Web Components lets you build the same kind of layered, reusable structure with your own tag names.
+
+## A composed widget tree
+
+The diagram below shows a `<card-widget>` element that composes two inner elements: `<user-avatar>` and `<action-button>`.
+
+export const composedTreeDiagram = `flowchart LR
+  CW["card-widget"]
+  UA["user-avatar"]
+  AB["action-button"]
+  CW --> UA
+  CW --> AB`;
+
+<Mermaid title="A composed widget tree" code={composedTreeDiagram} />
+
+## Lessons in this module
+
+| Lesson | Slug | What you will learn |
+|---|---|---|
+| Composing Components | `composition` | Nesting elements, attribute-based communication, and CustomEvent bubbling |
+| Form-Associated Elements | `form-associated` | Making custom elements participate in native HTML forms |
+| Accessibility Patterns | `accessibility` | ARIA roles, keyboard navigation, and focus management |
+| Declarative Shadow DOM | `declarative-shadow-dom` | Server-rendered shadow roots with the `shadowrootmode` attribute |
+
+## Runnable demo
+
+The example below defines two custom elements: `<name-tag>` renders bold text from its `name` attribute, and `<greeting-card>` creates a `<name-tag>` and appends a welcome message — composing two elements into one widget.
+
+export const indexHtml = `<greeting-card name="Alice"></greeting-card>`;
+
+export const indexJs = `var NameTag = function() { HTMLElement.call(this); };
+NameTag.prototype = Object.create(HTMLElement.prototype);
+NameTag.prototype.constructor = NameTag;
+NameTag.prototype.connectedCallback = function() {
+  var b = document.createElement('b');
+  b.textContent = this.getAttribute('name') || 'stranger';
+  this.appendChild(b);
+};
+customElements.define('name-tag', NameTag);
+
+var GreetingCard = function() { HTMLElement.call(this); };
+GreetingCard.prototype = Object.create(HTMLElement.prototype);
+GreetingCard.prototype.constructor = GreetingCard;
+GreetingCard.prototype.connectedCallback = function() {
+  var tag = document.createElement('name-tag');
+  tag.setAttribute('name', this.getAttribute('name') || 'friend');
+  this.appendChild(tag);
+  var span = document.createElement('span');
+  span.textContent = ' — welcome!';
+  this.appendChild(span);
+};
+customElements.define('greeting-card', GreetingCard);`;
+
+<LivePreview client:visible html={indexHtml} js={indexJs} />
+
+<Tip title="Components all the way down">
+Custom elements can contain other custom elements. The browser upgrades them in document order, so inner elements upgrade before the outer one's JavaScript relies on them — but use `connectedCallback` (not `constructor`) to be safe.
+</Tip>
+
+export const quizIndex = [
+  {
+    q: 'What does "composition" mean in Web Components?',
+    options: [
+      'Using CSS Grid to lay out components',
+      'Building larger elements from smaller nested custom elements',
+      'Inheriting from multiple HTMLElement classes',
+      'Sharing JavaScript modules between files',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Which lifecycle callback is the right place to append child custom elements?',
+    options: [
+      'constructor',
+      'disconnectedCallback',
+      'connectedCallback',
+      'adoptedCallback',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'In this module, which lesson covers participating in a native HTML form?',
+    options: [
+      'composition',
+      'declarative-shadow-dom',
+      'accessibility',
+      'form-associated',
+    ],
+    answer: 3,
+  },
+];
+
+<Quiz client:visible id="patterns-composition/index" questions={quizIndex} />
+
+<ProgressTracker client:visible id="patterns-composition/index" />

@@ -1,0 +1,97 @@
+---
+title: "Custom Properties and Constructable Stylesheets"
+description: "CSS custom properties pierce the shadow boundary and are the main theming API. Plus: Constructable Stylesheets for sharing styles efficiently."
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+CSS custom properties (also called CSS variables) are the primary theming API for web components. Unlike regular CSS rules, custom properties **inherit through shadow boundaries**. The host element or any ancestor can declare `--color: blue`, and the shadow root can read it with `color: var(--color, defaultValue)`. The second argument is the fallback, used when the property is not set.
+
+```css
+/* Page or host sets the token */
+themed-badge {
+  --badge-bg: #7c3aed;
+  --badge-color: white;
+}
+
+/* Shadow root reads it */
+span {
+  background: var(--badge-bg, #6b7280);
+  color: var(--badge-color, white);
+}
+```
+
+This inheritance is intentional: custom properties were designed to punch through encapsulation. Everything else (selectors, cascade) stops at the shadow boundary, but `--` variables flow freely.
+
+## Constructable Stylesheets
+
+Constructable Stylesheets let you create a `CSSStyleSheet` object in JavaScript, populate it once with `.replaceSync()`, and then share that single object across many shadow roots by assigning it to `shadowRoot.adoptedStyleSheets`. Each shadow root that adopts the sheet gets the styles without duplicating the parsed CSS in memory.
+
+```js
+const sheet = new CSSStyleSheet();
+sheet.replaceSync('span { font-weight: bold; color: steelblue; }');
+
+class MyEl extends HTMLElement {
+  connectedCallback() {
+    var shadow = this.attachShadow({ mode: 'open' });
+    shadow.adoptedStyleSheets = [sheet];
+  }
+}
+```
+
+This is particularly useful in design systems where dozens of components share a common base stylesheet. Parse once, adopt everywhere.
+
+## Live Demo
+
+The demo below defines a `<themed-badge>` element whose background and text color are driven entirely by CSS custom properties set on the host from the page stylesheet. Change the `--badge-bg` value in the CSS panel to retheme without touching the component code.
+
+export const themedHtml = `<themed-badge>Premium</themed-badge>
+<themed-badge>Gold</themed-badge>`;
+
+export const themedCss = `themed-badge { --badge-bg: #7c3aed; --badge-color: white; display: inline-block; margin: 4px; }
+themed-badge:nth-child(2) { --badge-bg: #d97706; }`;
+
+export const themedJs = 'class ThemedBadge extends HTMLElement {' +
+  '  connectedCallback() {' +
+  '    var shadow = this.attachShadow({mode: \'open\'});' +
+  '    var style = document.createElement(\'style\');' +
+  '    style.textContent = \':host{display:inline-block;} span{background:var(--badge-bg,#6b7280);color:var(--badge-color,white);padding:4px 14px;border-radius:20px;font-weight:600;font-size:.9rem;}\';' +
+  '    var span = document.createElement(\'span\');' +
+  '    span.textContent = this.textContent;' +
+  '    shadow.append(style, span);' +
+  '  }' +
+  '}' +
+  'customElements.define(\'themed-badge\', ThemedBadge);';
+
+<LivePreview client:visible html={themedHtml} css={themedCss} js={themedJs} />
+
+<Tip title="Custom properties are the theming API">
+Design your components with named `--component-name-property` custom properties for every visual token. Document them. This makes your components themeable without any JavaScript.
+</Tip>
+
+export const quizCustomProps = [
+  {
+    q: "Do CSS custom properties (--vars) cross the shadow DOM boundary?",
+    options: ["No, they are fully blocked like regular styles", "Yes, they inherit through shadow roots", "Only if defined with !important", "Only in open mode shadow roots"],
+    answer: 1,
+  },
+  {
+    q: "What is the syntax to provide a fallback for a custom property inside a shadow root?",
+    options: ["var(--color) fallback: blue", "var(--color, blue)", "--color: blue !fallback", "fallback(--color, blue)"],
+    answer: 1,
+  },
+  {
+    q: "What does adoptedStyleSheets on a shadow root allow?",
+    options: ["Import a CSS file at runtime", "Share a single CSSStyleSheet object across multiple roots without duplication", "Override ::part() styles", "Set global variables"],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="styling/custom-properties-and-sheets" questions={quizCustomProps}/>
+
+<ProgressTracker client:visible id="styling/custom-properties-and-sheets"/>

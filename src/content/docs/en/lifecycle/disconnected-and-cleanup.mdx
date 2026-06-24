@@ -1,0 +1,157 @@
+---
+title: 'disconnectedCallback and Cleanup'
+description: 'disconnectedCallback fires when the element is removed from the DOM — the right place to remove listeners, cancel timers, and release resources.'
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## When disconnectedCallback fires
+
+`disconnectedCallback` is called each time the element is removed from a connected document. Common cleanup tasks belong here:
+
+- Remove event listeners added in `connectedCallback`
+- Cancel `setInterval` or `setTimeout` timers
+- Close WebSocket connections
+- Disconnect `MutationObserver`, `ResizeObserver`, or `IntersectionObserver` instances
+
+One important caveat: `disconnectedCallback` is **not** called when the entire page is unloaded (e.g. the user navigates away or closes the tab). It is only triggered by explicit DOM removal such as `removeChild`, `replaceWith`, or `innerHTML` reassignment.
+
+## The symmetry pattern
+
+Think of `connectedCallback` and `disconnectedCallback` as matching brackets. Whatever resource you acquire when the element enters the DOM, you release when it leaves:
+
+```js
+class TimerDemo extends HTMLElement {
+  connectedCallback() {
+    // start work
+    this._intervalId = setInterval(this._tick.bind(this), 1000);
+  }
+
+  disconnectedCallback() {
+    // stop work — mirror of connectedCallback
+    clearInterval(this._intervalId);
+  }
+
+  _tick() {
+    // called every second while connected
+  }
+}
+```
+
+Storing the handle (`this._intervalId`) on the element instance is the standard way to make it accessible to `disconnectedCallback`.
+
+## Full timer pattern
+
+```js
+class TimerDemo extends HTMLElement {
+  connectedCallback() {
+    this._seconds = 0;
+    this._render();
+    this._intervalId = setInterval(this._tick.bind(this), 1000);
+  }
+
+  disconnectedCallback() {
+    clearInterval(this._intervalId);
+  }
+
+  _tick() {
+    this._seconds += 1;
+    this._render();
+  }
+
+  _render() {
+    this.textContent = 'Running: ' + this._seconds + 's';
+  }
+}
+
+customElements.define('timer-demo', TimerDemo);
+```
+
+## Live demo
+
+export const cleanupHtml = `<div id="log" style="font-family:monospace;font-size:.85rem;background:#f3f4f6;padding:.5rem;border-radius:4px;margin-bottom:.5rem"></div>
+<timer-demo id="td"></timer-demo>
+<br>
+<button onclick="document.body.removeChild(document.getElementById('td'))">Remove timer</button>
+<button onclick="var el=document.createElement('timer-demo');el.id='td';document.body.appendChild(el)">Re-add timer</button>`;
+
+export const cleanupJs = `function logMsg(msg) {
+  var log = document.getElementById('log');
+  if (log) {
+    log.textContent = msg;
+  }
+}
+
+class TimerDemo extends HTMLElement {
+  connectedCallback() {
+    this._seconds = 0;
+    this._render();
+    var self = this;
+    this._intervalId = setInterval(function() {
+      self._seconds += 1;
+      self._render();
+    }, 1000);
+    logMsg('connectedCallback: timer started');
+  }
+
+  disconnectedCallback() {
+    clearInterval(this._intervalId);
+    logMsg('disconnectedCallback: timer stopped');
+  }
+
+  _render() {
+    this.textContent = 'Running: ' + this._seconds + 's';
+  }
+}
+
+customElements.define('timer-demo', TimerDemo);`;
+
+<LivePreview client:visible html={cleanupHtml} js={cleanupJs} />
+
+Click **Remove timer** to remove the element from the DOM — the log line confirms `disconnectedCallback` fired and the timer stopped. Click **Re-add timer** to re-insert a fresh element; the counter resets and the log shows `connectedCallback` running again.
+
+<Tip title="Store cleanup handles on the instance">
+Use `this._intervalId`, `this._observer`, or similar instance properties to hold any handle you will need in `disconnectedCallback`. Storing them on the element guarantees you can always find them, even if the element is moved between documents.
+</Tip>
+
+export const quizDisconnectedCleanup = [
+  {
+    q: 'When does disconnectedCallback fire?',
+    options: [
+      'When the browser tab is closed',
+      'When the element is removed from a connected document',
+      'When any attribute is removed from the element',
+      'When the element is moved from one parent to another',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What happens to a setInterval started in connectedCallback if you never call clearInterval in disconnectedCallback?',
+    options: [
+      'The browser automatically clears it when the element is removed',
+      'It pauses until the element is re-added',
+      'It keeps running in the background, causing a memory and CPU leak',
+      'It throws an error as soon as the element is removed',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'Does disconnectedCallback fire when the user navigates away from the page?',
+    options: [
+      'Yes, always',
+      'Yes, but only in Chrome',
+      'No — it is not called during page unload',
+      'Only if the element is in the visible viewport',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="lifecycle/disconnected-and-cleanup" questions={quizDisconnectedCleanup} />
+
+<ProgressTracker client:visible id="lifecycle/disconnected-and-cleanup" />

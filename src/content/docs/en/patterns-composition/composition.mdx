@@ -1,0 +1,179 @@
+---
+title: 'Composing Components'
+description: 'Build a larger custom element from smaller pieces using nesting, slots, attributes, and custom events.'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Nesting custom elements
+
+The simplest form of composition is nesting: an outer custom element creates one or more inner custom elements inside `connectedCallback`. Define the inner elements first so the registry knows about them before the outer element tries to use them.
+
+```js
+// Inner element — defined first
+class InnerWidget extends HTMLElement {
+  connectedCallback() {
+    this.textContent = 'I am the inner widget';
+  }
+}
+customElements.define('inner-widget', InnerWidget);
+
+// Outer element — creates the inner one programmatically
+class OuterWidget extends HTMLElement {
+  connectedCallback() {
+    var inner = document.createElement('inner-widget');
+    this.appendChild(inner);
+  }
+}
+customElements.define('outer-widget', OuterWidget);
+```
+
+Place the outer element in HTML and the browser handles the rest:
+
+```html
+<outer-widget></outer-widget>
+```
+
+## Communicating via attributes
+
+The most straightforward way for a parent element to pass data to a child is through HTML attributes. The parent calls `setAttribute` on the child element it creates; the child reads the value with `getAttribute` in its own `connectedCallback`.
+
+```js
+// Parent sets the child's attribute
+var child = document.createElement('name-tag');
+child.setAttribute('name', this.getAttribute('name') || 'friend');
+this.appendChild(child);
+
+// Child reads it
+NameTag.prototype.connectedCallback = function() {
+  var name = this.getAttribute('name') || 'stranger';
+  this.textContent = name;
+};
+```
+
+Attributes are always strings, so convert to the type you need (for example, `parseInt` for numbers).
+
+## Communicating via events
+
+When a child element needs to tell its parent that something happened — a button was clicked, a value was selected — it dispatches a `CustomEvent`. The parent listens for that event in its own `connectedCallback`.
+
+Two options on the event constructor matter here:
+
+- `bubbles: true` — the event travels up the DOM tree past the child
+- `composed: true` — the event crosses shadow-DOM boundaries
+
+```js
+// Child dispatches an event
+this.addEventListener('click', function() {
+  self.dispatchEvent(new CustomEvent('item-selected', {
+    bubbles: true,
+    composed: true,
+    detail: { value: self.getAttribute('value') }
+  }));
+});
+
+// Parent listens in connectedCallback
+OuterWidget.prototype.connectedCallback = function() {
+  var self = this;
+  // ... build children ...
+  self.addEventListener('item-selected', function(e) {
+    console.log('selected:', e.detail.value);
+  });
+};
+```
+
+Because `bubbles: true` is set, the parent can attach a single listener to itself and receive events from any child nested inside it — no direct reference needed.
+
+## Runnable demo
+
+The demo below composes a `<star-rating>` from five `<rating-star>` elements. Each star listens for a click and dispatches a `star-select` CustomEvent. The outer `<star-rating>` listens for those events and updates a display span with the chosen rating.
+
+export const compositionHtml = `<star-rating></star-rating>`;
+
+export const compositionJs = `var RatingStar = function() { HTMLElement.call(this); };
+RatingStar.prototype = Object.create(HTMLElement.prototype);
+RatingStar.prototype.constructor = RatingStar;
+RatingStar.prototype.connectedCallback = function() {
+  var self = this;
+  var val = this.getAttribute('value') || '1';
+  this.textContent = '★';
+  this.style.cursor = 'pointer';
+  this.style.fontSize = '1.5rem';
+  this.style.marginRight = '2px';
+  this.addEventListener('click', function() {
+    self.dispatchEvent(new CustomEvent('star-select', {
+      bubbles: true,
+      composed: true,
+      detail: { value: parseInt(val, 10) }
+    }));
+  });
+};
+customElements.define('rating-star', RatingStar);
+
+var StarRating = function() { HTMLElement.call(this); };
+StarRating.prototype = Object.create(HTMLElement.prototype);
+StarRating.prototype.constructor = StarRating;
+StarRating.prototype.connectedCallback = function() {
+  var self = this;
+  for (var i = 1; i <= 5; i++) {
+    var star = document.createElement('rating-star');
+    star.setAttribute('value', String(i));
+    self.appendChild(star);
+  }
+  var display = document.createElement('span');
+  display.style.marginLeft = '0.5rem';
+  display.textContent = 'Click a star';
+  self.appendChild(display);
+  self.addEventListener('star-select', function(e) {
+    display.textContent = 'Rating: ' + e.detail.value + ' / 5';
+  });
+};
+customElements.define('star-rating', StarRating);`;
+
+<LivePreview client:visible html={compositionHtml} js={compositionJs} />
+
+<Tip title="bubbles + composed">
+Set `bubbles: true` so the event travels up the DOM tree. Set `composed: true` so it crosses shadow-DOM boundaries. Both are `false` by default.
+</Tip>
+
+export const quizComposition = [
+  {
+    q: 'What property on CustomEvent options makes the event cross shadow-DOM boundaries?',
+    options: [
+      'bubbles',
+      'composed',
+      'cancelable',
+      'detail',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'In the star-rating demo, which element dispatches the star-select event?',
+    options: [
+      'star-rating',
+      'rating-star',
+      'document',
+      'window',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Which method does the parent element use to subscribe to child events in connectedCallback?',
+    options: [
+      'dispatchEvent',
+      'addEventListener',
+      'attachShadow',
+      'customElements.define',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="patterns-composition/composition" questions={quizComposition} />
+
+<ProgressTracker client:visible id="patterns-composition/composition" />

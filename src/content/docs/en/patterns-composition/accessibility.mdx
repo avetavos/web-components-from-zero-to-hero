@@ -1,0 +1,142 @@
+---
+title: 'Accessibility in Custom Elements'
+description: 'Add ARIA roles, keyboard handling, and delegatesFocus to make custom elements accessible to all users.'
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Why custom elements need accessibility work
+
+Native elements like `<button>` have built-in ARIA roles, focus management, and keyboard handling. Custom elements start with none of this. You must explicitly add what the browser normally provides for free.
+
+When a user navigates with a keyboard or uses a screen reader, the browser exposes an accessibility tree — a parallel representation of the DOM that assistive technologies read. Native elements populate this tree automatically. A `<div>` or custom element does not, which means screen reader users may receive no information about what the element is or how to interact with it.
+
+## ARIA roles and attributes on the host
+
+The simplest way to describe a custom element's purpose is to set `role` and `aria-*` attributes directly on the host element.
+
+```js
+class AccessibleCard extends HTMLElement {
+  connectedCallback() {
+    this.setAttribute('role', 'region');
+    this.setAttribute('aria-label', this.getAttribute('label') || 'Card');
+  }
+}
+```
+
+Setting `role="region"` tells assistive technologies that this element is a landmark region. `aria-label` gives it an accessible name. Both attributes are reflected into the accessibility tree immediately.
+
+## delegatesFocus in attachShadow
+
+When `delegatesFocus: true` is passed to `attachShadow`, clicking on the shadow host (or any non-focusable part inside it) moves focus to the first focusable element inside the shadow root. This is especially useful for custom inputs.
+
+```js
+this.shadow = this.attachShadow({ mode: 'open', delegatesFocus: true });
+```
+
+Without `delegatesFocus`, clicking the host element does not move keyboard focus into the shadow DOM. The visual appearance may look focused, but the accessibility tree disagrees, and keyboard users will not be able to interact with the element.
+
+## Keyboard handling
+
+To behave like a button, handle `keydown` for Enter and Space in `connectedCallback` and call the same action as the click handler.
+
+Native buttons fire a `click` event when Enter or Space is pressed. Custom elements do not get this for free. You must listen for `keydown` and check for those keys explicitly. Always call `e.preventDefault()` on Space to prevent the page from scrolling.
+
+```js
+this.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    // same action as the click handler
+  }
+});
+```
+
+## internals.role and ARIA reflection
+
+Via `ElementInternals`, you can set ARIA properties directly without polluting the element's attribute list. For example, `internals.role = 'button'` and `internals.ariaLabel = 'Close'`. These ARIA properties reflect to the accessibility tree without being visible as HTML attributes. This keeps your element's attribute surface clean and avoids conflicts with author-set attributes.
+
+ARIA reflection via `ElementInternals` requires `attachInternals()`, which in turn requires `static formAssociated = true` only if you also need form participation — for pure ARIA reflection you can call `attachInternals()` without `formAssociated`.
+
+## Runnable demo
+
+The demo below defines a `<focus-btn>` element that attaches a shadow root with `delegatesFocus: true`, places a `<button>` inside it, sets `role="button"` on the host, and handles keyboard Enter and Space.
+
+export const a11yHtml = `<focus-btn label="Press me"></focus-btn><p id="a11y-out">Press the button or use Enter/Space</p>`;
+
+export const a11yJs = `var FocusBtn = function() { HTMLElement.call(this); };
+FocusBtn.prototype = Object.create(HTMLElement.prototype);
+FocusBtn.prototype.constructor = FocusBtn;
+FocusBtn.prototype.connectedCallback = function() {
+  var self = this;
+  if (this.shadowRoot) return;
+  var shadow = this.attachShadow({ mode: 'open', delegatesFocus: true });
+  var btn = document.createElement('button');
+  btn.textContent = this.getAttribute('label') || 'Click me';
+  btn.style.padding = '8px 16px';
+  btn.style.cursor = 'pointer';
+  shadow.appendChild(btn);
+  this.setAttribute('role', 'button');
+  this.setAttribute('tabindex', '0');
+  function activate() {
+    var out = document.getElementById('a11y-out');
+    if (out) out.textContent = 'Activated!';
+  }
+  btn.addEventListener('click', activate);
+  this.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      activate();
+    }
+  });
+};
+customElements.define('focus-btn', FocusBtn);`;
+
+<LivePreview client:visible html={a11yHtml} js={a11yJs} />
+
+Click the button with your mouse, then try pressing Tab to focus it and activating it with Enter or Space. Both paths should update the paragraph below.
+
+<Tip title="Test with a keyboard">
+After building a custom interactive element, navigate to it using only Tab and activate it with Enter and Space. If you cannot reach it or trigger it without a mouse, your users who rely on keyboards or assistive technology cannot either.
+</Tip>
+
+export const quizA11y = [
+  {
+    q: 'What does delegatesFocus: true do when passed to attachShadow?',
+    options: [
+      'It makes all child elements focusable',
+      'It forwards focus to the first focusable element inside the shadow root when the host is clicked',
+      'It removes focus from the element when clicked',
+      'It disables keyboard navigation inside the shadow root',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Which keyboard keys should a custom element acting as a button respond to?',
+    options: [
+      'Tab and Escape',
+      'Enter and Space',
+      'Arrow keys and Tab',
+      'Enter only',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'How can internals.role differ from setAttribute("role", ...)?',
+    options: [
+      'internals.role sets the role as an HTML attribute',
+      'internals.role sets the ARIA role in the accessibility tree without adding a visible HTML attribute',
+      'There is no difference',
+      'internals.role only works in Firefox',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="patterns-composition/accessibility" questions={quizA11y} />
+
+<ProgressTracker client:visible id="patterns-composition/accessibility" />

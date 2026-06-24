@@ -1,0 +1,79 @@
+---
+title: "การจัดสไตล์ Web Components"
+description: "ภาพรวมของ scoped shadow styles และ selectors ที่ข้ามขอบเขต shadow boundary โดยตั้งใจ"
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+
+CSS ที่อยู่ภายใน shadow root จะถูก scope อย่างสมบูรณ์ — สไตล์ของหน้าไม่รั่วเข้าไป และสไตล์ของ shadow ก็ไม่รั่วออกมา แต่มีกลไกสามอย่างที่ข้ามขอบเขตนี้โดยตั้งใจ ได้แก่ selectors `:host` / `::slotted` / `::part` และ CSS custom properties การเข้าใจว่า rule ใดถูกแยกออกและ rule ใดทะลุผ่าน shadow boundary โดยตั้งใจ คือรากฐานของการทำ theming ให้ web component อย่างมั่นคง
+
+export const boundaryDiagram = `
+flowchart LR
+  subgraph Page
+    PA[".btn color red"]
+    PB["::part(label)"]
+    PC["--theme-color blue"]
+  end
+  subgraph Shadow
+    SA[":host styles"]
+    SB["::slotted(span)"]
+    SC["var(--theme-color)"]
+    SD["internal .btn"]
+  end
+  PA -. "blocked" .-> SD
+  PB --> SC
+  PC --> SC
+`;
+
+<Mermaid code={boundaryDiagram} title="Shadow boundary — อะไรทะลุได้และอะไรไม่ได้" />
+
+โมดูลนี้ครอบคลุมสี่หัวข้อที่เมื่อรวมกันแล้วจะทำให้คุณควบคุมการจัดสไตล์ shadow DOM ได้อย่างสมบูรณ์:
+
+1. **selectors `:host`** — จัดสไตล์ตัว custom element เองจากภายใน shadow root
+2. **`::slotted`** — กำหนดเป้าหมาย children ใน light DOM ที่ตกลงไปอยู่ใน slot
+3. **`::part` และ `exportparts`** — เปิดเผย internals ที่ตั้งชื่อไว้เพื่อให้ CSS ของหน้าจัดสไตล์ได้
+4. **CSS custom properties และ Constructable Stylesheets** — วิธี theming ที่ยืดหยุ่นที่สุด
+
+export const indexHtml = '<shadow-intro></shadow-intro>';
+
+export const indexJs = 'class ShadowIntro extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    var shadow = this.attachShadow({mode: \'open\'});\n' +
+  '    shadow.innerHTML = \'<style>p { color: steelblue; font-weight: bold; }</style><p>Shadow styles are scoped!</p>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'shadow-intro\', ShadowIntro);';
+
+<LivePreview client:visible html={indexHtml} js={indexJs} />
+
+<Tip title="การแยกสไตล์ของ Shadow DOM">
+สไตล์ที่กำหนดภายใน shadow root จะมีผลเฉพาะกับ shadow tree นั้นเท่านั้น class `.btn` ใน CSS ของหน้าจะไม่ส่งผลต่อ elements ใน shadow DOM และ rule `.btn` ใน shadow root ก็จะไม่รั่วออกไปยังหน้า กลไกที่ข้ามขอบเขตนี้โดยตั้งใจคือ `:host`, `::slotted`, `::part`, และ CSS custom properties
+</Tip>
+
+export const quizStyling = [
+  {
+    q: "Selector ใดที่ให้ CSS ของหน้าจัดสไตล์ element ใน shadow root ได้โดยระบุชื่อ?",
+    options: ["::shadow", "::part(name)", "/deep/", ">>>"],
+    answer: 1,
+  },
+  {
+    q: "CSS custom properties (--var) ข้ามขอบเขต shadow boundary ได้หรือไม่?",
+    options: ["ไม่ได้ ถูกบล็อกโดยสมบูรณ์", "ได้ พวกมัน inherit ผ่าน shadow roots", "เฉพาะใน Firefox", "เฉพาะกับ adoptedStyleSheets"],
+    answer: 1,
+  },
+  {
+    q: "Selector ใดจัดสไตล์ host element เองจากภายใน shadow root?",
+    options: ["::host", ":root", ":host", ":shadow-host"],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="styling/index" questions={quizStyling}/>
+
+<ProgressTracker client:visible id="styling/index"/>

@@ -1,0 +1,79 @@
+---
+title: "Styling Web Components"
+description: "An overview of scoped shadow styles and the selectors that cross the shadow boundary by design."
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+
+CSS inside a shadow root is fully scoped — page styles don't bleed in, shadow styles don't bleed out. But three mechanisms cross the boundary BY DESIGN: `:host` / `::slotted` / `::part` selectors, and CSS custom properties. Understanding which rules stay isolated and which ones intentionally pierce the shadow boundary is the foundation of robust web-component theming.
+
+export const boundaryDiagram = `
+flowchart LR
+  subgraph Page
+    PA[".btn color red"]
+    PB["::part(label)"]
+    PC["--theme-color blue"]
+  end
+  subgraph Shadow
+    SA[":host styles"]
+    SB["::slotted(span)"]
+    SC["var(--theme-color)"]
+    SD["internal .btn"]
+  end
+  PA -. "blocked" .-> SD
+  PB --> SC
+  PC --> SC
+`;
+
+<Mermaid code={boundaryDiagram} title="Shadow boundary — what pierces vs not" />
+
+This module covers four topics that together give you complete control over shadow-DOM styling:
+
+1. **`:host` selectors** — style the custom element itself from inside its shadow root
+2. **`::slotted`** — target light-DOM children that land in a slot
+3. **`::part` and `exportparts`** — expose named internals so page CSS can style them
+4. **CSS custom properties and Constructable Stylesheets** — the most flexible theming approach
+
+export const indexHtml = '<shadow-intro></shadow-intro>';
+
+export const indexJs = 'class ShadowIntro extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    var shadow = this.attachShadow({mode: \'open\'});\n' +
+  '    shadow.innerHTML = \'<style>p { color: steelblue; font-weight: bold; }</style><p>Shadow styles are scoped!</p>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'shadow-intro\', ShadowIntro);';
+
+<LivePreview client:visible html={indexHtml} js={indexJs} />
+
+<Tip title="Shadow DOM style isolation">
+Styles defined inside a shadow root apply only to that shadow tree. A class `.btn` in page CSS won't affect shadow-DOM elements, and a `.btn` rule in the shadow root won't leak out to the page. The mechanisms that intentionally cross this boundary are `:host`, `::slotted`, `::part`, and CSS custom properties.
+</Tip>
+
+export const quizStyling = [
+  {
+    q: "Which selector lets page CSS style a shadow-root element by name?",
+    options: ["::shadow", "::part(name)", "/deep/", ">>>"],
+    answer: 1,
+  },
+  {
+    q: "Do CSS custom properties (--var) cross the shadow boundary?",
+    options: ["No, they are fully blocked", "Yes, they inherit through shadow roots", "Only in Firefox", "Only with adoptedStyleSheets"],
+    answer: 1,
+  },
+  {
+    q: "Which selector styles the host element itself from inside the shadow root?",
+    options: ["::host", ":root", ":host", ":shadow-host"],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="styling/index" questions={quizStyling}/>
+
+<ProgressTracker client:visible id="styling/index"/>

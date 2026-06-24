@@ -1,0 +1,150 @@
+---
+title: 'Observed Attributes'
+description: 'static get observedAttributes() declares which attributes to watch, and attributeChangedCallback fires whenever one of them changes.'
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Declaring watched attributes
+
+The browser only tracks attributes you explicitly opt in to. The static getter `observedAttributes` must return an array of attribute name strings:
+
+```js
+static get observedAttributes() {
+  return ['color', 'label'];
+}
+```
+
+Only attributes that appear in this array will ever trigger `attributeChangedCallback`. If the array is empty — or the getter is missing entirely — attribute changes are silently ignored.
+
+## The attributeChangedCallback signature
+
+When a watched attribute is added, changed, or removed, the browser calls:
+
+```js
+attributeChangedCallback(name, oldValue, newValue) {
+  // name     — the attribute name, e.g. 'color'
+  // oldValue — the previous value string, or null on first set
+  // newValue — the new value string, or null when removed
+}
+```
+
+All three parameters are strings (or `null`). On the very first time an attribute is set, `oldValue` is `null`. When an attribute is removed with `removeAttribute`, `newValue` is `null`.
+
+## Full pattern
+
+```js
+class AttrColor extends HTMLElement {
+  static get observedAttributes() {
+    return ['color', 'label'];
+  }
+
+  connectedCallback() {
+    this._render();
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    this._render();
+  }
+
+  _render() {
+    var color = this.getAttribute('color') || '#6366f1';
+    var label = this.getAttribute('label') || '?';
+    this.innerHTML =
+      '<span style="' +
+        'display:inline-block;' +
+        'padding:.25rem .75rem;' +
+        'border-radius:9999px;' +
+        'background:' + color + ';' +
+        'color:#fff;' +
+        'font-weight:600;' +
+        'font-family:sans-serif;' +
+        'font-size:.875rem' +
+      '">' + label + '</span>';
+  }
+}
+
+customElements.define('attr-color', AttrColor);
+```
+
+## Live demo
+
+export const attrHtml = `<attr-color color="#4f46e5" label="Indigo"></attr-color><br><attr-color color="#059669" label="Emerald"></attr-color>`;
+
+export const attrJs = `class AttrColor extends HTMLElement {
+  static get observedAttributes() {
+    return ['color', 'label'];
+  }
+  connectedCallback() {
+    this._render();
+  }
+  attributeChangedCallback(name, oldValue, newValue) {
+    this._render();
+  }
+  _render() {
+    var color = this.getAttribute('color') || '#6366f1';
+    var label = this.getAttribute('label') || '?';
+    this.innerHTML =
+      '<span style="' +
+        'display:inline-block;' +
+        'padding:.25rem .75rem;' +
+        'border-radius:9999px;' +
+        'background:' + color + ';' +
+        'color:#fff;' +
+        'font-weight:600;' +
+        'font-family:sans-serif;' +
+        'font-size:.875rem' +
+      '">' + label + '</span>';
+  }
+}
+customElements.define('attr-color', AttrColor);`;
+
+<LivePreview client:visible html={attrHtml} js={attrJs} />
+
+Try editing `color="#4f46e5"` to another CSS color value, or change the `label` text in the HTML panel — the badges re-render immediately.
+
+<Tip title="observedAttributes runs once at class definition time">
+Because `observedAttributes` is a static getter, the browser evaluates it when the class is registered — not each time an element is created. You cannot make the list dynamic per-instance. If you need conditional attribute watching, handle it inside `attributeChangedCallback` by checking `name`.
+</Tip>
+
+export const quizObservedAttributes = [
+  {
+    q: 'What must static get observedAttributes() return?',
+    options: [
+      'An object mapping attribute names to types',
+      'A Set of attribute names',
+      'An array of attribute name strings',
+      'A Map of attribute names to default values',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'What happens when you change an attribute that is NOT listed in observedAttributes?',
+    options: [
+      'attributeChangedCallback is called with name set to null',
+      'The browser throws a DOMException',
+      'The change is silently ignored — attributeChangedCallback is not called',
+      'connectedCallback is called instead',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'What is the value of oldValue the very first time an attribute is set on an element?',
+    options: [
+      'An empty string ""',
+      'undefined',
+      'The string "null"',
+      'null',
+    ],
+    answer: 3,
+  },
+];
+
+<Quiz client:visible id="lifecycle/observed-attributes" questions={quizObservedAttributes} />
+
+<ProgressTracker client:visible id="lifecycle/observed-attributes" />

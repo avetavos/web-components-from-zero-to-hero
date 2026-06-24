@@ -1,0 +1,106 @@
+---
+title: 'The Template Element'
+description: 'How to use the HTML template element: .content, cloneNode, and why templates are inert and efficient.'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## What is the template element
+
+The `<template>` element holds HTML markup that is NOT rendered when the page loads. Unlike a hidden `<div>`, template content has no side-effects: scripts inside it do not execute, images do not load, and styles do not apply. Its `content` property exposes the markup as a `DocumentFragment` — a lightweight container of parsed nodes that lives outside the live document tree until you explicitly insert it.
+
+## Accessing and cloning
+
+Use `document.querySelector('template').content` (or `getElementById`) to get the `DocumentFragment`. Call `content.cloneNode(true)` to make a deep copy with all descendant nodes included, ready to insert anywhere in the document.
+
+```html
+<template id="card-tpl">
+  <div class="card"><p class="msg"></p></div>
+</template>
+```
+
+```js
+const tpl = document.getElementById('card-tpl');
+const clone = tpl.content.cloneNode(true);
+clone.querySelector('.msg').textContent = 'Hello from template!';
+document.body.appendChild(clone);
+```
+
+Each call to `cloneNode(true)` produces an independent copy — mutating one clone does not affect the original `DocumentFragment` or any other clone.
+
+## Why templates are efficient
+
+Because template content lives in an inert `DocumentFragment`, the browser performs no layout, no styling, and no script execution for it until you clone and insert it. The parsing cost is paid once when the page loads, and every subsequent `cloneNode(true)` is a fast structural copy. This makes `<template>` ideal for stamping many instances of the same markup — for example, list items, cards, or repeated custom elements.
+
+## Runnable demo
+
+The custom element `my-card` below uses a `<template>` defined in the light DOM. In its `connectedCallback` it attaches a shadow root and appends a clone of the template's content. Both instances share the same parsed template, demonstrating the "parse once, stamp many" pattern.
+
+export const templatesHtml = `<template id="card-tpl">
+  <style>
+    .card { border: 2px solid #6366f1; border-radius: 8px; padding: 1rem; font-family: sans-serif; display: inline-block; }
+    .label { font-weight: bold; color: #6366f1; }
+  </style>
+  <div class="card"><span class="label">Template Card: </span><slot></slot></div>
+</template>
+<my-card>Hello from a template!</my-card>
+<my-card>Second instance</my-card>`;
+
+export const templatesJs = `var tpl = document.getElementById('card-tpl');
+class MyCard extends HTMLElement {
+  connectedCallback() {
+    var shadow = this.attachShadow({ mode: 'open' });
+    shadow.appendChild(tpl.content.cloneNode(true));
+  }
+}
+customElements.define('my-card', MyCard);`;
+
+<LivePreview client:visible html={templatesHtml} js={templatesJs} />
+
+The `<template>` lives in the light DOM and is accessed by ID. Each `my-card` instance gets its own shadow root populated with an independent clone of the template content.
+
+<Tip title="One template, many instances">
+Because `cloneNode(true)` copies the DocumentFragment cheaply, you can stamp dozens of instances without re-parsing the HTML string each time.
+</Tip>
+
+export const quizTemplates = [
+  {
+    q: "What does `template.content` return?",
+    options: [
+      "An HTMLElement",
+      "A DocumentFragment",
+      "A string of HTML",
+      "An array of nodes"
+    ],
+    answer: 1
+  },
+  {
+    q: "Why is `<template>` content not rendered by default?",
+    options: [
+      "The browser skips unknown elements",
+      "Template content is in an inert DocumentFragment — not part of the live document",
+      "Templates require a polyfill to activate",
+      "The style attribute must be set first"
+    ],
+    answer: 1
+  },
+  {
+    q: "What method creates a ready-to-insert copy of the template's content?",
+    options: [
+      "template.innerHTML",
+      "template.content.cloneNode(true)",
+      "template.copy()",
+      "document.adoptNode(template.content)"
+    ],
+    answer: 1
+  }
+];
+
+<Quiz client:visible id="templates-slots/templates" questions={quizTemplates} />
+
+<ProgressTracker client:visible id="templates-slots/templates" />

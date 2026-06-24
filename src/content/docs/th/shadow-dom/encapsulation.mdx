@@ -1,0 +1,95 @@
+---
+title: 'การ Encapsulate สไตล์'
+description: 'สไตล์ใน shadow root มีขอบเขตและไม่รั่วออก; สไตล์หน้าไม่สามารถเข้ามาใน shadow root ได้'
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Shadow boundary คืออะไร?
+
+Shadow boundary คือเส้นกั้นที่ป้องกันไม่ให้ CSS รั่วผ่าน shadow root เส้นกั้นนี้ทำงานสองทิศทาง:
+
+- สไตล์ที่ประกาศ **ภายใน** shadow root จะไม่ส่งผลต่อ element ใดๆ ใน light DOM
+- selector CSS จาก **ภายนอก** shadow root ไม่สามารถกำหนดเป้าหมาย element ภายใน shadow tree ได้
+
+ลักษณะนี้เรียกว่า **style encapsulation** และเป็นหนึ่งในคุณประโยชน์หลักของ Shadow DOM
+
+## ตัวอย่าง: สไตล์ที่ขัดแย้งกัน
+
+ตัวอย่างด้านล่างกำหนด `.box` สองแบบ: หนึ่งในหน้า (สีน้ำเงิน) และอีกหนึ่งภายใน shadow root (สีแดง) เนื่องจาก shadow boundary แต่ละอันจะใช้เฉพาะกับ element ของตัวเอง
+
+export const encapCss = `.box { color: #0ea5e9; font-weight: bold; border: 2px solid #0ea5e9; padding: 0.5rem; margin: 0.5rem 0; }`;
+
+export const encapJs = 'class EncDemo extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    this.attachShadow({ mode: \'open\' });\n' +
+  '    this.shadowRoot.innerHTML =\n' +
+  '      \'<style>\' +\n' +
+  '      \'.box { color: #dc2626; font-weight: bold; border: 2px solid #dc2626; padding: 0.5rem; margin: 0.5rem 0; }\' +\n' +
+  '      \'p { margin: 0.25rem 0; }\' +\n' +
+  '      \'</style>\' +\n' +
+  '      \'<p>Inside shadow root:</p>\' +\n' +
+  '      \'<div class="box">Red — shadow style wins</div>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'enc-demo\', EncDemo);';
+
+export const encapHtml = '<div class="box">Blue — page style (outside shadow)</div><enc-demo></enc-demo>';
+
+<LivePreview client:visible html={encapHtml} css={encapCss} js={encapJs} />
+
+<Tip title="ขอบเขต Shadow เป็นกำแพงสองทาง">
+สไตล์ภายในไม่สามารถหลุดออกไปได้ และสไตล์ภายนอกไม่สามารถเข้ามาได้ (ยกเว้น CSS custom properties และ `::part`)
+</Tip>
+
+export const quizEncapsulation = [
+  {
+    q: 'CSS ของหน้าประกาศ `.title { color: red; }` กฎนี้จะส่งผลต่อ element `.title` ภายใน shadow root หรือไม่?',
+    options: [
+      'ใช่ สไตล์หน้าชนะเสมอเพราะ specificity',
+      'ใช่ แต่เฉพาะเมื่อ shadow root ใช้ mode: "open"',
+      'ไม่ สไตล์หน้าไม่สามารถเจาะ shadow boundary ได้',
+      'ไม่ นอกจาก element นั้นจะมี id attribute ด้วย',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'shadow root มี `<style>p { font-size: 2rem; }</style>` กฎนี้ส่งผลต่อ element ใด?',
+    options: [
+      '`<p>` ทุกตัวในหน้า',
+      'เฉพาะ `<p>` ภายใน shadow tree นั้น',
+      'เฉพาะ `<p>` ที่เป็น direct children ของ host',
+      '`<p>` ทุกตัวภายใน host element และ descendants',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'อะไรที่สามารถข้าม shadow boundary ได้?',
+    options: [
+      'Class selector จาก page stylesheet',
+      'ID selector จาก page stylesheet',
+      'CSS custom property (variable) ที่กำหนดบน host',
+      'Universal selector `*` ใน page stylesheet',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'ประโยชน์หลักของ style encapsulation ใน Shadow DOM คืออะไร?',
+    options: [
+      'CSS parsing เร็วขึ้น',
+      'รองรับ dark mode อัตโนมัติ',
+      'สไตล์ของ component ไม่ชนกันโดยไม่ตั้งใจกับสไตล์ของหน้าหรือ component อื่น',
+      'ไม่จำเป็นต้องใช้ inline styles อีกต่อไป',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="shadow-dom/encapsulation" questions={quizEncapsulation} />
+
+<ProgressTracker client:visible id="shadow-dom/encapsulation" />

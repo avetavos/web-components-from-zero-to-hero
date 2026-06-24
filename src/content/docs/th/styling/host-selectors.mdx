@@ -1,0 +1,72 @@
+---
+title: "Selector :host"
+description: "จัดสไตล์ตัว custom element เองจากภายใน shadow root ด้วย :host, :host(.modifier), และ :host-context()"
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+pseudo-class `:host` ช่วยให้คุณจัดสไตล์ตัว custom element เองจากภายใน shadow root ของมัน มีสามรูปแบบที่คุณจะใช้เป็นประจำ:
+
+- **`:host`** — มีผลกับ host element เสมอ ไม่ว่าจะอยู่ในบริบทใด
+- **`:host(.modifier)`** — มีผลเฉพาะเมื่อ host element มี class ที่ระบุ
+- **`:host-context(selector)`** — มีผลเมื่อ ancestor ใดๆ ของ host ตรงกับ selector ที่กำหนด
+
+```css
+:host { display: block; }
+:host(.primary) { background: #3b82f6; }
+:host-context(.dark-bg) { color: white; }
+```
+
+rule `:host` เป็นที่ที่เหมาะสมในการกำหนดการมีส่วนร่วมในเลย์เอาต์ของ element — ว่าจะ render เป็น `block`, `inline-block`, หรือ `flex` หากไม่กำหนด custom element จะมีค่าเริ่มต้นเป็น `display: inline` ซึ่งมักไม่ใช่สิ่งที่คุณต้องการ
+
+รูปแบบแบบมีเงื่อนไข `:host(.modifier)` เป็นวิธีที่เป็นมาตรฐานในการจัดการ variants (primary, danger, small, large) โดยไม่ต้องใช้ JavaScript สลับสไตล์ภายใน รายการ class ของ host เป็นตัวขับเคลื่อนสไตล์ของ shadow
+
+`:host-context(selector)` มีประโยชน์สำหรับการทำ theming อัตโนมัติ: component สามารถปรับตัวเข้ากับ class ของ ancestor ที่เป็นโหมดมืดได้ โดยที่หน้าไม่จำเป็นต้องรู้ internals ของ component
+
+export const hostHtml = '<badge-host>Default</badge-host>\n' +
+  '<badge-host class="primary">Primary</badge-host>\n' +
+  '<badge-host class="danger">Danger</badge-host>';
+
+export const hostJs = 'class BadgeHost extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    var shadow = this.attachShadow({mode: \'open\'});\n' +
+  '    var style = document.createElement(\'style\');\n' +
+  '    style.textContent = \':host { display: inline-block; padding: 4px 12px; border-radius: 20px; background: #e2e8f0; color: #1a202c; font-family: system-ui, sans-serif; margin: 4px; } :host(.primary) { background: #3b82f6; color: white; } :host(.danger) { background: #ef4444; color: white; }\';\n' +
+  '    var slot = document.createElement(\'slot\');\n' +
+  '    shadow.append(style, slot);\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'badge-host\', BadgeHost);';
+
+<LivePreview client:visible html={hostHtml} js={hostJs} />
+
+<Tip title="ขอบเขตของ host selector">
+สไตล์ `:host` มีผลกับ tag ของ custom element ภายนอกตามที่เห็นใน document พวกมันมี specificity ต่ำกว่าสไตล์ของหน้าที่กำหนดเป้าหมายไปยัง element เดียวกัน — ดังนั้น rule ของหน้าอย่าง `badge-host { background: pink }` จะ override `:host { background: blue }`
+</Tip>
+
+export const quizHost = [
+  {
+    q: ":host ภายใน shadow root หมายถึงอะไร?",
+    options: ["body ของ document", "node shadow root", "ตัว custom element เอง", "element ลูกแรก"],
+    answer: 2,
+  },
+  {
+    q: ":host(.active) ใช้สไตล์เมื่อใด?",
+    options: ["เมื่อ child ใดๆ มี class active", "เมื่อ host element มี class active", "เมื่อ shadow root มี class active", "ทุกเวลา"],
+    answer: 1,
+  },
+  {
+    q: ":host-context(dark-theme) ทำอะไร?",
+    options: ["จัดสไตล์ element เฉพาะเมื่อมันเป็น dark-theme element", "จัดสไตล์ element เมื่อ ancestor ตรงกับ selector dark-theme", "จัดสไตล์ลูกทั้งหมดใน dark-theme", "ไม่ใช่ CSS selector ที่ถูกต้อง"],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="styling/host-selectors" questions={quizHost}/>
+
+<ProgressTracker client:visible id="styling/host-selectors"/>

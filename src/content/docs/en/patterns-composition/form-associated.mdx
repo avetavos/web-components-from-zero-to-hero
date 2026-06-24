@@ -1,0 +1,145 @@
+---
+title: 'Form-Associated Elements'
+description: "Use static formAssociated and attachInternals to make a custom element participate in native HTML forms."
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## What are form-associated custom elements
+
+The Form-Associated Custom Elements API lets a custom element participate in a `<form>` exactly like a native input. The element reports its value, validity, and can be included in `FormData` and `form.submit()`.
+
+Without this API, a custom element placed inside a `<form>` is invisible to the browser's form submission machinery. Values it holds are not serialised, and built-in validation does not apply to it. With the API, your element becomes a first-class form participant indistinguishable from a native `<input>`.
+
+## Enabling the API
+
+Two things are required: a static `formAssociated = true` property on the class, and a call to `this.attachInternals()` in the constructor.
+
+```js
+class MyInput extends HTMLElement {
+  static formAssociated = true;
+  constructor() {
+    super();
+    this.internals = this.attachInternals();
+  }
+}
+```
+
+The static property must be declared before `attachInternals()` is called — the browser reads it at construction time to decide whether to grant form-participation abilities.
+
+## ElementInternals methods
+
+Once you have the internals object, these are the key form-related methods:
+
+- `internals.setFormValue(value)` — sets the value included in `FormData` when the form is submitted.
+- `internals.setValidity(flags, message, anchor)` — controls the element's validation state. Pass an empty object and an empty string to clear all errors.
+- `internals.reportValidity()` — triggers the browser's built-in validation UI (the tooltip bubble), the same way a native input would.
+- `internals.checkValidity()` — returns a boolean indicating whether the element currently passes validation.
+
+The `internals.role` and ARIA reflection properties are covered in the Accessibility lesson.
+
+## Full API reference
+
+```js
+// Form-Associated Custom Elements API (Chrome 77+, Firefox 98+, Safari 16.4+)
+// static formAssociated = true  — must be on the class before attachInternals()
+// this.internals = this.attachInternals()
+//
+// internals.setFormValue(value)           — submittable value
+// internals.setFormValue(value, state)    — value + restore-state hint
+// internals.setValidity({}, '')           — clear validity errors
+// internals.setValidity({ valueMissing: true }, 'Required', anchorEl)
+// internals.reportValidity()              — show browser validation UI
+// internals.checkValidity()               — boolean
+// internals.form                          — the associated <form> element
+// internals.labels                        — NodeList of associated <label>s
+// internals.willValidate                  — boolean
+```
+
+## Runnable demo — feature-detected
+
+The demo below feature-detects support for `attachInternals` and `formAssociated`. If the browser does not support them, a fallback message is shown instead.
+
+export const formHtml = `<form id="demo-form"><fancy-input name="myfield"></fancy-input></form><p id="fi-out">Form value: (empty)</p>`;
+
+export const formJs = `var FancyInput = function() {
+  var el = HTMLElement.call(this) || this;
+  if (FancyInput.formAssociated && el.attachInternals) {
+    el._internals = el.attachInternals();
+  }
+  return el;
+};
+FancyInput.formAssociated = true;
+FancyInput.prototype = Object.create(HTMLElement.prototype);
+FancyInput.prototype.constructor = FancyInput;
+FancyInput.prototype.connectedCallback = function() {
+  if (!this._internals) {
+    this.textContent = 'Form-associated elements not supported in this browser.';
+    return;
+  }
+  var self = this;
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Type a value...';
+  input.style.border = '2px solid #0070f3';
+  input.style.borderRadius = '4px';
+  input.style.padding = '4px 8px';
+  this.appendChild(input);
+  input.addEventListener('input', function() {
+    self._internals.setFormValue(input.value);
+    var out = document.getElementById('fi-out');
+    if (out) out.textContent = 'Form value: ' + (input.value || '(empty)');
+  });
+  this._internals.setFormValue('');
+};
+customElements.define('fancy-input', FancyInput);`;
+
+<LivePreview client:visible html={formHtml} js={formJs} />
+
+Type into the custom input and watch the paragraph below the form reflect the value that would be submitted with the form.
+
+<Tip title="attachInternals before connectedCallback">
+Call `this.attachInternals()` in the `constructor`, not in `connectedCallback`. The internals object must be created once per element, and the constructor is the right place to do it.
+</Tip>
+
+export const quizFormAssociated = [
+  {
+    q: 'What static property must be set to true to make a custom element form-associated?',
+    options: [
+      'formEnabled',
+      'formAssociated',
+      'internalsEnabled',
+      'formParticipant',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Which method sets the value that will appear in FormData on form submit?',
+    options: [
+      'internals.setValue()',
+      'internals.setFormValue()',
+      'internals.reportValidity()',
+      'internals.checkValidity()',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What should a form-associated element do when attachInternals is not available?',
+    options: [
+      'Throw an error immediately',
+      'Feature-detect and show a fallback message',
+      'Call super.attachInternals()',
+      'Ignore it silently',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="patterns-composition/form-associated" questions={quizFormAssociated} />
+
+<ProgressTracker client:visible id="patterns-composition/form-associated" />

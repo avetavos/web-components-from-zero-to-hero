@@ -1,0 +1,128 @@
+---
+title: 'Constructor และ connectedCallback'
+description: 'เข้าใจความแตกต่างระหว่าง constructor กับ connectedCallback และรู้ว่าควรทำอะไรใน callback ไหน'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## constructor
+
+`constructor` คือจุดที่คุณตั้งค่า internal state เริ่มต้นของ element เช่น กำหนดค่า property หรือสร้าง Shadow DOM ข้อกำหนดที่สำคัญมีดังนี้:
+
+- ต้องเรียก `super()` เป็น statement แรกเสมอ
+- **ห้าม** อ่านหรือเขียน attribute ของ element ใน constructor
+- **ห้าม** แตะ children หรือ parent node ของ element ใน constructor
+- **ห้าม** render เนื้อหาลงใน DOM ใน constructor
+
+เหตุผลคือเมื่อ `constructor` ถูกเรียก element ยังไม่ได้อยู่ใน document และ attribute ยังไม่ได้ถูกกำหนดค่า
+
+```js
+class MyElement extends HTMLElement {
+  constructor() {
+    super(); // ต้องมาก่อนเสมอ
+    this._count = 0; // ตั้งค่า internal state ได้
+    this._data = null;
+    // ห้ามทำ: this.getAttribute('foo') หรือ this.innerHTML = '...'
+  }
+}
+```
+
+## connectedCallback
+
+`connectedCallback` จะถูกเรียกทุกครั้งที่ element ถูกแทรกเข้าไปใน document ที่เชื่อมต่ออยู่ นี่คือจุดที่ถูกต้องและปลอดภัยสำหรับ:
+
+- การ render เนื้อหา HTML ของ element
+- การอ่าน attribute เพื่อกำหนดพฤติกรรม
+- การลงทะเบียน event listener
+- การเริ่มต้น timer หรือ fetch ข้อมูล
+
+สิ่งที่ต้องระวังคือ `connectedCallback` จะถูกเรียกซ้ำ**ทุกครั้ง**ที่ element ถูกแทรกเข้าไปใหม่ ถ้าย้าย element ไปยัง parent อื่นด้วย `appendChild` callback นี้จะถูกเรียกอีกครั้ง
+
+```js
+class MyElement extends HTMLElement {
+  connectedCallback() {
+    // อ่าน attribute ได้อย่างปลอดภัย
+    var label = this.getAttribute('label') || 'default';
+    this.textContent = label;
+    // เพิ่ม listener ได้
+    this.addEventListener('click', this._handleClick);
+  }
+}
+```
+
+## ตัวอย่างที่รันได้จริง
+
+export const ctorHtml = `<div id="log" style="font-family:monospace;font-size:.85rem;background:#f3f4f6;padding:.5rem;border-radius:4px;margin-bottom:.5rem;min-height:2rem"></div>
+<ctor-demo greeting="Hello"></ctor-demo>`;
+
+export const ctorJs = `class CtorDemo extends HTMLElement {
+  constructor() {
+    super();
+    this._count = 0;
+    var log = document.getElementById('log');
+    if (log) { var p = document.createElement('p'); p.style.margin = '0'; p.textContent = '> constructor called (no DOM work here)'; log.appendChild(p); }
+  }
+  connectedCallback() {
+    this._count = this._count + 1;
+    var greeting = this.getAttribute('greeting') || 'Hi';
+    this.style.display = 'block';
+    this.style.padding = '.5rem 1rem';
+    this.style.background = '#d1fae5';
+    this.style.borderRadius = '6px';
+    this.style.marginTop = '.5rem';
+    this.textContent = greeting + '! Connected #' + this._count;
+    var log = document.getElementById('log');
+    if (log) { var p = document.createElement('p'); p.style.margin = '0'; p.textContent = '> connectedCallback called (count: ' + this._count + ')'; log.appendChild(p); }
+  }
+}
+customElements.define('ctor-demo', CtorDemo);`;
+
+<LivePreview client:visible html={ctorHtml} js={ctorJs} />
+
+สังเกตว่า `constructor` ถูกเรียกก่อน แต่ไม่ได้แตะ DOM ส่วน `connectedCallback` จะนับ `_count` ขึ้นทุกครั้งที่ element ถูกแทรกเข้าไปใหม่
+
+<Tip title="ต้องเรียก super() ก่อนเสมอ">
+บรรทัดแรกของ constructor ใน custom element ทุกตัวต้องเป็น `super()` เสมอ การเรียก `super()` จะเรียก constructor ของ `HTMLElement` และตั้งค่า internal state ของ element หากละเว้น `super()` จะเกิด `ReferenceError`
+</Tip>
+
+export const quizCtorConnected = [
+  {
+    q: 'ทำไมจึงไม่ควรจัดการ DOM ภายใน constructor?',
+    options: [
+      'constructor ทำงานแบบ asynchronous',
+      'Element ยังไม่ได้เชื่อมต่อกับ document ในขณะที่ถูก construct',
+      'constructor ไม่สามารถเข้าถึง this ได้',
+      'Browser จะโยน error ถ้าทำ',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'connectedCallback ตอบสนองต่ออะไร?',
+    options: [
+      'element ถูกสร้างด้วย new',
+      'observed attribute มีการเปลี่ยนแปลงค่า',
+      'element ถูกแทรกเข้าไปใน document หรือ shadow root',
+      'element ถูก upgrade จาก unknown element',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'connectedCallback สามารถถูกเรียกมากกว่าหนึ่งครั้งสำหรับ element instance เดียวกันได้เมื่อใด?',
+    options: [
+      'ไม่ได้ — ถูกเรียกได้เพียงครั้งเดียวตลอดอายุของ element',
+      'ทุกครั้งที่ attribute บน element เปลี่ยนแปลง',
+      'ทุกครั้งที่ element ถูกย้ายไปยัง parent ใหม่หรือถูกแทรกซ้ำหลังจากถูกลบออก',
+      'เฉพาะเมื่อ element อยู่ใน shadow root เท่านั้น',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="lifecycle/constructor-and-connected" questions={quizCtorConnected} />
+
+<ProgressTracker client:visible id="lifecycle/constructor-and-connected" />

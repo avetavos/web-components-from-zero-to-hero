@@ -1,0 +1,161 @@
+---
+title: 'Upgrade และ Timing'
+description: "Element upgrade เกิดขึ้นเมื่อ browser จับคู่ tag ที่ parse แล้วกับ constructor ที่ลงทะเบียน — element ที่ define หลังจากปรากฏใน HTML จะถูก upgrade แบบ asynchronous"
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## "Upgrade" คืออะไร
+
+เมื่อ browser ทำการ parse HTML อาจพบ tag เช่น `<my-el>` ก่อนที่ JavaScript จะทำงาน ณ จุดนั้น browser ยังไม่มี constructor ที่ลงทะเบียนสำหรับ `my-el` จึงสร้าง element นั้นเป็น `HTMLElement` ธรรมดา — เรียกว่า *unknown element* ที่ยังไม่มีพฤติกรรมพิเศษ
+
+ต่อมาเมื่อ script เรียก `customElements.define('my-el', MyEl)` browser จะทำการ **upgrade**: มันจะวนหา element ทุกตัวที่ตรงกับ tag นั้นในเอกสาร แล้วเรียก constructor ของ `MyEl` กับแต่ละตัว จากนั้นเรียก `connectedCallback` หาก element นั้นอยู่ใน DOM อยู่แล้ว
+
+หมายความว่า upgrade เกิดได้สองลำดับ:
+
+- **Define ก่อน parse** — `<script>` ใน `<head>` ที่ใช้ `defer` ทำงานก่อนที่ parser จะถึง `<my-el>` element จะถูก construct ทันทีเมื่อ parser พบ tag นั้น
+- **Define หลัง parse** — script ที่โหลดแบบ lazy ทำงานหลังจาก HTML อยู่ใน DOM แล้ว ทุก `<my-el>` ที่มีอยู่ในเอกสารจะถูก upgrade ณ ขณะที่ `define` ถูกเรียก
+
+ทั้งสองลำดับนี้เป็นสิ่งที่ตั้งใจออกแบบมาและรองรับอย่างสมบูรณ์ สิ่งที่ *ไม่ควร* ทำคือการสมมติว่า element มีพฤติกรรม custom ก่อนที่ `define` จะถูกเรียก
+
+## รอด้วย `customElements.whenDefined`
+
+`customElements.whenDefined(tagName)` คืน `Promise` ที่ resolve เป็น class constructor ทันทีที่ tag name นั้นได้รับการลงทะเบียน ใช้มันเพื่อเลื่อนโค้ดที่ต้องพึ่งพา interface ของ element ที่ถูก upgrade แล้ว:
+
+```js
+// แบบ Promise / .then()
+customElements.whenDefined('my-el').then(function(Ctor) {
+  console.log('my-el is now defined:', Ctor);
+  document.querySelector('my-el').doSomething();
+});
+```
+
+```js
+// แบบ async / await
+async function init() {
+  const Ctor = await customElements.whenDefined('my-el');
+  console.log('my-el is now defined:', Ctor);
+  document.querySelector('my-el').doSomething();
+}
+init();
+```
+
+หาก element ถูก define ไปแล้วตอนที่เรียก `whenDefined` Promise จะ resolve ทันทีใน microtask tick ถัดไป
+
+## CSS pseudo-class `:defined`
+
+ก่อน upgrade custom element จะตรงกับ `:not(:defined)` ใน CSS หลังจาก `customElements.define` ถูกเรียกและการ upgrade เสร็จสิ้น element จะตรงกับ `:defined` ซึ่งเป็น hook ที่สะอาดสำหรับซ่อน element ที่ยัง render ไม่สมบูรณ์จนกว่าจะพร้อม — ป้องกัน **Flash of Undefined Content (FOUC)**:
+
+```css
+my-el:not(:defined) {
+  visibility: hidden;
+}
+```
+
+pattern การป้องกัน FOUC ที่สมบูรณ์ยิ่งขึ้นซึ่งแสดง loading placeholder ด้วย:
+
+```html
+<style>
+  upgrade-demo:not(:defined) {
+    visibility: hidden;
+  }
+
+  upgrade-demo:defined {
+    display: block;
+    border: 2px solid #059669;
+  }
+</style>
+
+<upgrade-demo>Loading…</upgrade-demo>
+```
+
+```css
+/* เพิ่ม animation การเปิดเผยได้ */
+upgrade-demo {
+  transition: opacity 0.3s ease;
+}
+upgrade-demo:not(:defined) {
+  opacity: 0;
+}
+upgrade-demo:defined {
+  opacity: 1;
+}
+```
+
+## ข้อควรระวังเรื่อง Ordering
+
+ช่วงเวลาของ `define` เทียบกับการ parse DOM มีผลสำคัญ:
+
+- **Script ใน `<head>` โดยไม่มี `defer`** — script จะบล็อก parsing ทำให้ `define` ถูกเรียกก่อน element ใดๆ ใน body จะถูก parse element จะถูก construct ทันทีเมื่อ parser พบมัน
+- **Script ใน `<head>` ที่มี `defer`** — script ทำงานหลังจาก document ถูก parse ครบ ทุก element ที่อยู่ใน DOM จะถูก upgrade พร้อมกันเมื่อ `define` ถูกเรียก
+- **Script ที่ถูก import แบบ dynamic หรือโหลดแบบ lazy** — เหมือน `defer`: element ที่มีอยู่ทั้งหมดจะถูก upgrade เป็น batch เมื่อถึงเวลา `define`
+- **Element ที่เพิ่มผ่าน JavaScript หลังจาก `define`** — จะถูก upgrade แบบ synchronous เมื่อถูกใส่เข้าไปใน document
+
+ควรใช้ `customElements.whenDefined` เสมอ (หรือ `customElements.upgrade(element)` สำหรับ node เดี่ยว) เมื่อต้องการให้แน่ใจว่า element พร้อมก่อนที่จะเข้าถึง custom API ของมัน
+
+## Demo แบบ Runnable
+
+export const upgradeHtml = `<p id="status" style="font-style:italic;color:#6b7280">Waiting for upgrade...</p><upgrade-demo style="display:block;padding:.75rem;border:2px dashed #d1d5db;border-radius:6px;color:#6b7280">Pre-upgrade placeholder</upgrade-demo>`;
+
+export const upgradeJs = `setTimeout(function() {
+  class UpgradeDemo extends HTMLElement {
+    connectedCallback() {
+      this.innerHTML = '<strong style="color:#059669">Upgraded!</strong> I am alive.';
+      this.style.borderColor = '#059669';
+      this.style.color = '#111827';
+      var status = document.getElementById('status');
+      if (status) { status.textContent = 'Element upgraded after 1.2 s'; }
+    }
+  }
+  customElements.define('upgrade-demo', UpgradeDemo);
+}, 1200);`;
+
+<LivePreview client:visible html={upgradeHtml} js={upgradeJs} />
+
+ดู element เริ่มต้นเป็น placeholder ธรรมดา จากนั้นเปลี่ยนเป็นสถานะที่ถูก upgrade หลังจาก 1.2 วินาที เมื่อ `customElements.define` ถูกเรียกภายใน `setTimeout`
+
+<Tip title="ซ่อน element ที่ยังไม่ถูก upgrade ด้วย :not(:defined)">
+ใช้ `my-el:not(:defined) { visibility: hidden; }` เพื่อซ่อน element ที่ยังไม่ถูก upgrade วิธีนี้ป้องกันการแสดง placeholder แบบ raw ชั่วคราวในขณะที่ script กำลังโหลดและ define element อยู่
+</Tip>
+
+export const quizUpgradeAndTiming = [
+  {
+    q: '"Upgrading" custom element หมายความว่าอะไร?',
+    options: [
+      'การดาวน์โหลดเวอร์ชันใหม่ของ element จาก CDN',
+      'Browser แทนที่ unknown element ด้วย registered constructor class และเรียก lifecycle callbacks',
+      'การเปลี่ยน tag name ของ element เป็น HTML5 element ที่ถูกต้อง',
+      'การย้าย element ขึ้นไปในตำแหน่งที่สูงกว่าใน DOM tree',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'customElements.whenDefined(tagName) คืนค่าอะไร?',
+    options: [
+      'Instance ของ element ที่อยู่ใน DOM ปัจจุบัน',
+      'Boolean ที่บอกว่า element ถูก define แล้วหรือยัง',
+      'Promise ที่ resolve เป็น constructor class เมื่อ element ได้รับการลงทะเบียน',
+      'จำนวน element ที่มี tag name นั้นในเอกสาร',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'CSS pseudo-class :defined ให้คุณทำอะไรได้?',
+    options: [
+      'Style เฉพาะ element ที่มี shadow root แนบอยู่',
+      'ใช้ style เฉพาะหลังจาก element ได้รับการลงทะเบียนและถูก upgrade แล้ว ช่วยให้ซ่อน element จนกว่าจะพร้อม',
+      'เลือก element ที่ attribute ตรงกับ schema definition',
+      'Target element ที่ชื่อ constructor ตรงกับ CSS identifier',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="lifecycle/upgrade-and-timing" questions={quizUpgradeAndTiming} />
+
+<ProgressTracker client:visible id="lifecycle/upgrade-and-timing" />

@@ -1,0 +1,134 @@
+---
+title: 'Lifecycle Callbacks'
+description: 'ทำความเข้าใจ 4 lifecycle callbacks ของ Web Components ได้แก่ constructor, connectedCallback, attributeChangedCallback และ disconnectedCallback'
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Lifecycle Callbacks ของ Web Components คืออะไร
+
+Web Components มี lifecycle callbacks 4 ตัวที่ browser จะเรียกใช้งานโดยอัตโนมัติในช่วงเวลาต่าง ๆ ของการทำงาน ทำให้คุณสามารถเชื่อมต่อกับจุดสำคัญต่าง ๆ ในชีวิตของ element ได้
+
+| Callback | เมื่อไหร่ที่ถูกเรียก |
+|---|---|
+| `constructor` | เมื่อสร้าง instance ของ element ขึ้นมาใหม่ |
+| `connectedCallback` | เมื่อ element ถูกแทรกเข้าไปใน DOM |
+| `attributeChangedCallback` | เมื่อ attribute ที่ถูก observe มีการเปลี่ยนแปลง |
+| `disconnectedCallback` | เมื่อ element ถูกนำออกจาก DOM |
+
+## ลำดับการทำงานของ Lifecycle
+
+แผนภาพด้านล่างแสดงลำดับทั่วไปของ lifecycle callbacks:
+
+export const lifecycleDiagram = `
+flowchart LR
+  C["constructor\n(element created)"]
+  CC["connectedCallback\n(inserted into DOM)"]
+  AC["attributeChangedCallback\n(attribute changed)\n— fires each time —"]
+  DC["disconnectedCallback\n(removed from DOM)"]
+  C --> CC
+  CC --> AC
+  AC --> AC
+  CC --> DC
+`;
+
+<Mermaid code={lifecycleDiagram} title="Web Component Lifecycle Timeline" />
+
+## constructor
+
+`constructor` จะถูกเรียกเมื่อสร้าง instance ของ element ขึ้นมาใหม่ ไม่ว่าจะผ่านทาง `document.createElement` หรือ parser ของ browser ก็ตาม กฎสำคัญคือต้องเรียก `super()` เป็น statement แรกเสมอ และห้ามแตะ DOM, attribute หรือ children ในขั้นตอนนี้
+
+## connectedCallback
+
+`connectedCallback` จะถูกเรียกทุกครั้งที่ element ถูกแทรกเข้าไปใน document ที่เชื่อมต่ออยู่ นี่คือจุดที่เหมาะสมสำหรับการ render และการตั้งค่า event listener
+
+## attributeChangedCallback
+
+`attributeChangedCallback` จะถูกเรียกเมื่อ attribute ที่อยู่ใน `observedAttributes` มีการเพิ่ม, เปลี่ยนแปลง หรือลบออก คุณต้องระบุรายการ attribute ที่ต้องการ observe ด้วย static getter ชื่อ `observedAttributes`
+
+## disconnectedCallback
+
+`disconnectedCallback` จะถูกเรียกเมื่อ element ถูกนำออกจาก DOM ใช้สำหรับทำความสะอาด เช่น การลบ event listener หรือยกเลิก timer
+
+## ตัวอย่างที่รันได้จริง
+
+export const indexHtml = `<div id="log" style="font-family:monospace;font-size:.85rem;background:#f3f4f6;padding:.5rem;border-radius:4px;margin-bottom:.5rem;min-height:2rem"></div>
+<lifecycle-demo label="Hello"></lifecycle-demo>`;
+
+export const indexJs = `class LifecycleDemo extends HTMLElement {
+  static get observedAttributes() { return ['label']; }
+  constructor() {
+    super();
+  }
+  connectedCallback() {
+    this.style.display = 'block';
+    this.style.padding = '.5rem 1rem';
+    this.style.background = '#ede9fe';
+    this.style.borderRadius = '6px';
+    this.style.marginTop = '.5rem';
+    this.textContent = 'Connected: ' + (this.getAttribute('label') || 'element');
+    var log = document.getElementById('log');
+    if (log) { var p = document.createElement('p'); p.style.margin = '0'; p.textContent = '> connectedCallback fired'; log.appendChild(p); }
+  }
+  attributeChangedCallback(name, oldVal, newVal) {
+    this.textContent = 'Connected: ' + newVal;
+    var log = document.getElementById('log');
+    if (log) { var p = document.createElement('p'); p.style.margin = '0'; p.textContent = '> attributeChangedCallback: ' + name + ' = ' + newVal; log.appendChild(p); }
+  }
+  disconnectedCallback() {
+    var log = document.getElementById('log');
+    if (log) { var p = document.createElement('p'); p.style.margin = '0'; p.textContent = '> disconnectedCallback fired'; log.appendChild(p); }
+  }
+}
+customElements.define('lifecycle-demo', LifecycleDemo);`;
+
+<LivePreview client:visible html={indexHtml} js={indexJs} />
+
+ลองดู console log ในแผง HTML เพื่อสังเกตว่า callbacks แต่ละตัวถูกเรียกเมื่อไหร่
+
+<Tip title="สี่ callbacks หนึ่ง element">
+ไม่จำเป็นต้องใช้ทั้งสี่ callbacks เสมอไป `constructor` และ `connectedCallback` เป็นตัวที่ใช้บ่อยที่สุด เพิ่ม `disconnectedCallback` เฉพาะเมื่อมี listener หรือ timer ที่ต้องทำความสะอาด และเพิ่ม `attributeChangedCallback` เฉพาะเมื่อต้องการ reactive attributes เท่านั้น
+</Tip>
+
+export const quizLifecycleIndex = [
+  {
+    q: 'Lifecycle callback ใดที่ถูกเรียกเมื่อ element ถูกแทรกเข้าไปใน document?',
+    options: [
+      'constructor',
+      'connectedCallback',
+      'attributeChangedCallback',
+      'disconnectedCallback',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'สิ่งใดที่จำเป็นให้ attributeChangedCallback รับการแจ้งเตือน?',
+    options: [
+      'ชื่อ attribute ต้องขึ้นต้นด้วย "data-"',
+      'element ต้องเชื่อมต่อกับ document ก่อน',
+      'ชื่อ attribute ต้องถูกระบุไว้ใน static observedAttributes array',
+      'ต้องเรียก super.attributeChangedCallback() ใน constructor',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'Callback ใดที่ถูกเรียกเมื่อ element ถูกนำออกจาก DOM?',
+    options: [
+      'constructor',
+      'connectedCallback',
+      'attributeChangedCallback',
+      'disconnectedCallback',
+    ],
+    answer: 3,
+  },
+];
+
+<Quiz client:visible id="lifecycle/index" questions={quizLifecycleIndex} />
+
+<ProgressTracker client:visible id="lifecycle/index" />

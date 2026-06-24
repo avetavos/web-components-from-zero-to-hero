@@ -1,0 +1,102 @@
+---
+title: 'Lit และ Tooling'
+description: 'ทำไม Lit ถึงมีอยู่ สิ่งที่มันเพิ่มให้กับ Custom Elements และสิ่งที่โมดูลนี้ครอบคลุม'
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+export const pillarsDiagram = `
+flowchart LR
+  PropChange["Property\nchanges"] --> Schedule["Schedule\nmicrotask\nupdate"]
+  Schedule --> ShouldUpdate["shouldUpdate()"]
+  ShouldUpdate --> Render["render()\nlit-html diff"]
+  Render --> Updated["updated()\noptional hook"]
+`;
+
+export const litHelloJs = `(async () => {
+  const { LitElement, html } = await import('https://esm.sh/lit');
+  class LitHello extends LitElement {
+    static properties = { name: { type: String } };
+    constructor() { super(); this.name = 'World'; }
+    render() { return html\`<p style="font-family:sans-serif;padding:8px">Hello from Lit, <strong>\${this.name}</strong>!</p>\`; }
+  }
+  customElements.define('lit-hello', LitHello);
+})();`;
+
+export const litHelloHtml = `<lit-hello></lit-hello>`;
+
+export const quizLitIndex = [
+  {
+    q: 'Lit เพิ่มอะไรบนมาตรฐาน Custom Elements API?',
+    options: [
+      'การจำลอง Virtual DOM',
+      'Reactive properties และ declarative templates',
+      'Framework สำหรับ server-side rendering',
+      'CSS preprocessor',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'ขนาดของไลบรารี Lit โดยประมาณคือเท่าไหร่?',
+    options: [
+      '50 KB',
+      '200 KB',
+      '~5 KB',
+      '~500 KB',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'อะไรที่ทำให้เกิดการ re-render ใน LitElement?',
+    options: [
+      'การเรียก document.createElement()',
+      'Reactive property เปลี่ยนค่า',
+      'การเรียก window.requestAnimationFrame()',
+      'การเพิ่ม CSS class',
+    ],
+    answer: 1,
+  },
+];
+
+## โมดูลนี้คืออะไร
+
+Vanilla Custom Elements API ช่วยให้คุณสร้าง HTML elements ที่กำหนดเองได้ แต่เมื่อ component มีความซับซ้อนมากขึ้น การจัดการ state, การ re-render DOM และ scoped styles ด้วยมือนั้นก็จะยุ่งยากขึ้นตามไปด้วย
+
+**Lit** เป็นไลบรารีขนาดเล็ก (~5 KB) จาก Google ที่วางอยู่บน Custom Elements มาตรฐาน Lit เพิ่ม reactive properties, declarative templates ผ่าน tagged template literals และ scoped styles ในรูปแบบที่กระชับและมีประสิทธิภาพ
+
+## วงจรอัปเดตแบบ Reactive
+
+Lit ตั้งเวลา microtask update ทุกครั้งที่ reactive property เปลี่ยนค่า แทนที่จะ re-render ทันที:
+
+<Mermaid title="วงจรอัปเดตแบบ Reactive ของ Lit" code={pillarsDiagram} />
+
+## สิ่งที่โมดูลนี้ครอบคลุม
+
+| บทเรียน | สิ่งที่คุณจะได้เรียน |
+|---|---|
+| ทำไม Lit | จุดอ่อนของ Vanilla และเมื่อไหร่ที่ Lit ช่วยได้ |
+| LitElement | Reactive properties, render, scoped styles |
+| การใช้ใน Frameworks | นำ web components ไปใช้ใน React, Vue, Angular |
+| การเผยแพร่ | การเผยแพร่ npm, Custom Elements Manifest, รองรับเบราว์เซอร์ |
+
+## ตัวอย่าง: Lit Hello World
+
+ดูว่า Lit ทำให้การสร้าง component ง่ายขึ้นได้อย่างไรในตัวอย่างด้านล่าง:
+
+<LivePreview client:visible js={litHelloJs} html={litHelloHtml} />
+
+<Tip title="Lit คือแพลตฟอร์มนั่นเอง">
+Lit ไม่ได้แทนที่ Custom Elements หรือ Shadow DOM แต่ห่อหุ้มมัน ทุก `LitElement` เป็น `HTMLElement` มาตรฐานที่ทำงานได้ในทุกเบราว์เซอร์และทุก framework
+</Tip>
+
+## ทดสอบความเข้าใจ
+
+<Quiz client:visible id="lit-and-tooling/index" questions={quizLitIndex} />
+
+<ProgressTracker client:visible id="lit-and-tooling/index" />

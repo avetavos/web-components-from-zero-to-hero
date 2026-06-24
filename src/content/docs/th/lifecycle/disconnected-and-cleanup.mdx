@@ -1,0 +1,151 @@
+---
+title: 'disconnectedCallback และการ Cleanup'
+description: 'disconnectedCallback ทำงานเมื่อ element ถูกลบออกจาก DOM — เหมาะสำหรับลบ event listener, ยกเลิก timer และคืนทรัพยากร'
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## เมื่อไหร่ที่ disconnectedCallback ทำงาน
+
+`disconnectedCallback` จะถูกเรียกทุกครั้งที่ element ถูกลบออกจาก document ที่เชื่อมต่ออยู่ งานทำความสะอาดที่ควรทำที่นี่ได้แก่:
+
+- ลบ event listener ที่เพิ่มไว้ใน `connectedCallback`
+- ยกเลิก timer ของ `setInterval` หรือ `setTimeout`
+- ปิด WebSocket connections
+- Disconnect `MutationObserver`, `ResizeObserver` หรือ `IntersectionObserver`
+
+ข้อควรระวังสำคัญ: `disconnectedCallback` จะ**ไม่**ถูกเรียกเมื่อ page ทั้งหมดถูก unload (เช่น ผู้ใช้เปิดหน้าใหม่หรือปิด tab) มันจะถูก trigger เฉพาะจากการลบ DOM อย่างชัดเจน เช่น `removeChild`, `replaceWith` หรือการกำหนดค่าใหม่ให้ `innerHTML`
+
+## รูปแบบ Symmetry
+
+คิดว่า `connectedCallback` และ `disconnectedCallback` เป็นเหมือนวงเล็บที่จับคู่กัน ทรัพยากรที่คุณได้มาเมื่อ element เข้าสู่ DOM คุณก็ต้องคืนเมื่อมันออกไป:
+
+```js
+class TimerDemo extends HTMLElement {
+  connectedCallback() {
+    // เริ่มทำงาน
+    this._intervalId = setInterval(this._tick.bind(this), 1000);
+  }
+
+  disconnectedCallback() {
+    // หยุดทำงาน — สมมาตรกับ connectedCallback
+    clearInterval(this._intervalId);
+  }
+
+  _tick() {
+    // ถูกเรียกทุก 1 วินาทีขณะที่ connected
+  }
+}
+```
+
+การเก็บ handle (`this._intervalId`) ไว้บน element instance คือวิธีมาตรฐานเพื่อให้ `disconnectedCallback` เข้าถึงได้
+
+## รูปแบบ Timer ที่สมบูรณ์
+
+```js
+class TimerDemo extends HTMLElement {
+  connectedCallback() {
+    this._seconds = 0;
+    this._render();
+    this._intervalId = setInterval(this._tick.bind(this), 1000);
+  }
+
+  disconnectedCallback() {
+    clearInterval(this._intervalId);
+  }
+
+  _tick() {
+    this._seconds += 1;
+    this._render();
+  }
+
+  _render() {
+    this.textContent = 'Running: ' + this._seconds + 's';
+  }
+}
+
+customElements.define('timer-demo', TimerDemo);
+```
+
+## Live demo
+
+export const cleanupHtml = `<div id="log" style="font-family:monospace;font-size:.85rem;background:#f3f4f6;padding:.5rem;border-radius:4px;margin-bottom:.5rem;min-height:2rem"></div>
+<timer-demo id="td"></timer-demo>
+<br>
+<button onclick="document.body.removeChild(document.getElementById('td'))">Remove timer</button>
+<button onclick="var el=document.createElement('timer-demo');el.id='td';document.body.appendChild(el)">Re-add timer</button>`;
+
+export const cleanupJs = `class TimerDemo extends HTMLElement {
+  connectedCallback() {
+    var self = this;
+    self.style.display = 'block';
+    self.style.padding = '.5rem 1rem';
+    self.style.background = '#fef3c7';
+    self.style.borderRadius = '6px';
+    self.style.marginTop = '.5rem';
+    self._seconds = 0;
+    self.textContent = 'Running: 0s';
+    self._intervalId = setInterval(function() {
+      self._seconds = self._seconds + 1;
+      self.textContent = 'Running: ' + self._seconds + 's';
+    }, 1000);
+    var log = document.getElementById('log');
+    if (log) { var p = document.createElement('p'); p.style.margin = '0'; p.textContent = '> connectedCallback: timer started'; log.appendChild(p); }
+  }
+  disconnectedCallback() {
+    clearInterval(this._intervalId);
+    var log = document.getElementById('log');
+    if (log) { var p = document.createElement('p'); p.style.margin = '0'; p.textContent = '> disconnectedCallback: timer stopped'; log.appendChild(p); }
+  }
+}
+customElements.define('timer-demo', TimerDemo);`;
+
+<LivePreview client:visible html={cleanupHtml} js={cleanupJs} />
+
+คลิก **Remove timer** เพื่อลบ element ออกจาก DOM — บรรทัด log ยืนยันว่า `disconnectedCallback` ทำงานและ timer หยุดแล้ว คลิก **Re-add timer** เพื่อแทรก element ใหม่อีกครั้ง counter จะ reset และ log จะแสดง `connectedCallback` ทำงานอีกครั้ง
+
+<Tip title="เก็บ cleanup handle ไว้บน instance">
+กำหนด interval ID, timeout ID หรือ reference ของ event handler ไว้เป็น property บน element instance (เช่น `this._intervalId`) ภายใน `connectedCallback` แล้ว `disconnectedCallback` จะสามารถหาและยกเลิกมันได้เสมอ
+</Tip>
+
+export const quizDisconnectedCleanup = [
+  {
+    q: 'disconnectedCallback ทำงานเมื่อไหร่?',
+    options: [
+      'เมื่อ browser tab ถูกปิด',
+      'ทุกครั้งที่ element ถูกลบออกจาก document ที่เชื่อมต่ออยู่',
+      'เมื่อ observed attribute ถูกลบออก',
+      'เมื่อ element ถูกย้ายจาก parent หนึ่งไปยังอีก parent',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'จะเกิดอะไรขึ้นกับ setInterval ที่เริ่มใน connectedCallback ถ้า disconnectedCallback ไม่ได้เรียก clearInterval?',
+    options: [
+      'Browser clear มันโดยอัตโนมัติเมื่อ element ถูกลบ',
+      'มันหยุดชั่วคราวจนกว่า element จะถูกเพิ่มกลับ',
+      'มันยังคงทำงานต่อไปในพื้นหลัง ทำให้เกิด memory และ CPU leak',
+      'มันโยน error ทันทีที่ element ถูกลบ',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'disconnectedCallback ทำงานเมื่อผู้ใช้เปิดหน้าใหม่หรือ unload page หรือไม่?',
+    options: [
+      'ใช่ เสมอ',
+      'ใช่ แต่เฉพาะใน Chrome',
+      'ไม่ — มันไม่ถูกเรียกอย่างน่าเชื่อถือขณะ page unload',
+      'เฉพาะเมื่อ element อยู่ใน viewport ที่มองเห็นได้เท่านั้น',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="lifecycle/disconnected-and-cleanup" questions={quizDisconnectedCleanup} />
+
+<ProgressTracker client:visible id="lifecycle/disconnected-and-cleanup" />

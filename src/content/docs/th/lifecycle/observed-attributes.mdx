@@ -1,0 +1,141 @@
+---
+title: 'Observed Attributes'
+description: 'static get observedAttributes() ประกาศ attribute ที่ต้องการตรวจสอบ และ attributeChangedCallback จะทำงานเมื่อ attribute เหล่านั้นเปลี่ยนแปลง'
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## การประกาศ attribute ที่ต้องการตรวจสอบ
+
+Browser จะติดตามเฉพาะ attribute ที่คุณระบุอย่างชัดเจนเท่านั้น static getter `observedAttributes` ต้องคืนค่าเป็น array ของชื่อ attribute:
+
+```js
+static get observedAttributes() {
+  return ['color', 'label'];
+}
+```
+
+เฉพาะ attribute ที่อยู่ใน array นี้เท่านั้นที่จะทำให้ `attributeChangedCallback` ถูกเรียก หาก array ว่างเปล่า หรือไม่มี getter นี้เลย การเปลี่ยนแปลง attribute จะถูกเพิกเฉยโดยไม่มีข้อผิดพลาด
+
+## Signature ของ attributeChangedCallback
+
+เมื่อ attribute ที่ถูกตรวจสอบมีการเพิ่ม, เปลี่ยนแปลง หรือลบออก browser จะเรียก:
+
+```js
+attributeChangedCallback(name, oldValue, newValue) {
+  // name     — ชื่อ attribute เช่น 'color'
+  // oldValue — ค่าเดิมเป็น string หรือ null เมื่อตั้งค่าครั้งแรก
+  // newValue — ค่าใหม่เป็น string หรือ null เมื่อถูกลบออก
+}
+```
+
+พารามิเตอร์ทั้งสามเป็น string (หรือ `null`) เมื่อตั้งค่า attribute เป็นครั้งแรก `oldValue` จะเป็น `null` เมื่อลบ attribute ด้วย `removeAttribute` แล้ว `newValue` จะเป็น `null`
+
+## รูปแบบที่สมบูรณ์
+
+```js
+class AttrColor extends HTMLElement {
+  static get observedAttributes() {
+    return ['color', 'label'];
+  }
+
+  connectedCallback() {
+    this._render();
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    this._render();
+  }
+
+  _render() {
+    var color = this.getAttribute('color') || '#6366f1';
+    var label = this.getAttribute('label') || '?';
+    this.innerHTML =
+      '<span style="' +
+        'display:inline-block;' +
+        'padding:.25rem .75rem;' +
+        'border-radius:9999px;' +
+        'background:' + color + ';' +
+        'color:#fff;' +
+        'font-weight:600;' +
+        'font-family:sans-serif;' +
+        'font-size:.875rem' +
+      '">' + label + '</span>';
+  }
+}
+
+customElements.define('attr-color', AttrColor);
+```
+
+## Live demo
+
+export const attrHtml = `<attr-color color="#4f46e5" label="Indigo"></attr-color><br><attr-color color="#059669" label="Emerald"></attr-color>`;
+
+export const attrJs = `class AttrColor extends HTMLElement {
+  static get observedAttributes() { return ['color', 'label']; }
+  connectedCallback() {
+    this._render();
+  }
+  attributeChangedCallback(name, oldVal, newVal) {
+    this._render();
+  }
+  _render() {
+    var color = this.getAttribute('color') || '#6b7280';
+    var label = this.getAttribute('label') || 'Badge';
+    this.innerHTML =
+      '<span style="display:inline-block;padding:.25rem .75rem;border-radius:9999px;background:' + color + ';color:#fff;font-weight:600;font-size:.875rem">' +
+      label +
+      '</span>';
+  }
+}
+customElements.define('attr-color', AttrColor);`;
+
+<LivePreview client:visible html={attrHtml} js={attrJs} />
+
+ลองแก้ไข `color="#4f46e5"` เป็นค่าสี CSS อื่น หรือเปลี่ยนข้อความ `label` ในแผง HTML — badge จะ render ใหม่ทันที
+
+<Tip title="observedAttributes ทำงานครั้งเดียวตอน class ถูก define">
+เนื่องจาก `observedAttributes` เป็น static getter browser จึงประเมินค่ามันตอนที่ลงทะเบียน class ไม่ใช่ทุกครั้งที่สร้าง element ใหม่ รายการ attribute ที่ตรวจสอบจะถูกใช้ร่วมกันในทุก instance ของ element คุณไม่สามารถเปลี่ยนแปลง attribute ที่ตรวจสอบได้ขณะ runtime
+</Tip>
+
+export const quizObservedAttributes = [
+  {
+    q: 'static get observedAttributes() ต้องคืนค่าอะไร?',
+    options: [
+      'Object ที่ map ชื่อ attribute กับ type',
+      'Set ของชื่อ attribute',
+      'Array ของชื่อ attribute แบบ string',
+      'Map ของชื่อ attribute กับค่า default',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'จะเกิดอะไรขึ้นเมื่อ attribute ที่ไม่ได้อยู่ใน observedAttributes มีการเปลี่ยนแปลง?',
+    options: [
+      'attributeChangedCallback ถูกเรียกพร้อมค่าใหม่',
+      'Browser โยน DOMException',
+      'การเปลี่ยนแปลงถูกเพิกเฉยโดยไม่มีการเรียก attributeChangedCallback',
+      'connectedCallback ถูกเรียกแทน',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'ค่าของ oldValue คืออะไรเมื่อ observed attribute ถูกตั้งค่าเป็นครั้งแรก?',
+    options: [
+      'empty string ""',
+      'undefined',
+      'string "null"',
+      'null',
+    ],
+    answer: 3,
+  },
+];
+
+<Quiz client:visible id="lifecycle/observed-attributes" questions={quizObservedAttributes} />
+
+<ProgressTracker client:visible id="lifecycle/observed-attributes" />

@@ -1,0 +1,131 @@
+---
+title: 'Web Components คืออะไร?'
+description: 'ปัญหาที่ Web Components แก้ ความแตกต่างจาก component ของเฟรมเวิร์ก และการรองรับของเบราว์เซอร์ในปัจจุบัน'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## ปัญหา: นำกลับมาใช้ซ้ำได้โดยไม่ต้องพึ่งเฟรมเวิร์ก
+
+ก่อนจะมี Web Components การแชร์ UI widget ระหว่างโปรเจกต์หมายถึงการคัดลอกและวางมาร์กอัปไปมา หรือไม่ก็ต้องผูกตัวเองกับเฟรมเวิร์กใดเฟรมเวิร์กหนึ่ง component ปุ่มของ React ไม่สามารถนำไปวางในแอป Vue ได้ การ์ดของ Svelte ก็นำกลับมาใช้ซ้ำในโปรเจกต์ Angular ไม่ได้
+
+Web Components แก้ปัญหานี้ด้วยมาตรฐานสามอย่างที่มากับเบราว์เซอร์:
+
+- **Custom Elements** — นิยาม HTML tag ใหม่ในรูปแบบ ES class
+- **Shadow DOM** — ห่อหุ้ม DOM และ CSS ของ element ไม่ให้สไตล์รั่วเข้าหรือออก
+- **HTML Templates และ Slots** — ประกาศชิ้นส่วนมาร์กอัปที่นำกลับมาใช้ซ้ำได้และจุดแทรกเนื้อหาแบบ declarative
+
+ผลลัพธ์คือ component ที่มีคุณสมบัติ:
+
+| คุณสมบัติ | ความหมาย |
+|---|---|
+| **นำกลับมาใช้ซ้ำได้** | ใช้งานได้ในบริบท HTML ใด ๆ กับเฟรมเวิร์กใดก็ได้หรือไม่ใช้เลยก็ได้ |
+| **ห่อหุ้มเป็นเอกเทศ** | มาร์กอัปและสไตล์ภายในถูกแยกออกจากหน้าเพจ |
+| **เป็นของเนทีฟ** | ไม่ต้อง transpile ไม่ต้องมี virtual DOM ไม่ต้องมีไลบรารีตอนรันไทม์ |
+
+## Component ของเฟรมเวิร์ก เทียบกับ Web Components
+
+Component ของเฟรมเวิร์ก (React, Vue, Svelte) อยู่ภายในรันไทม์ของเฟรมเวิร์กตัวนั้นทั้งหมด เบราว์เซอร์ไม่เคยเห็น `<MyButton>` เลย — มันเห็นแค่สิ่งที่เฟรมเวิร์กเรนเดอร์ออกมาแทนที่
+
+```html
+<!-- React JSX — compiled away, never in the DOM -->
+<MyButton variant="primary">Save</MyButton>
+
+<!-- Web Component — a real DOM node the browser owns -->
+<my-button variant="primary">Save</my-button>
+```
+
+Web Components เป็น DOM node จริง ๆ คุณสามารถ query มันด้วย `document.querySelector` ดักฟัง event ของมันด้วย `addEventListener` และตรวจสอบมันใน DevTools ได้ — เหมือนกับ element ที่มีมาในตัวทุกประการ
+
+## การรองรับของเบราว์เซอร์ในปัจจุบัน
+
+เอนจินเรนเดอร์หลักทั้งสี่ตัวรองรับสเปก Web Components v1 อย่างครบถ้วน:
+
+- **Chrome / Edge** — รองรับเต็มรูปแบบตั้งแต่ปี 2018
+- **Firefox** — รองรับเต็มรูปแบบตั้งแต่ปี 2018
+- **Safari** — รองรับ Custom Elements เต็มรูปแบบตั้งแต่ Safari 10.1 (2017); ส่วน Shadow DOM v1 ตั้งแต่ Safari 10 (2016)
+
+ข้อยกเว้นเดียวคือ **customized built-ins** (การ extend element ที่มีอยู่แล้ว เช่น `HTMLButtonElement`) Safari ไม่รองรับและได้ระบุไว้ว่าจะไม่รองรับ — autonomous custom elements (extend `HTMLElement`) จึงเป็นตัวเลือกที่พกพาได้ เรื่องนี้จะกล่าวถึงในบทเรียนสุดท้ายของโมดูลนี้
+
+## Custom element ก็เป็นแค่ class ตัวหนึ่ง
+
+โดยแก่นแล้ว custom element คือ ES class ที่ extend `HTMLElement` และถูกลงทะเบียนด้วยชื่อ tag:
+
+```js
+class MyGreeting extends HTMLElement {
+  connectedCallback() {
+    this.textContent = 'Hello from a custom element!';
+  }
+}
+
+customElements.define('my-greeting', MyGreeting);
+```
+
+หลังจาก `define` แล้ว tag `<my-greeting>` ใด ๆ ในเอกสาร — ไม่ว่าจะมีอยู่แล้วหรือเพิ่มเข้ามาในอนาคต — จะถูกอัปเกรดเป็นอินสแตนซ์ของ `MyGreeting` โดยอัตโนมัติ
+
+export const wacJs = `class MyGreeting extends HTMLElement {
+  connectedCallback() {
+    this.textContent = 'Hello from a custom element!';
+  }
+}
+customElements.define('my-greeting', MyGreeting);`;
+
+export const wacHtml = `<my-greeting></my-greeting>`;
+
+<LivePreview client:visible html={wacHtml} js={wacJs} />
+
+<Tip title="class ที่ extend HTMLElement">
+Custom element ก็เป็นแค่ class ที่ extend `HTMLElement` แล้วลงทะเบียนผ่าน `customElements.define` ไม่ต้องมีเฟรมเวิร์ก ไม่ต้องมีเครื่องมือ build ไม่ต้องมี virtual DOM — มีแค่จุดต่อขยายของเบราว์เซอร์เองเท่านั้น
+</Tip>
+
+export const quizWac = [
+  {
+    q: 'ข้อใดต่อไปนี้อธิบาย custom element ได้ถูกต้อง?',
+    options: [
+      'component ของ React ที่ถูกคอมไพล์เป็น Web Component',
+      'ES class ที่ extend HTMLElement และลงทะเบียนด้วยชื่อ tag',
+      'attribute พิเศษของ HTML ที่เปิดใช้พฤติกรรมของเฟรมเวิร์ก',
+      'ปลั๊กอินของเบราว์เซอร์ที่ดักจับการเปลี่ยนแปลง DOM',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'เบราว์เซอร์ตัวใดที่ไม่รองรับ customized built-in elements?',
+    options: [
+      'Chrome',
+      'Firefox',
+      'Safari',
+      'Edge',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'ข้อได้เปรียบหลักของ Web Components เหนือ component ของเฟรมเวิร์กคืออะไร?',
+    options: [
+      'คอมไพล์ได้เร็วกว่า JSX',
+      'ใช้งานได้ในบริบท HTML ใด ๆ โดยไม่ต้องมีรันไทม์ของเฟรมเวิร์กร่วมกัน',
+      'โหลด dependency แบบ lazy ให้โดยอัตโนมัติ',
+      'แทนที่ความจำเป็นในการใช้ CSS ได้ทั้งหมด',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'หลังจากเรียก customElements.define แล้ว tag ที่ตรงกับชื่อซึ่งมีอยู่แล้วในเอกสารจะเกิดอะไรขึ้น?',
+    options: [
+      'ไม่มีอะไรเกิดขึ้น — มีผลเฉพาะกับ tag ในอนาคตเท่านั้น',
+      'มันจะโยน TypeError',
+      'มันจะถูกอัปเกรดเป็นอินสแตนซ์ของ class ที่ลงทะเบียนไว้',
+      'มันจะถูกลบออกแล้วแทรกเข้ามาใหม่',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="intro-custom-elements/what-are-web-components" questions={quizWac} />
+
+<ProgressTracker client:visible id="intro-custom-elements/what-are-web-components" />

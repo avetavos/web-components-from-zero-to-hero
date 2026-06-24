@@ -1,5 +1,108 @@
 ---
-title: Intro & Custom Elements
-description: What Web Components are, and defining your first custom element.
+title: 'Intro & Custom Elements'
+description: 'What this course covers, the three pillars of Web Components, and your first custom element.'
+sidebar:
+  order: 1
 ---
-Coming soon.
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+Web Components are a suite of browser-native standards that let you define your own HTML elements — reusable, encapsulated, and framework-agnostic. No build step, no library, just the platform.
+
+This course walks you through three interlocking pillars:
+
+export const pillarsDiagram = `
+flowchart LR
+  CE["Custom Elements\n(class + define)"]
+  SD["Shadow DOM\n(encapsulated tree)"]
+  TS["Templates & Slots\n(declarative markup)"]
+  CE --> SD
+  SD --> TS
+  CE --> TS
+`;
+
+<Mermaid code={pillarsDiagram} title="The three pillars of Web Components" />
+
+| Pillar | What it gives you |
+|---|---|
+| Custom Elements | A class-based API to create new HTML tags |
+| Shadow DOM | A private, encapsulated DOM tree and CSS scope |
+| Templates & Slots | Reusable HTML fragments with named insertion points |
+
+By the end of this module you will have defined your first custom element from scratch, and seen how Lit builds on the same primitives.
+
+## Your first custom element
+
+The snippet below defines `<hello-badge>` — a vanilla custom element that reads a `name` attribute and renders a greeting.
+
+export const helloJs = `class HelloBadge extends HTMLElement {
+  connectedCallback() {
+    this.textContent = 'Hello, ' + (this.getAttribute('name') || 'world') + '!';
+  }
+}
+customElements.define('hello-badge', HelloBadge);`;
+
+export const helloHtml = `<hello-badge name="Web Components"></hello-badge>`;
+
+<LivePreview client:visible html={helloHtml} js={helloJs} />
+
+## Lit teaser
+
+Lit is a thin library that adds reactive properties and a declarative template system on top of the standard Custom Elements and Shadow DOM APIs. It is covered in depth in the **Lit and Tooling** module — here is a quick taste to confirm the import path works in this runner:
+
+export const litJs = `(async () => {
+  const { LitElement, html } = await import('https://esm.sh/lit');
+  class LitHi extends LitElement {
+    render() { return html\`<p>Hi from Lit \${'⚡'}</p>\`; }
+  }
+  customElements.define('lit-hi', LitHi);
+})();`;
+
+export const litHtml = `<lit-hi></lit-hi>`;
+
+<LivePreview client:visible html={litHtml} js={litJs} />
+
+<Tip title="Framework-agnostic by design">
+Web Components are built into the browser. A `hello-badge` element works inside a React app, a Svelte app, or a plain HTML file — because all of them ultimately render HTML.
+</Tip>
+
+export const quizIndex = [
+  {
+    q: 'Which browser API lets you register a new HTML tag name?',
+    options: [
+      'document.createElement()',
+      'customElements.define()',
+      'HTMLElement.register()',
+      'window.defineElement()',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What are the three pillars of Web Components?',
+    options: [
+      'Custom Elements, Virtual DOM, and JSX',
+      'Custom Elements, Shadow DOM, and Templates & Slots',
+      'Shadow DOM, Service Workers, and IndexedDB',
+      'Custom Elements, CSS Modules, and Web Workers',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Lit is built on top of which browser-native standards?',
+    options: [
+      'React internals and Babel transforms',
+      'Service Workers and IndexedDB',
+      'Custom Elements and Shadow DOM',
+      'WebAssembly and WASI',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="intro-custom-elements/index" questions={quizIndex} />
+
+<ProgressTracker client:visible id="intro-custom-elements/index" />

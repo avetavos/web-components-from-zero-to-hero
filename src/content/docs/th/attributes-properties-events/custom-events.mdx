@@ -1,0 +1,147 @@
+---
+title: 'Custom Events'
+description: 'Dispatch and listen to CustomEvent to carry data out of a custom element without coupling it to its parent.'
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+Custom elements สื่อสารออกไปภายนอกด้วยการ dispatch events คอนสตรัคเตอร์ `CustomEvent` ที่มีมาในเบราว์เซอร์ช่วยให้คุณแนบ payload ตามต้องการ — ซึ่งก็คือออบเจกต์ `detail` — เพื่อให้ parent รับข้อมูลที่มีโครงสร้างได้โดยไม่ต้องยื่นมือเข้าไปภายใน element นี้ หน้านี้จะอธิบายวิธีสร้าง ส่ง และรับฟัง custom events
+
+## คอนสตรัคเตอร์ `CustomEvent`
+
+`CustomEvent` ถูกสร้างด้วย string ที่บอก type และออบเจกต์ options ตัวเลือกที่สำคัญที่สุดคือ `detail` ซึ่งเป็นที่เก็บ payload ของคุณ:
+
+```js
+var event = new CustomEvent('count-change', {
+  detail: { count: 42 },
+  bubbles: true,
+});
+```
+
+`bubbles: true` ทำให้ event เดินทางขึ้นผ่าน DOM tree ดังนั้น parent หรือ ancestor — ไม่ใช่แค่ element ตัวเอง — ก็สามารถรับฟัง event นี้ได้ หากไม่มี flag นี้ event จะยิงขึ้นเฉพาะบน element ที่ dispatch ออกมาเท่านั้น และจะไม่ส่งต่อขึ้นไปอีก
+
+## การ Dispatch จากภายใน Element
+
+เรียก `this.dispatchEvent(event)` จากที่ใดก็ได้ภายในคลาสของคุณเพื่อยิง event ออกไป:
+
+```js
+class MyCounter extends HTMLElement {
+  connectedCallback() {
+    this._count = 0;
+    this.innerHTML = '<button>Count: 0</button>';
+    this.querySelector('button').addEventListener('click', () => {
+      this._count++;
+      this.querySelector('button').textContent = 'Count: ' + this._count;
+      this.dispatchEvent(new CustomEvent('count-change', {
+        detail: { count: this._count },
+        bubbles: true,
+      }));
+    });
+  }
+}
+customElements.define('my-counter', MyCounter);
+```
+
+Element ไม่สนใจว่าใครกำลังฟังอยู่ มันเพียงแค่ประกาศว่ามีบางอย่างเกิดขึ้นและส่งข้อมูลออกไป นี่คือกุญแจสำคัญในการทำให้ elements นำกลับมาใช้ใหม่ได้
+
+## การรับฟังจากภายนอก
+
+โค้ดใดก็ตามที่มีการอ้างอิงถึง element — หรือ ancestor ใดก็ได้ เพราะตั้ง `bubbles: true` ไว้ — สามารถลงทะเบียน listener ด้วย API มาตรฐาน `addEventListener` ได้:
+
+```js
+// Parent listening
+document.querySelector('my-counter').addEventListener('count-change', (e) => {
+  console.log('Count is now', e.detail.count);
+});
+```
+
+คุณยังสามารถรับฟังที่ระดับ `document` ได้เมื่อตั้ง `bubbles: true` ไว้ ซึ่งสะดวกมากเมื่อคุณไม่มีการอ้างอิงโดยตรงไปยัง element
+
+## ทำไมต้องใช้ Events แทน Callback Props?
+
+รูปแบบ callback-prop — การส่งฟังก์ชันเป็น property — ใช้งานได้ใน JavaScript แต่มันสร้างการผูกมัดที่แน่นแฟ้น: element ต้องรู้ว่า consumer คาดหวังฟังก์ชันบน property ที่ชื่อเฉพาะ และ consumer ต้องมั่นใจว่าตั้งค่าฟังก์ชันนั้นไว้ก่อนที่ element จะใช้
+
+Events ถูกออกแบบมาให้มีการเชื่อมต่อแบบหลวม ผู้ฟังจำนวนมากเท่าไรก็ได้สามารถ subscribe หรือ unsubscribe ได้ทุกเวลาโดยที่ element ไม่รับรู้ public API ของ element ยังคงคาดเดาได้: มันจะ dispatch named event พร้อม `detail` shape ที่มีเอกสารกำกับ และไม่มีอะไรมากกว่านั้น
+
+<Tip title="ตั้งชื่อ Events แบบ DOM Events">
+ใช้ชื่อตัวพิมพ์เล็กที่มีขีดกลางสำหรับ custom events — เช่น `count-change` แทนที่จะเป็น `countChange` วิธีนี้ตรงกับแบบแผนของเบราว์เซอร์เอง (`pointerdown`, `input`, `before-match`) และหลีกเลี่ยงปัญหาที่เกิดจากความแตกต่างของตัวพิมพ์ใหญ่-เล็กใน HTML attribute handlers
+</Tip>
+
+## ตัวอย่างสด
+
+Element `click-counter` ด้านล่างนับจำนวนครั้งที่ปุ่มของมันถูกกด แต่ละครั้งที่กดจะ dispatch event `counter-change` พร้อม `{ value: N }` ใน `detail` หน้าเพจรับฟังที่ระดับ `document` และแสดงค่าล่าสุดในพื้นที่ log
+
+export const customEventsHtml = '<click-counter></click-counter>' +
+'\n<div id="log" style="margin-top:.75rem;font-family:monospace;font-size:.85rem;background:#f3f4f6;padding:.5rem;border-radius:4px;min-height:2rem">Click the button...</div>';
+
+export const customEventsJs = 'var _count = 0;' +
+'\nclass ClickCounter extends HTMLElement {' +
+'\n  connectedCallback() {' +
+'\n    _count = 0;' +
+'\n    this.innerHTML = "<button style=\\"padding:.4rem .9rem;font-size:1rem;border-radius:6px;border:none;background:#6366f1;color:#fff;cursor:pointer\\">Click me</button>";' +
+'\n    var self = this;' +
+'\n    this.querySelector("button").addEventListener("click", function() {' +
+'\n      _count++;' +
+'\n      self.querySelector("button").textContent = "Click me (" + _count + ")";' +
+'\n      self.dispatchEvent(new CustomEvent("counter-change", {' +
+'\n        detail: { value: _count },' +
+'\n        bubbles: true' +
+'\n      }));' +
+'\n    });' +
+'\n  }' +
+'\n}' +
+'\ncustomElements.define("click-counter", ClickCounter);' +
+'\ndocument.addEventListener("counter-change", function(e) {' +
+'\n  var log = document.getElementById("log");' +
+'\n  if (log) {' +
+'\n    log.textContent = "Last event: " + e.detail.value;' +
+'\n  }' +
+'\n});';
+
+<LivePreview client:visible html={customEventsHtml} js={customEventsJs} />
+
+<Tip title="detail เป็น read-only หลังจาก dispatch">
+เมื่อคุณเรียก `dispatchEvent` แล้ว ออบเจกต์ `detail` ที่คุณส่งเข้าไปจะสามารถเข้าถึงได้ใน event object ของทุก listener ในรูป `e.detail` การแก้ไขค่าภายใน listener นั้นทำได้ในทางเทคนิค แต่ไม่แนะนำอย่างยิ่ง — ให้ถือว่า `detail` เป็น snapshot ที่ไม่เปลี่ยนแปลงของ state ณ ขณะที่ dispatch
+</Tip>
+
+export const quizCustomEvents = [
+  {
+    q: 'Property ใดของ `CustomEvent` ที่ใช้เก็บ event payload?',
+    options: [
+      'data',
+      'payload',
+      'detail',
+      'info',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'ตัวเลือกใดทำให้ CustomEvent เดินทางขึ้นไปใน DOM tree?',
+    options: [
+      'composed: true',
+      'bubbles: true',
+      'capture: true',
+      'propagate: true',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'จะ dispatch custom event จากภายใน element ได้อย่างไร?',
+    options: [
+      'window.dispatch(event)',
+      'document.emit(event)',
+      'this.dispatchEvent(event)',
+      'HTMLElement.fire(event)',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="attributes-properties-events/custom-events" questions={quizCustomEvents} />
+
+<ProgressTracker client:visible id="attributes-properties-events/custom-events" />

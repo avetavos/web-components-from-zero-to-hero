@@ -1,0 +1,143 @@
+---
+title: 'การเรนเดอร์เนื้อหา'
+description: 'วิธีกำหนดเนื้อหาของ element ใน connectedCallback การใช้ innerHTML และ DOM API และการอ่าน attribute'
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## ทำไมต้อง connectedCallback ไม่ใช่ constructor
+
+class ของ custom element มี `constructor` เหมือน ES class อื่น ๆ แต่ constructor เป็นที่ที่ผิดสำหรับการทำงานกับ DOM เมื่อเบราว์เซอร์เรียก constructor element จะมีอยู่ในรูปอ็อบเจกต์ JavaScript แต่ยังไม่ถูกเพิ่มเข้าไปในเอกสาร — มันยังไม่มี parent, attribute อาจยัง parse ไม่ครบ และ children ก็ยังไม่ปรากฏ
+
+ให้ใช้ `connectedCallback` แทน มันจะถูกเรียกทุกครั้งที่ element ถูก **แทรกเข้าไปในเอกสารที่เชื่อมต่อแล้ว** ซึ่ง ณ จุดนั้น attribute และ light DOM children ของ element พร้อมใช้งานแล้ว:
+
+```js
+class MyCard extends HTMLElement {
+  constructor() {
+    super(); // always required
+    // DO NOT touch this.innerHTML, this.children, or attributes here
+  }
+
+  connectedCallback() {
+    // Safe to read attributes and manipulate DOM here
+    const title = this.getAttribute('title') || 'Card';
+    this.innerHTML = '<h2>' + title + '</h2>';
+  }
+}
+```
+
+## การกำหนดเนื้อหา: innerHTML เทียบกับ DOM API
+
+**`innerHTML`** คือวิธีที่เร็วที่สุดในการสร้างเทมเพลตออกมา:
+
+```js
+connectedCallback() {
+  this.innerHTML = '<p>Hello from <strong>innerHTML</strong></p>';
+}
+```
+
+สำหรับค่าที่เปลี่ยนแปลงได้หรือค่าที่ผู้ใช้ป้อนเข้ามา ให้ sanitize ก่อนเสมอ หรือใช้ DOM API แทนเพื่อหลีกเลี่ยง XSS:
+
+```js
+connectedCallback() {
+  const p = document.createElement('p');
+  const userInput = this.getAttribute('label') || '';
+  p.textContent = userInput; // textContent never parses HTML
+  this.appendChild(p);
+}
+```
+
+## การอ่าน attribute
+
+`this.getAttribute(name)` คืนค่า attribute เป็นสตริง หรือคืน `null` หาก attribute ไม่มีอยู่ รูปแบบ `this.getAttribute('x') || 'default'` ปลอดภัยเพราะ `null || 'default'` ให้ผลเป็น `'default'`:
+
+```js
+connectedCallback() {
+  const color = this.getAttribute('color') || 'blue';
+  const label = this.getAttribute('label') || 'Button';
+  this.innerHTML =
+    '<button style="background:' + color + '">' + label + '</button>';
+}
+```
+
+## เดโมที่รันได้
+
+export const renderJs = `class ColorCard extends HTMLElement {
+  connectedCallback() {
+    var color = this.getAttribute('color') || '#4f46e5';
+    var label = this.getAttribute('label') || 'Card';
+    var desc  = this.getAttribute('desc')  || '';
+    this.innerHTML =
+      '<div style="border:2px solid ' + color + ';border-radius:8px;padding:1rem;">' +
+      '<h3 style="margin:0 0 .5rem;color:' + color + '">' + label + '</h3>' +
+      '<p style="margin:0">' + desc + '</p>' +
+      '</div>';
+  }
+}
+customElements.define('color-card', ColorCard);`;
+
+export const renderHtml = `<color-card
+  color="#059669"
+  label="Connected!"
+  desc="Content set in connectedCallback.">
+</color-card>`;
+
+<LivePreview client:visible html={renderHtml} js={renderJs} height="180px" />
+
+ลองเพิ่ม tag `<color-card>` ตัวที่สองโดยใช้ `color` และ `label` ที่ต่างกันในแผง HTML
+
+<Tip title="ทำงานกับ DOM ใน connectedCallback">
+อย่าแตะ `innerHTML`, `children` หรือ attribute ใน constructor — element ยังไม่อยู่ในเอกสาร ให้ทำงานกับ DOM ทั้งหมดใน `connectedCallback` ซึ่งจะถูกเรียกหลังจาก element ถูกแทรกเข้าไปและ attribute พร้อมแล้ว
+</Tip>
+
+export const quizRender = [
+  {
+    q: 'ทำไมคุณจึงควรหลีกเลี่ยงการกำหนด innerHTML ใน constructor?',
+    options: [
+      'constructor ทำงานสองครั้งสำหรับทุก element',
+      'element ยังไม่ถูกเชื่อมต่อเข้ากับเอกสาร ดังนั้น attribute อาจหายไป',
+      'innerHTML ถูกเลิกใช้แล้วใน custom element',
+      'constructor ไม่สามารถเข้าถึงคีย์เวิร์ด this ได้',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'connectedCallback ถูกเรียกเมื่อใด?',
+    options: [
+      'ครั้งเดียว เมื่อ class ถูกนิยาม',
+      'หนึ่งครั้งต่อการเปลี่ยนแปลง attribute หนึ่งครั้ง',
+      'ทุกครั้งที่ element ถูกแทรกเข้าไปในเอกสารที่เชื่อมต่อแล้ว',
+      'เฉพาะเมื่อ element ถูกลบออกจากเอกสารเท่านั้น',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'แนวทางใดปลอดภัยกว่าเมื่อเรนเดอร์ข้อมูลที่ผู้ใช้ป้อนเข้ามา?',
+    options: [
+      'this.innerHTML = userValue',
+      'element.textContent = userValue',
+      'document.write(userValue)',
+      'eval(userValue)',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'getAttribute คืนค่าอะไรเมื่อ attribute ไม่มีอยู่บน element?',
+    options: [
+      'undefined',
+      'false',
+      'สตริงว่าง',
+      'null',
+    ],
+    answer: 3,
+  },
+];
+
+<Quiz client:visible id="intro-custom-elements/rendering-content" questions={quizRender} />
+
+<ProgressTracker client:visible id="intro-custom-elements/rendering-content" />

@@ -1,0 +1,178 @@
+---
+title: 'Attributes, Properties & Events'
+description: 'Overview of the data-in / data-out model for custom elements: attributes and properties carry data in, events carry data out.'
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+Every custom element has two ways to receive data and one way to send it. **Attributes** arrive as strings in HTML markup. **Properties** arrive as JavaScript values set by code. **Events** carry information outward to the rest of the application. Understanding which channel to use — and when — is the key to writing custom elements that feel native and compose cleanly with any framework or plain JavaScript.
+
+This module covers five lessons:
+
+- `index` — attributes vs properties vs events overview (this page)
+- `reflecting-attributes` — keeping attributes and properties in sync
+- `properties-vs-attributes` — when to use each, and the type-coercion gotchas
+- `custom-events` — dispatching and listening to `CustomEvent`
+- `composed-events` — crossing shadow-DOM boundaries with `composed: true`
+
+## Data flow in and out of a custom element
+
+export const attrPropEvtDiagram = `
+flowchart LR
+  HTML["HTML Markup"] -->|attributes| CE["Custom Element"]
+  JS["JavaScript"] -->|properties| CE
+  CE -->|events| App["App / Parent"]
+`;
+
+<Mermaid code={attrPropEvtDiagram} title="Data flow in and out of a custom element" />
+
+| Channel | Direction | Carrier type | Set from |
+|---|---|---|---|
+| Attribute | in | string | HTML or `setAttribute()` |
+| Property | in | any JS value | JavaScript assignment |
+| Event | out | `Event` / `CustomEvent` | `dispatchEvent()` inside element |
+
+Attributes are the natural interface from HTML — they are what you write in markup and what HTML parsers understand. Properties are the JavaScript interface — they can hold any type: numbers, booleans, arrays, objects. Events are the only sanctioned way for an element to communicate outward; they keep the element decoupled from whoever is using it.
+
+## Attributes are always strings
+
+When the browser parses `<attr-demo label="42">`, the value `"42"` is a string. If your element needs a number, your code must convert it. This is one of the most common sources of subtle bugs when moving from framework components (where props can be any type) to custom elements.
+
+```js
+class AttrDemo extends HTMLElement {
+  static get observedAttributes() { return ['count']; }
+
+  attributeChangedCallback(name, oldVal, newVal) {
+    // newVal is always a string — coerce explicitly
+    var count = Number(newVal);
+    this.textContent = 'Count: ' + count;
+  }
+}
+customElements.define('attr-demo', AttrDemo);
+```
+
+## Properties bypass the string constraint
+
+Setting a property directly in JavaScript lets you pass rich values without serialisation:
+
+```js
+var el = document.querySelector('my-chart');
+el.data = [{ x: 1, y: 2 }, { x: 3, y: 4 }]; // object, not a string
+```
+
+The element's setter receives the value as-is. No string conversion happens unless you write it yourself. This is why complex configuration — arrays, objects, functions — belongs on properties, not attributes.
+
+## Events carry data out
+
+An element should never reach up into the DOM to mutate a parent. Instead it dispatches an event and lets the parent decide what to do:
+
+```js
+this.dispatchEvent(new CustomEvent('demo-click', {
+  bubbles: true,
+  composed: true,
+  detail: { label: this.getAttribute('label') }
+}));
+```
+
+The parent listens with `addEventListener('demo-click', handler)`. The element and the parent are fully decoupled.
+
+## Live demo
+
+The element below reads its `label` attribute and displays it in a styled box. Click the box to dispatch a `demo-click` event — the page catches it and shows a log entry.
+
+export const indexHtml = '<style>' +
+'\n  attr-demo {' +
+'\n    display: inline-block;' +
+'\n    padding: .5rem 1rem;' +
+'\n    background: #6366f1;' +
+'\n    color: #fff;' +
+'\n    border-radius: 6px;' +
+'\n    cursor: pointer;' +
+'\n    font-family: sans-serif;' +
+'\n    user-select: none;' +
+'\n  }' +
+'\n</style>' +
+'\n<attr-demo label="Hello from HTML"></attr-demo>' +
+'\n<div id="log" style="margin-top:.75rem;font-family:monospace;font-size:.85rem;background:#f3f4f6;padding:.5rem;border-radius:4px;min-height:2rem"></div>';
+
+export const indexJs = 'function addLog(msg) {' +
+'\n  var el = document.getElementById("log");' +
+'\n  if (!el) return;' +
+'\n  var p = document.createElement("p");' +
+'\n  p.style.margin = "0 0 .15rem 0";' +
+'\n  p.textContent = new Date().toLocaleTimeString() + " → " + msg;' +
+'\n  el.appendChild(p);' +
+'\n}' +
+'\nclass AttrDemo extends HTMLElement {' +
+'\n  static get observedAttributes() { return ["label"]; }' +
+'\n  connectedCallback() {' +
+'\n    this.render();' +
+'\n    this.addEventListener("click", this._onClick.bind(this));' +
+'\n  }' +
+'\n  attributeChangedCallback(name, oldVal, newVal) {' +
+'\n    if (name === "label") this.render();' +
+'\n  }' +
+'\n  render() {' +
+'\n    this.textContent = this.getAttribute("label") || "(no label)";' +
+'\n  }' +
+'\n  _onClick() {' +
+'\n    this.dispatchEvent(new CustomEvent("demo-click", {' +
+'\n      bubbles: true,' +
+'\n      composed: true,' +
+'\n      detail: { label: this.getAttribute("label") }' +
+'\n    }));' +
+'\n  }' +
+'\n}' +
+'\ncustomElements.define("attr-demo", AttrDemo);' +
+'\ndocument.addEventListener("demo-click", function(e) {' +
+'\n  addLog("demo-click fired — detail.label: \\"" + e.detail.label + "\\"");' +
+'\n});';
+
+<LivePreview client:visible html={indexHtml} js={indexJs} />
+
+<Tip title="Use observedAttributes to opt in">
+`attributeChangedCallback` only fires for attributes listed in the static `observedAttributes` array. Attributes not on that list are silently ignored, no matter how many times you call `setAttribute()`.
+</Tip>
+
+export const quizAttrPropEvtIndex = [
+  {
+    q: 'What is the primary difference between an attribute and a property on a custom element?',
+    options: [
+      'Attributes are always strings; properties are JavaScript values',
+      'Properties are set in HTML; attributes are set in JavaScript',
+      'They are the same thing with different names',
+      'Attributes are read-only; properties are writable',
+    ],
+    answer: 0,
+  },
+  {
+    q: 'Which direction do events flow in the custom element data model?',
+    options: [
+      'From parent to child',
+      'From attribute to property',
+      'From element outward to the parent or document',
+      'They do not flow',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'What is observedAttributes used for?',
+    options: [
+      'It lists all attributes a custom element can have in HTML',
+      'It tells the browser which attributes should trigger attributeChangedCallback',
+      'It prevents attributes from being set',
+      'It maps attributes to CSS custom properties',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="attributes-properties-events/index" questions={quizAttrPropEvtIndex} />
+
+<ProgressTracker client:visible id="attributes-properties-events/index" />

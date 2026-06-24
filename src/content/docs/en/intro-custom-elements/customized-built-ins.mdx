@@ -1,0 +1,140 @@
+---
+title: 'Customized Built-ins'
+description: 'Extending built-in elements like HTMLButtonElement, the is= attribute, and the Safari support caveat.'
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Two kinds of custom elements
+
+The Web Components spec defines two flavors of custom element:
+
+| Flavor | Extends | Registered as | Used in HTML |
+|---|---|---|---|
+| Autonomous | `HTMLElement` | `customElements.define('x-btn', XBtn)` | `<x-btn>` |
+| Customized built-in | e.g. `HTMLButtonElement` | `customElements.define('x-btn', XBtn, { extends: 'button' })` | `<button is="x-btn">` |
+
+## Customized built-ins: syntax
+
+A customized built-in extends a specific HTML element class and declares which built-in it extends in the third argument to `define`:
+
+```js
+class FancyButton extends HTMLButtonElement {
+  connectedCallback() {
+    this.style.background = '#4f46e5';
+    this.style.color = '#fff';
+    this.style.borderRadius = '6px';
+    this.style.padding = '.4rem 1rem';
+    this.style.border = 'none';
+    this.style.cursor = 'pointer';
+  }
+}
+
+customElements.define('fancy-button', FancyButton, { extends: 'button' });
+```
+
+In HTML, the `is` attribute activates the customized built-in on a standard element:
+
+```html
+<button is="fancy-button">Click me</button>
+```
+
+The element is still a `<button>` — it inherits all the built-in semantics (focusable, submits forms, responds to `disabled`) plus your custom behavior.
+
+## The support caveat
+
+**Safari does not support customized built-ins** and has explicitly declined to implement them. This is a significant portability problem: a `<button is="fancy-button">` will render as a plain unstyled button in Safari.
+
+There are polyfills (such as `@ungap/custom-elements`), but they add weight and complexity.
+
+```html
+<!-- This renders correctly in Chrome/Firefox but NOT in Safari: -->
+<button is="fancy-button">Safari renders this as a plain button</button>
+```
+
+## The portable choice: autonomous elements
+
+Autonomous custom elements (`extends HTMLElement`) are fully supported everywhere. For the button example, an equivalent autonomous element:
+
+```js
+class XButton extends HTMLElement {
+  connectedCallback() {
+    this.innerHTML =
+      '<button style="background:#4f46e5;color:#fff;border-radius:6px;' +
+      'padding:.4rem 1rem;border:none;cursor:pointer">' +
+      (this.textContent || 'Click me') + '</button>';
+  }
+}
+customElements.define('x-button', XButton);
+```
+
+You lose the automatic inheritance of native `<button>` semantics (you must add `role="button"` and keyboard handling manually), but you gain full cross-browser support.
+
+## Runnable demo (autonomous element)
+
+The demo below uses an autonomous element — it works in every browser. The customized built-in syntax is shown for reference only.
+
+export const cbiJs = `class XButton extends HTMLElement {
+  connectedCallback() {
+    var label = this.getAttribute('label') || 'Click me';
+    var color = this.getAttribute('color') || '#4f46e5';
+    this.innerHTML =
+      '<button style="background:' + color + ';color:#fff;border-radius:6px;' +
+      'padding:.4rem 1rem;border:none;cursor:pointer;font-size:1rem">' +
+      label + '</button>';
+  }
+}
+customElements.define('x-button', XButton);`;
+
+export const cbiHtml = `<x-button label="Autonomous element" color="#059669"></x-button>
+<x-button label="Another one" color="#dc2626"></x-button>`;
+
+<LivePreview client:visible html={cbiHtml} js={cbiJs} height="120px" />
+
+> **Browser note:** The customized built-in pattern (`class extends HTMLButtonElement` + `<button is="...">`) is not supported in Safari. Use autonomous elements (`class extends HTMLElement`) for portable, cross-browser Web Components.
+
+<Tip title="Autonomous elements are the portable choice">
+Autonomous custom elements (`extends HTMLElement`) work in every major browser. Customized built-ins (`extends HTMLButtonElement`, used with `is="..."`) are not supported in Safari — use them only if you can polyfill or target Chromium/Firefox exclusively.
+</Tip>
+
+export const quizCbi = [
+  {
+    q: 'How do you activate a customized built-in element in HTML?',
+    options: [
+      'Use the custom tag name directly, e.g. <fancy-button>',
+      'Add the is="fancy-button" attribute to the native element',
+      'Import the class with a script type="module"',
+      'Call document.upgrade("button", FancyButton)',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Which third argument to customElements.define signals a customized built-in?',
+    options: [
+      '{ type: "built-in" }',
+      '{ autonomous: false }',
+      '{ extends: "button" }',
+      '{ base: HTMLButtonElement }',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'Which browser does NOT support customized built-in elements?',
+    options: [
+      'Chrome',
+      'Edge',
+      'Firefox',
+      'Safari',
+    ],
+    answer: 3,
+  },
+];
+
+<Quiz client:visible id="intro-custom-elements/customized-built-ins" questions={quizCbi} />
+
+<ProgressTracker client:visible id="intro-custom-elements/customized-built-ins" />

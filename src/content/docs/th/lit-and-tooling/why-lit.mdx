@@ -1,0 +1,125 @@
+---
+title: 'ทำไมต้อง Lit'
+description: 'จุดอ่อนของ Vanilla Custom Elements และเมื่อไหร่ที่ Lit เหมาะสม'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+export const whyLitHtml = `<lit-counter></lit-counter>`;
+
+export const whyLitJs = `(async () => {
+  const { LitElement, html, css } = await import('https://esm.sh/lit');
+  class LitCounter extends LitElement {
+    static properties = { count: { type: Number } };
+    static styles = css\`
+      :host { display: block; font-family: sans-serif; padding: 8px; }
+      button { margin: 4px; padding: 4px 10px; cursor: pointer; }
+      span { font-weight: bold; color: #6200ee; }
+    \`;
+    constructor() { super(); this.count = 0; }
+    render() {
+      return html\`
+        <p>Count: <span>\${this.count}</span></p>
+        <button @click=\${() => this.count++}>+</button>
+        <button @click=\${() => this.count--}>-</button>
+      \`;
+    }
+  }
+  customElements.define('lit-counter', LitCounter);
+})();`;
+
+export const quizWhyLit = [
+  {
+    q: 'ปัญหาสำคัญของการใช้ innerHTML เพื่อ re-render ใน vanilla Custom Elements คืออะไร?',
+    options: [
+      'มันทำงานแบบ asynchronous',
+      'มันสร้าง subtree ใหม่และเพิ่ม event listeners ใหม่ทุกครั้งที่อัปเดต',
+      'ต้องการ build step',
+      'ใช้งานไม่ได้ใน Shadow DOM',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'ฟีเจอร์ใดของ Lit ที่แทนที่การอัปเดต DOM ด้วยตนเองด้วยการ diffing ที่มีประสิทธิภาพ?',
+    options: [
+      'static styles',
+      'html tagged template literal',
+      'connectedCallback',
+      'attributeChangedCallback',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'เมื่อไหร่ที่เหมาะสมที่จะข้าม Lit และใช้ HTMLElement ธรรมดา?',
+    options: [
+      'เมื่อสร้าง component library ขนาดใหญ่',
+      'เมื่อ element เป็นแค่โครงสร้างโดยไม่มี dynamic state',
+      'เมื่อต้องการ reactive properties',
+      'เมื่อต้องการ scoped styles',
+    ],
+    answer: 1,
+  },
+];
+
+## จุดอ่อนของ Vanilla Custom Elements
+
+เมื่อ component ของคุณมี state และต้องอัปเดต UI ตามการเปลี่ยนแปลง Vanilla Custom Elements บังคับให้คุณเขียน boilerplate จำนวนมาก เช่น:
+
+- เรียก `this.shadowRoot.innerHTML = ...` ทุกครั้งที่ state เปลี่ยน
+- ผูก event listeners ซ้ำซ้อนทุกครั้งที่ re-render
+- ไม่มี diffing — DOM ทั้งหมดถูกสร้างใหม่
+
+การตั้ง `innerHTML` ซ้ำๆ นั้นไม่ใช่แค่ verbose แต่ยังมีปัญหาด้านประสิทธิภาพ เพราะมันทำลายและสร้าง DOM subtree ใหม่ทุกครั้ง รวมถึงลบ event listeners ที่ผูกไว้กับ child elements ทั้งหมด
+
+## Lit แก้ปัญหาอย่างไร
+
+Lit ใช้ `html` tagged template literal เพื่อสร้าง `TemplateResult` ซึ่ง Lit จะนำไป diff กับ DOM ที่มีอยู่ แทนที่จะสร้างใหม่ทั้งหมด วิธีนี้ทำให้:
+
+- อัปเดตเฉพาะส่วนที่เปลี่ยนแปลง
+- Event listeners ไม่ถูกลบและเพิ่มซ้ำ
+- โค้ดกระชับและอ่านง่ายขึ้นมาก
+
+## ตัวอย่าง: Counter ด้วย Lit
+
+```js
+class LitCounter extends LitElement {
+  static properties = { count: { type: Number } };
+  constructor() { super(); this.count = 0; }
+  render() {
+    return html`
+      <p>Count: <span>${this.count}</span></p>
+      <button @click=${() => this.count++}>+</button>
+    `;
+  }
+}
+```
+
+ลองใช้งาน counter ด้านล่างนี้:
+
+<LivePreview client:visible js={whyLitJs} html={whyLitHtml} />
+
+## เมื่อไหร่ที่ควรใช้ Lit และเมื่อไหร่ที่ไม่ควร
+
+ควรใช้ Lit เมื่อ:
+- Component มี reactive state ที่ต้องอัปเดต UI
+- ต้องการ scoped styles ที่จัดการง่าย
+- กำลังสร้าง component library สำหรับใช้ข้าม frameworks
+
+ไม่จำเป็นต้องใช้ Lit เมื่อ:
+- Element เป็นแค่โครงสร้างแบบ static โดยไม่มี dynamic state
+- ต้องการ bundle ขนาดเล็กที่สุดและ component ง่ายมาก
+
+<Tip title="Lit และ tree-shaking">
+Lit รองรับ tree-shaking อย่างสมบูรณ์ หากคุณใช้เพียง `LitElement` และ `html` จะมีเฉพาะ module เหล่านั้นเท่านั้นที่ถูก bundle
+</Tip>
+
+## ทดสอบความเข้าใจ
+
+<Quiz client:visible id="lit-and-tooling/why-lit" questions={quizWhyLit} />
+
+<ProgressTracker client:visible id="lit-and-tooling/why-lit" />

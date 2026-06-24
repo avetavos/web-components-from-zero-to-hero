@@ -1,0 +1,211 @@
+---
+title: "Properties vs Attributes"
+description: "Attributes เป็น string เสมอใน HTML ส่วน properties เป็นค่า JS เรียนรู้ว่าควรใช้อะไร จัดการ boolean อย่างไร และเมื่อใดควรส่งข้อมูลซับซ้อนผ่าน property setter"
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Attributes อยู่ใน HTML และเป็น string เสมอ
+
+เมื่อเขียน `<my-card count="5" label="hello">` ใน HTML เบราว์เซอร์จะเก็บค่าเหล่านั้นเป็น **attribute nodes** — และทุกค่าของ attribute คือ string เสมอ ไม่ว่าจะพิมพ์อะไรก็ตาม การเรียก `element.getAttribute('count')` จะคืนค่า string `"5"` ไม่ใช่ตัวเลข `5`
+
+```js
+const el = document.querySelector('my-card');
+console.log(el.getAttribute('count'));   // "5"   (string)
+console.log(el.getAttribute('label'));   // "hello" (string)
+console.log(el.getAttribute('missing')); // null   (not present)
+```
+
+สิ่งสำคัญที่ต้องจำคือ `getAttribute` คืนค่าเป็น **string** หรือ **null** เท่านั้น — ไม่เคยเป็น boolean, number, array หรือ object
+
+## Properties คือค่า JavaScript
+
+**Properties** คือ property ของ JavaScript object ปกติบน element instance สามารถเป็น JS type ใดก็ได้ ไม่ว่าจะเป็น boolean, number, array, object หรือ function เข้าถึงด้วย dot notation ไม่ใช่ `getAttribute`
+
+```js
+el.count = 5;           // number
+el.rows = [{ id: 1 }];  // array
+el.config = { theme: 'dark', size: 'lg' }; // object
+el.disabled = true;     // boolean
+```
+
+ค่า property เหล่านี้จะไม่ถูก serialize กลับเข้า DOM เว้นแต่ component จะทำเองอย่างชัดเจน property ที่กำหนดบน element instance อยู่ใน JavaScript memory เท่านั้น
+
+## Boolean attributes: ตรวจสอบการมีอยู่ ไม่ใช่ค่า
+
+Boolean attributes ใน HTML ทำงานโดย **การมีอยู่หรือไม่มีอยู่** — ถ้า attribute นั้นอยู่บน element แสดงว่าเป็น true ถ้าไม่มีแสดงว่าเป็น false ค่าของ attribute string ไม่มีผลใดๆ
+
+นั่นหมายความว่า `<my-btn disabled="">` และ `<my-btn disabled="false">` ต่างก็ **ถูก disabled** เพราะ attribute นั้นมีอยู่ มีเพียง `<my-btn>` (ไม่มี attribute เลย) เท่านั้นที่หมายถึงไม่ถูก disabled
+
+อย่าเปรียบเทียบ `getAttribute('disabled') === 'true'` หรือ `=== true` ให้ใช้ `hasAttribute` หรือตรวจสอบว่าค่าที่คืนมาเป็น `null` หรือไม่เสมอ
+
+```js
+// Boolean attribute — check presence, not value
+class MyButton extends HTMLElement {
+  get disabled() { return this.hasAttribute('disabled'); }
+  set disabled(v) { v ? this.setAttribute('disabled', '') : this.removeAttribute('disabled'); }
+}
+```
+
+สังเกตว่า setter กำหนด attribute เป็น empty string `''` เมื่อค่าเป็น truthy — นั่นคือ pattern ที่ถูกต้องตามแบบ HTML getter ไม่สนใจว่า string ที่เก็บอยู่คืออะไร แค่ถามว่า attribute นั้นมีอยู่หรือเปล่า?
+
+<Tip title="hasAttribute กับ getAttribute สำหรับ boolean">
+`this.hasAttribute('disabled')` คืนค่า `true` หรือ `false` ตามการมีอยู่เท่านั้น — นี่คือเครื่องมือที่ถูกต้องสำหรับ boolean attributes `this.getAttribute('disabled')` จะคืนค่า `""` (empty string) เมื่อ attribute ถูกกำหนดโดยไม่มีค่า ซึ่งเป็น truthy แต่อ่านแล้วสับสนง่าย ใช้ `hasAttribute` สำหรับ boolean เสมอ
+</Tip>
+
+## ข้อมูลซับซ้อน: ใช้ property ไม่ใช่ attribute
+
+เมื่อต้องการส่ง array, object หรือค่าที่ไม่ใช่ string เข้าไปใน component **JS property setter** คือเครื่องมือที่เหมาะสม การพยายาม serialize object เป็น attribute string (เช่น `data="[object Object]"`) นั้นเปราะบางและสูญเสียข้อมูล
+
+```js
+// Rich data — use a property, not an attribute
+class DataTable extends HTMLElement {
+  set rows(data) {        // data is an array of objects
+    this._rows = data;
+    this._render();
+  }
+  get rows() { return this._rows || []; }
+  _render() { /* ... */ }
+}
+```
+
+จากนั้นใช้งานผ่าน JavaScript:
+
+```js
+const table = document.querySelector('data-table');
+table.rows = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+];
+```
+
+setter รับ array จริงๆ — ไม่ต้อง parse เลย เมื่อข้อมูลเปลี่ยน แค่กำหนด property ใหม่และ `_render` จะทำงาน
+
+## Demo สด
+
+element `<user-card>` ด้านล่างรวมทั้งสองเทคนิคเข้าด้วยกัน:
+
+- **boolean attribute** `premium` — เมื่อมีอยู่จะแสดง crown
+- **property setter** `profile` — รับ object `{ name, role }` และ re-render
+
+export const userCardHtml = '<user-card premium></user-card>' +
+'<div id="log" style="margin-top:.75rem;font-family:monospace;font-size:.85rem;color:#6b7280"></div>';
+
+export const userCardJs = 'class UserCard extends HTMLElement {' +
+'\n  constructor() {' +
+'\n    super();' +
+'\n    this._profile = null;' +
+'\n  }' +
+'\n' +
+'\n  connectedCallback() {' +
+'\n    this._render();' +
+'\n  }' +
+'\n' +
+'\n  get premium() {' +
+'\n    return this.hasAttribute("premium");' +
+'\n  }' +
+'\n' +
+'\n  set premium(v) {' +
+'\n    if (v) {' +
+'\n      this.setAttribute("premium", "");' +
+'\n    } else {' +
+'\n      this.removeAttribute("premium");' +
+'\n    }' +
+'\n  }' +
+'\n' +
+'\n  set profile(data) {' +
+'\n    this._profile = data;' +
+'\n    this._render();' +
+'\n    var log = document.getElementById("log");' +
+'\n    if (log) {' +
+'\n      log.textContent = "profile setter called — name: " + data.name + ", role: " + data.role;' +
+'\n    }' +
+'\n  }' +
+'\n' +
+'\n  get profile() {' +
+'\n    return this._profile;' +
+'\n  }' +
+'\n' +
+'\n  _render() {' +
+'\n    var crown = this.premium ? "👑 " : "";' +
+'\n    var name = this._profile ? this._profile.name : "(no profile yet)";' +
+'\n    var role = this._profile ? " — " + this._profile.role : "";' +
+'\n    this.style.display = "inline-block";' +
+'\n    this.style.padding = ".4rem .75rem";' +
+'\n    this.style.border = "2px solid #10b981";' +
+'\n    this.style.borderRadius = "6px";' +
+'\n    this.style.fontFamily = "sans-serif";' +
+'\n    this.textContent = crown + name + role;' +
+'\n  }' +
+'\n}' +
+'\n' +
+'\ncustomElements.define("user-card", UserCard);' +
+'\n' +
+'\nvar el = document.querySelector("user-card");' +
+'\nel.profile = { name: "Alice", role: "Admin" };';
+
+<LivePreview client:visible html={userCardHtml} js={userCardJs} />
+
+HTML กำหนด attribute `premium` ตรงใน markup JavaScript จากนั้นกำหนด `el.profile = { name: 'Alice', role: 'Admin' }` — เป็น plain object — ซึ่ง trigger property setter และ re-render card
+
+## สรุป: ใช้อะไรดี?
+
+| สถานการณ์ | ใช้ |
+|---|---|
+| ค่า config ที่เป็น string ทั่วไป (label, type, variant) | Attribute |
+| flag ชนิด Boolean (disabled, hidden, selected) | Boolean attribute + `hasAttribute` |
+| Number, object, array หรือ function | Property setter |
+| ค่าที่กำหนดจาก HTML markup เท่านั้น | Attribute |
+| ค่าที่กำหนดจาก JavaScript | ได้ทั้งคู่ — แนะนำ property สำหรับค่าที่ไม่ใช่ string |
+
+export const quizPropAttr = [
+  {
+    q: 'What type does `getAttribute` always return?',
+    options: [
+      'boolean',
+      'number',
+      'string or null',
+      'object',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'How should you check if a boolean attribute like `disabled` is present?',
+    options: [
+      "this.getAttribute('disabled') === true",
+      "this.getAttribute('disabled') === 'true'",
+      "this.hasAttribute('disabled')",
+      'this.disabled !== undefined',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'When is using a JS property better than an HTML attribute?',
+    options: [
+      'When the value is a short string',
+      'When the value is an object, array, or a boolean',
+      'When the element has a shadow root',
+      'When the element is not yet connected',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Setting `<my-el count="5">` — what is the type of `this.getAttribute(\'count\')`?',
+    options: [
+      'number 5',
+      'boolean true',
+      "string '5'",
+      'undefined',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="attributes-properties-events/properties-vs-attributes" questions={quizPropAttr} />
+
+<ProgressTracker client:visible id="attributes-properties-events/properties-vs-attributes" />

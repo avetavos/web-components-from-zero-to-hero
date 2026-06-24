@@ -1,0 +1,89 @@
+---
+title: 'Templates and Slots Overview'
+description: 'What the templates-slots module covers: the template element, default and named slots, and slotchange events.'
+sidebar:
+  order: 1
+---
+
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## The template element
+
+The `<template>` element holds HTML markup that is inert: its content is parsed by the browser but never rendered, has no side-effects (no scripts run, no images load, no styles apply) until you explicitly clone it. Use `templateEl.content.cloneNode(true)` to stamp instances into the live document. This is efficient because the browser parses the markup exactly once, no matter how many instances you create.
+
+## Slots — projecting light-DOM content
+
+A `<slot>` inside a shadow tree is a projection point. Light-DOM children placed inside the custom element are rendered at the slot's position without being moved in the DOM. Named slots let you target specific insertion points: a child with `slot="header"` lands in `<slot name="header">`, while children without a slot attribute fall into the default `<slot>`.
+
+export const mermaidCode = `flowchart LR
+  subgraph "Light DOM (author)"
+    H["slot='header' child"]
+    B["slot='body' child"]
+    U["(unslotted child)"]
+  end
+  subgraph "Shadow Tree (element)"
+    SH["<slot name='header'>"]
+    SB["<slot name='body'>"]
+    SD["<slot> (default)"]
+  end
+  H --> SH
+  B --> SB
+  U --> SD`;
+
+<Mermaid code={mermaidCode} title="Light DOM children projected into shadow tree slots" />
+
+## What this module covers
+
+This module walks through everything you need to know about the `<template>` element and shadow DOM slots, from basic usage to dynamic slot change events.
+
+| Lesson | Description |
+|--------|-------------|
+| Templates and Slots Overview | Introduction to the module, the template element, and slots |
+| The Template Element | Deep dive into `.content`, `cloneNode`, and why templates are inert |
+| Default and Named Slots | How to use `<slot>` and `<slot name="...">` to project content |
+| Slot Fallback Content | Providing default markup inside a slot when no content is projected |
+| The slotchange Event | Reacting dynamically when assigned nodes change |
+
+<Tip title="Templates are parsed once">
+The browser parses the `<template>` element's markup once. Every `cloneNode(true)` stamps a new instance cheaply — no re-parsing.
+</Tip>
+
+export const quizIndex = [
+  {
+    q: "What happens to the content inside a `<template>` element before it is cloned?",
+    options: [
+      "It is rendered immediately",
+      "It is ignored entirely",
+      "It is parsed but kept inert — not rendered",
+      "It throws a SyntaxError"
+    ],
+    answer: 2
+  },
+  {
+    q: "What does a `<slot>` element inside a shadow tree do?",
+    options: [
+      "It creates a new HTML element",
+      "It projects light-DOM children into the shadow tree rendering",
+      "It copies the children into the shadow DOM",
+      "It prevents light-DOM children from rendering"
+    ],
+    answer: 1
+  },
+  {
+    q: "Which method stamps a reusable copy of a template's content?",
+    options: [
+      "template.innerHTML",
+      "template.content.cloneNode(true)",
+      "document.importNode(template)",
+      "template.render()"
+    ],
+    answer: 1
+  }
+];
+
+<Quiz client:visible id="templates-slots/index" questions={quizIndex} />
+
+<ProgressTracker client:visible id="templates-slots/index" />

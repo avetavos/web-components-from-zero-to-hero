@@ -1,0 +1,143 @@
+---
+title: 'Rendering Content'
+description: 'How to set element content in connectedCallback, use innerHTML and DOM APIs, and read attributes.'
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Why connectedCallback, not the constructor
+
+A custom element class has a `constructor` like any other ES class, but the constructor is the wrong place to do DOM work. When the browser calls the constructor, the element exists as a JavaScript object but it has not yet been added to the document — it has no parent, its attributes may not be fully parsed, and its children are not yet present.
+
+Use `connectedCallback` instead. It fires each time the element is **inserted into a connected document**, at which point the element's attributes and light DOM children are available:
+
+```js
+class MyCard extends HTMLElement {
+  constructor() {
+    super(); // always required
+    // DO NOT touch this.innerHTML, this.children, or attributes here
+  }
+
+  connectedCallback() {
+    // Safe to read attributes and manipulate DOM here
+    const title = this.getAttribute('title') || 'Card';
+    this.innerHTML = '<h2>' + title + '</h2>';
+  }
+}
+```
+
+## Setting content: innerHTML vs DOM APIs
+
+**`innerHTML`** is the quickest way to stamp out a template:
+
+```js
+connectedCallback() {
+  this.innerHTML = '<p>Hello from <strong>innerHTML</strong></p>';
+}
+```
+
+For dynamic or user-supplied values, always sanitize first or use DOM APIs instead to avoid XSS:
+
+```js
+connectedCallback() {
+  const p = document.createElement('p');
+  const userInput = this.getAttribute('label') || '';
+  p.textContent = userInput; // textContent never parses HTML
+  this.appendChild(p);
+}
+```
+
+## Reading attributes
+
+`this.getAttribute(name)` returns the attribute value as a string, or `null` if the attribute is absent. The pattern `this.getAttribute('x') || 'default'` is safe because `null || 'default'` evaluates to `'default'`:
+
+```js
+connectedCallback() {
+  const color = this.getAttribute('color') || 'blue';
+  const label = this.getAttribute('label') || 'Button';
+  this.innerHTML =
+    '<button style="background:' + color + '">' + label + '</button>';
+}
+```
+
+## Runnable demo
+
+export const renderJs = `class ColorCard extends HTMLElement {
+  connectedCallback() {
+    var color = this.getAttribute('color') || '#4f46e5';
+    var label = this.getAttribute('label') || 'Card';
+    var desc  = this.getAttribute('desc')  || '';
+    this.innerHTML =
+      '<div style="border:2px solid ' + color + ';border-radius:8px;padding:1rem;">' +
+      '<h3 style="margin:0 0 .5rem;color:' + color + '">' + label + '</h3>' +
+      '<p style="margin:0">' + desc + '</p>' +
+      '</div>';
+  }
+}
+customElements.define('color-card', ColorCard);`;
+
+export const renderHtml = `<color-card
+  color="#059669"
+  label="Connected!"
+  desc="Content set in connectedCallback.">
+</color-card>`;
+
+<LivePreview client:visible html={renderHtml} js={renderJs} height="180px" />
+
+Try adding a second `<color-card>` tag with a different `color` and `label` in the HTML panel.
+
+<Tip title="Do DOM work in connectedCallback">
+Never touch `innerHTML`, `children`, or attributes in the constructor — the element is not yet in the document. Do all DOM work in `connectedCallback`, which fires after the element is inserted and its attributes are ready.
+</Tip>
+
+export const quizRender = [
+  {
+    q: 'Why should you avoid setting innerHTML in the constructor?',
+    options: [
+      'The constructor runs twice for every element',
+      'The element is not yet connected to the document, so attributes may be missing',
+      'innerHTML is deprecated in custom elements',
+      'The constructor cannot access the this keyword',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What does connectedCallback fire?',
+    options: [
+      'Once, when the class is defined',
+      'Once per attribute change',
+      'Each time the element is inserted into a connected document',
+      'Only when the element is removed from the document',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'Which approach is safer when rendering user-supplied data?',
+    options: [
+      'this.innerHTML = userValue',
+      'element.textContent = userValue',
+      'document.write(userValue)',
+      'eval(userValue)',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What does getAttribute return when an attribute is not present on the element?',
+    options: [
+      'undefined',
+      'false',
+      'an empty string',
+      'null',
+    ],
+    answer: 3,
+  },
+];
+
+<Quiz client:visible id="intro-custom-elements/rendering-content" questions={quizRender} />
+
+<ProgressTracker client:visible id="intro-custom-elements/rendering-content" />

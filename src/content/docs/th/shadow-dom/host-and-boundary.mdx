@@ -1,0 +1,118 @@
+---
+title: "Host Element และ Shadow Boundary"
+description: 'วิธีใช้ :host และ :host(...) เพื่อสไตล์ host element จากภายใน shadow root และพฤติกรรมของ event boundary'
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## selector :host
+
+CSS selector `:host` กำหนดเป้าหมายไปที่ host element — element ที่เป็นเจ้าของ shadow root — จากภายใน shadow CSS นี่เป็นวิธีเดียวที่จะสไตล์ box model ของ host element เอง (display, border, padding) จาก shadow CSS ของ component
+
+```css
+:host {
+  display: inline-block;
+  border: 2px solid #6366f1;
+}
+```
+
+## :host กับ selector
+
+`:host(selector)` ใช้สไตล์เฉพาะเมื่อ host element ตรงกับ selector ที่ระบุ ซึ่งมีประโยชน์สำหรับการตอบสนองต่อ attribute หรือ class:
+
+```css
+/* ใช้เมื่อ host element มี attribute highlight */
+:host([highlight]) {
+  background: #fef08a;
+  border-color: #ca8a04;
+}
+
+/* ใช้เมื่อ host element มี class .large */
+:host(.large) {
+  font-size: 1.25rem;
+}
+```
+
+## Shadow boundary และ events
+
+เมื่อ event เกิดขึ้นภายใน shadow tree และฟอง (bubble) ออกไปสู่ light DOM browser จะทำ **event retargeting** — `event.target` จะถูกเปลี่ยนเป็น host element แทนที่จะเป็น element จริงภายใน shadow tree ซึ่งป้องกันไม่ให้โค้ดภายนอกเห็น internal structure
+
+## Light DOM และ slots
+
+**Light DOM** คือเนื้อหาที่วางไว้ภายใน element จากภายนอก — เนื้อหาที่ส่งเป็น children ให้ custom element สามารถ project เนื้อหา light DOM เข้าสู่ shadow tree ได้โดยใช้ `<slot>` elements
+
+## ตัวอย่างที่รันได้
+
+export const hostBoundaryJs = 'class HostBadge extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    this.attachShadow({ mode: \'open\' });\n' +
+  '    this.shadowRoot.innerHTML =\n' +
+  '      \'<style>\' +\n' +
+  '      \':host { display:inline-flex; align-items:center; gap:.5rem; padding:.25rem .75rem; border-radius:9999px; border:2px solid #6366f1; background:#eef2ff; font-family:sans-serif; }\' +\n' +
+  '      \':host([highlight]) { background:#fef08a; border-color:#ca8a04; }\' +\n' +
+  '      \'span { font-weight:bold; color:#4f46e5; }\' +\n' +
+  '      \'</style>\' +\n' +
+  '      \'<span>\' + (this.getAttribute(\'label\') || \'Badge\') + \'</span>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'host-badge\', HostBadge);';
+
+export const hostBoundaryHtml = '<host-badge label="Default"></host-badge> <host-badge label="Highlighted" highlight></host-badge>';
+
+<LivePreview client:visible html={hostBoundaryHtml} js={hostBoundaryJs} />
+
+<Tip title=":host กำหนดเป้าหมาย host element จากภายใน">
+`:host` กำหนดเป้าหมาย host element จากภายใน shadow root เป็นวิธีเดียวที่จะสไตล์ box model ของ host element เอง (display, border, padding) จาก shadow CSS ของ component
+</Tip>
+
+export const quizHostBoundary = [
+  {
+    q: 'selector :host กำหนดเป้าหมายอะไร?',
+    options: [
+      'element ทั้งหมดใน document',
+      'shadow root นั่นเอง',
+      'host element ที่เป็นเจ้าของ shadow root',
+      'parent ของ host element',
+    ],
+    answer: 2,
+  },
+  {
+    q: ':host([disabled]) ใช้งานเมื่อใด?',
+    options: [
+      'เมื่อ element ใดก็ตามมี attribute disabled',
+      'เมื่อ host element มี attribute disabled',
+      'เมื่อ child ใดก็ตามมี attribute disabled',
+      'เมื่อ shadow root เป็นโหมด closed',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'CSS selector จากภายนอก shadow root สามารถกำหนดเป้าหมาย element ภายในได้หรือไม่?',
+    options: [
+      'ได้เสมอ',
+      'ได้ ถ้าใช้ !important',
+      'ไม่ได้ selector ไม่สามารถข้าม shadow boundary ได้',
+      'ได้เฉพาะ ID selectors เท่านั้น',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'light DOM คืออะไร?',
+    options: [
+      'shadow tree ที่ element แนบไว้',
+      'children ที่วางไว้ภายใน element จากภายนอก (slotted content)',
+      'document head',
+      'virtual DOM ที่ใช้โดย frameworks',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="shadow-dom/host-and-boundary" questions={quizHostBoundary} />
+
+<ProgressTracker client:visible id="shadow-dom/host-and-boundary" />

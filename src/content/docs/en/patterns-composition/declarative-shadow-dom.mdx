@@ -1,0 +1,130 @@
+---
+title: 'Declarative Shadow DOM'
+description: 'Use the shadowrootmode attribute on a template element to attach shadow DOM without JavaScript — ideal for server-side rendering.'
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## What is Declarative Shadow DOM
+
+Declarative Shadow DOM (DSD) lets you attach a shadow root to an element using only HTML, without any JavaScript. This is ideal for server-side rendering (SSR), where the shadow tree can be included in the initial HTML response and the browser attaches it before any JavaScript runs.
+
+## The shadowrootmode attribute
+
+Placing a `<template shadowrootmode="open">` (or `"closed"`) as a direct child of an element causes the browser to automatically attach a shadow root to the parent and move the template's content into it.
+
+```html
+<my-card>
+  <template shadowrootmode="open">
+    <style>
+      p { color: #0070f3; font-weight: bold; }
+    </style>
+    <p>This content lives in the shadow root.</p>
+    <slot></slot>
+  </template>
+  Light DOM content here (goes into the slot)
+</my-card>
+```
+
+The `<template>` tag is consumed by the browser and replaced with an attached shadow root. No JavaScript needed — the element has a shadow root immediately on parse.
+
+## Hydration story
+
+When JavaScript does load, `customElements.define('my-card', MyCard)` upgrades the element. If the class calls `attachShadow` in its constructor, the browser skips creating a second shadow root (it already exists) and reuses the existing one. This means the server-rendered content is preserved — a critical property for SSR hydration.
+
+```js
+class MyCard extends HTMLElement {
+  connectedCallback() {
+    // Shadow root already attached declaratively — shadowRoot is available
+    const shadow = this.shadowRoot; // not null
+    if (shadow) {
+      // hydrate: add event listeners, update state, etc.
+    }
+  }
+}
+customElements.define('my-card', MyCard);
+```
+
+## Browser support note
+
+Declarative Shadow DOM is supported in Chrome 90+, Edge 90+, Safari 16.4+, and Firefox 123+. In older browsers, the `<template shadowrootmode>` attribute is unknown and the template remains inert. Include a polyfill for older browsers:
+
+```js
+// Polyfill for older browsers
+document.querySelectorAll('template[shadowrootmode]').forEach(function(t) {
+  t.parentElement.attachShadow({ mode: t.getAttribute('shadowrootmode') })
+    .appendChild(t.content.cloneNode(true));
+  t.remove();
+});
+```
+
+## Runnable demo
+
+The LivePreview below shows a `<dsd-card>` with a `<template shadowrootmode="open">` already in the HTML. The slot receives the light-DOM text. No JavaScript is required for the shadow to attach.
+
+export const dsdHtml = `<dsd-card>
+  <template shadowrootmode="open">
+    <style>
+      :host { display: block; border: 2px solid #0070f3; border-radius: 8px; padding: 1rem; }
+      h3 { margin: 0 0 0.5rem; color: #0070f3; }
+    </style>
+    <h3>Shadow-rendered heading</h3>
+    <slot></slot>
+  </template>
+  <p>This paragraph lives in light DOM, projected via the slot.</p>
+</dsd-card>`;
+
+export const dsdJs = `var out = document.createElement('p');
+out.style.marginTop = '0.5rem';
+out.style.fontSize = '0.8rem';
+out.style.color = '#666';
+out.textContent = 'No customElements.define needed — shadow root attached by HTML parser.';
+document.body.appendChild(out);`;
+
+<LivePreview client:visible html={dsdHtml} js={dsdJs} />
+
+<Tip title="Great for SSR">
+Declarative Shadow DOM shines in server-side rendering scenarios. Ship the shadow tree as HTML, and the browser renders it instantly — before any JavaScript is downloaded, parsed, or executed. JavaScript hydration then adds interactivity without re-rendering.
+</Tip>
+
+export const quizDsd = [
+  {
+    q: 'Which HTML attribute on a template element triggers Declarative Shadow DOM?',
+    options: [
+      'shadow-root',
+      'shadowrootmode',
+      'attachshadow',
+      'shadowmode',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'When does the browser attach the shadow root in Declarative Shadow DOM?',
+    options: [
+      'When customElements.define is called',
+      'During HTML parsing, before JavaScript runs',
+      'When connectedCallback fires',
+      'When DOMContentLoaded fires',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What happens to this.shadowRoot in a custom element class when a declarative shadow root already exists?',
+    options: [
+      'It is null — you must call attachShadow again',
+      'It returns the already-attached declarative shadow root',
+      'It throws an InvalidStateError',
+      'It is undefined until connectedCallback',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="patterns-composition/declarative-shadow-dom" questions={quizDsd} />
+
+<ProgressTracker client:visible id="patterns-composition/declarative-shadow-dom" />

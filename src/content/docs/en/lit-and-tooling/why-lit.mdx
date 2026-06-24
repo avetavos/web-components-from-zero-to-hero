@@ -1,0 +1,135 @@
+---
+title: 'Why Lit'
+description: 'Vanilla Custom Elements pain points, and when Lit makes sense.'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## The vanilla pain point
+
+In a vanilla Custom Element, every time state changes you must manually update the DOM. Here is a counter built without Lit:
+
+```js
+class VanillaCounter extends HTMLElement {
+  constructor() {
+    super();
+    this._count = 0;
+    this.attachShadow({ mode: 'open' });
+  }
+  connectedCallback() {
+    this._render();
+  }
+  _render() {
+    this.shadowRoot.innerHTML =
+      '<p>Count: <b>' + this._count + '</b></p>' +
+      '<button id="inc">+</button>' +
+      '<button id="dec">-</button>';
+    this.shadowRoot.querySelector('#inc').addEventListener('click', () => {
+      this._count++;
+      this._render();
+    });
+    this.shadowRoot.querySelector('#dec').addEventListener('click', () => {
+      this._count--;
+      this._render();
+    });
+  }
+}
+customElements.define('vanilla-counter', VanillaCounter);
+```
+
+This approach has several pain points:
+
+- `innerHTML` re-creates the whole subtree on every update — event listeners are re-added each time.
+- No declarative binding — every update requires imperative DOM surgery.
+- No property observation — you must wire `attributeChangedCallback` manually.
+
+## The Lit solution
+
+Lit solves these pain points with three features:
+
+- `static properties` — declares reactive properties; changing one schedules an efficient re-render.
+- `` html`...` `` tagged template — a declarative template that diffs and patches only the changed parts of the DOM.
+- `static styles` with `` css`...` `` — styles are adopted once into the Shadow DOM stylesheet, not re-parsed on each render.
+
+## When vanilla is enough
+
+Lit is not always necessary. Use plain `HTMLElement` when:
+
+- The element is purely structural (a layout wrapper with no state).
+- You are writing a one-off widget with no dynamic updates.
+- Bundle size is the primary constraint and the element does almost nothing.
+
+Use Lit when state changes need to drive UI updates, when you have multiple reactive properties, or when you are building a component library.
+
+## The Lit counter — same behaviour, far less code
+
+export const whyLitHtml = `<lit-counter></lit-counter>`;
+
+export const whyLitJs = `(async () => {
+  const { LitElement, html, css } = await import('https://esm.sh/lit');
+  class LitCounter extends LitElement {
+    static properties = { count: { type: Number } };
+    static styles = css\`
+      :host { display: block; font-family: sans-serif; padding: 8px; }
+      button { margin: 4px; padding: 4px 10px; cursor: pointer; }
+      span { font-weight: bold; color: #6200ee; }
+    \`;
+    constructor() { super(); this.count = 0; }
+    render() {
+      return html\`
+        <p>Count: <span>\${this.count}</span></p>
+        <button @click=\${() => this.count++}>+</button>
+        <button @click=\${() => this.count--}>-</button>
+      \`;
+    }
+  }
+  customElements.define('lit-counter', LitCounter);
+})();`;
+
+<LivePreview client:visible html={whyLitHtml} js={whyLitJs} />
+
+<Tip title="Lit and tree-shaking">
+Lit is fully tree-shakeable. If you use only `LitElement` and `html`, only those modules are bundled.
+</Tip>
+
+export const quizWhyLit = [
+  {
+    q: 'What is a key problem with using innerHTML for re-renders in vanilla Custom Elements?',
+    options: [
+      'It is asynchronous',
+      'It recreates the subtree and re-adds event listeners on every update',
+      'It requires a build step',
+      'It does not work in Shadow DOM',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Which Lit feature replaces manual DOM updates with efficient diffing?',
+    options: [
+      'static styles',
+      'html tagged template literal',
+      'connectedCallback',
+      'attributeChangedCallback',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'When is it appropriate to skip Lit and use a plain HTMLElement?',
+    options: [
+      'When building a large component library',
+      'When the element is purely structural with no dynamic state',
+      'When you need reactive properties',
+      'When you need scoped styles',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="lit-and-tooling/why-lit" questions={quizWhyLit} />
+
+<ProgressTracker client:visible id="lit-and-tooling/why-lit" />

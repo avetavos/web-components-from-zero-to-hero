@@ -1,0 +1,165 @@
+---
+title: 'Host Element and Shadow Boundary'
+description: 'How to style the host element from inside the shadow root using :host and :host(...); selector and event boundary behavior.'
+sidebar:
+  order: 5
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## The host element
+
+The **host element** is the element that owns the shadow root — for example, `<my-badge>` or `<host-badge>`. From inside the shadow tree, you can target and style the host element using the `:host` pseudo-class selector.
+
+This is important because the host element itself lives in the light DOM. Normally, shadow CSS cannot reach into the light DOM — but `:host` is a special exception that lets the shadow tree style its own container.
+
+## The :host selector
+
+`:host` targets the host element from inside the shadow root:
+
+```css
+/* inside shadow root <style> */
+:host {
+  display: inline-flex;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  border: 2px solid #6366f1;
+  background: #eef2ff;
+}
+```
+
+Without `:host { display: ... }`, a custom element defaults to `display: inline`, which may not be what you want.
+
+## The :host() functional selector
+
+`:host(selector)` lets you conditionally style the host based on its own attributes, classes, or state:
+
+```css
+/* style the host when it has a [disabled] attribute */
+:host([disabled]) {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* style the host when it has a specific class */
+:host(.primary) {
+  background: #4f46e5;
+  color: white;
+}
+```
+
+This pattern is extremely common — component state (active, disabled, highlighted) is often communicated via attributes, and `:host([attr])` is the right way to respond to them from inside the shadow CSS.
+
+## Shadow boundary for selectors
+
+The shadow boundary is strict for CSS selectors in both directions:
+
+```css
+/* page CSS — CANNOT reach inside <my-badge> shadow root */
+my-badge p { color: red; } /* no effect on shadow tree */
+
+/* shadow CSS — CANNOT reach outside into the light DOM */
+p { color: blue; } /* only affects <p> inside this shadow tree */
+```
+
+The only exceptions are CSS custom properties (variables) and the `::part()` pseudo-element, which are explicitly designed to cross the boundary.
+
+## Events and retargeting
+
+Most events bubble through the shadow boundary, but when they do, the browser **retargets** the event — the `event.target` seen by light DOM listeners is the host element, not the actual element inside the shadow tree that fired the event.
+
+```js
+document.querySelector('my-badge').addEventListener('click', function(e) {
+  console.log(e.target); // <my-badge> — not the <button> inside the shadow
+});
+```
+
+This preserves encapsulation: light DOM code cannot see the internal structure of your component via event targets.
+
+## Light DOM vs Shadow DOM
+
+| | Light DOM | Shadow DOM |
+|---|---|---|
+| Definition | Children you put in the element from outside | The private tree attached by the element itself |
+| Visibility | Normal document tree | Encapsulated, accessed via shadow root |
+| Styling | Styled by page CSS | Styled by shadow CSS |
+| Slots | Projected into shadow via `<slot>` | Contains the `<slot>` elements |
+
+## Runnable demo
+
+Two `<host-badge>` elements share the same shadow CSS. The one with the `highlight` attribute is styled differently via `:host([highlight])`.
+
+export const hostBoundaryJs = 'class HostBadge extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    this.attachShadow({ mode: \'open\' });\n' +
+  '    this.shadowRoot.innerHTML =\n' +
+  '      \'<style>\' +\n' +
+  '      \':host { display:inline-flex; align-items:center; gap:.5rem; padding:.25rem .75rem; border-radius:9999px; border:2px solid #6366f1; background:#eef2ff; font-family:sans-serif; margin:.25rem; }\' +\n' +
+  '      \':host([highlight]) { background:#fef08a; border-color:#ca8a04; }\' +\n' +
+  '      \'span { font-weight:bold; color:#4f46e5; }\' +\n' +
+  '      \'</style>\' +\n' +
+  '      \'<span>\' + (this.getAttribute(\'label\') || \'Badge\') + \'</span>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'host-badge\', HostBadge);';
+
+export const hostBoundaryHtml = '<host-badge label="Default"></host-badge> <host-badge label="Highlighted" highlight></host-badge>';
+
+<LivePreview client:visible html={hostBoundaryHtml} js={hostBoundaryJs} />
+
+The first badge uses the default `:host` styles. The second badge has the `highlight` attribute set, so `:host([highlight])` changes its background to yellow and its border to amber.
+
+<Tip title=":host styles the host from inside">
+`:host` targets the host element from INSIDE the shadow root. It is the only way to style the host element's own box model (display, border, padding) from within the component's shadow CSS.
+</Tip>
+
+export const quizHostBoundary = [
+  {
+    q: 'What does the `:host` selector target inside a shadow root stylesheet?',
+    options: [
+      'The first child element inside the shadow tree',
+      'The `<body>` element',
+      'The element that owns the shadow root',
+      'All elements inside the shadow tree',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'You want the host element to appear semi-transparent when it has a `disabled` attribute. Which CSS rule achieves this from inside the shadow root?',
+    options: [
+      '[disabled] { opacity: 0.5; }',
+      ':host([disabled]) { opacity: 0.5; }',
+      ':root([disabled]) { opacity: 0.5; }',
+      '.host[disabled] { opacity: 0.5; }',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'A click event originates from a `<button>` inside a shadow root and bubbles to the light DOM. What is `event.target` in the light DOM listener?',
+    options: [
+      'The `<button>` element inside the shadow root',
+      'The `document` object',
+      'The host element (the custom element)',
+      'null',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'Which of the following CANNOT cross the shadow boundary by default?',
+    options: [
+      'A CSS custom property defined on the host',
+      'A class selector rule from the page stylesheet targeting an element inside the shadow root',
+      'A bubbling event from inside the shadow root',
+      'The ::part() pseudo-element',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="shadow-dom/host-and-boundary" questions={quizHostBoundary} />
+
+<ProgressTracker client:visible id="shadow-dom/host-and-boundary" />

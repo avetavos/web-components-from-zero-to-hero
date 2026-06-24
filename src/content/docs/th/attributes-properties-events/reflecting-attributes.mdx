@@ -1,0 +1,205 @@
+---
+title: 'การ Reflect Attribute'
+description: 'รูปแบบ reflection ช่วยให้ JS property และ HTML attribute ซิงก์กันตลอดเวลา: getter อ่านผ่าน getAttribute, setter เขียนผ่าน setAttribute และ attributeChangedCallback ตอบสนองต่อทั้งสอง'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Attribute reflection คืออะไร?
+
+Custom element เปิดเผยสถานะของตัวเองในสองรูปแบบพร้อมกัน: ในรูปแบบ **JavaScript property** (เช่น `element.label`) และในรูปแบบ **HTML attribute** (เช่น `label="Hello"`) การ reflect หมายความว่าทั้งสองรูปแบบนี้ซิงก์กันตลอดเวลา — เมื่อเขียนค่าในฝั่งใดฝั่งหนึ่ง อีกฝั่งก็จะอัปเดตตามโดยอัตโนมัติ
+
+Element `<input>` ดั้งเดิมทำแบบนี้กับ `value`, `disabled`, `checked` และอื่น ๆ คุณสามารถมอบความสะดวกสบายแบบเดียวกันให้กับ element ของตัวเองได้
+
+## คู่ getter / setter
+
+รูปแบบ reflection คือคู่ getter และ setter ใน JavaScript ที่ส่งต่อการทำงานไปยัง `getAttribute` และ `setAttribute`:
+
+```js
+get label() {
+  return this.getAttribute('label') || '';
+}
+
+set label(v) {
+  this.setAttribute('label', v);
+}
+```
+
+เมื่อโค้ดภายนอกอ่าน `element.label` getter จะคืนค่า attribute ปัจจุบัน เมื่อโค้ดกำหนด `element.label = 'X'` setter จะเรียก `setAttribute` ทำให้ HTML attribute ถูกอัปเดตทันที `getAttribute('label')` และ `element.label` จะตรงกันเสมอ
+
+## การประกาศ observed attributes
+
+เพื่อให้ `attributeChangedCallback` ถูกเรียก — ไม่ว่า attribute จะถูกเปลี่ยนจาก HTML, DevTools หรือ JavaScript — ชื่อ attribute นั้นต้องอยู่ใน static getter ที่ชื่อ `observedAttributes`:
+
+```js
+static get observedAttributes() {
+  return ['label', 'color'];
+}
+```
+
+เบราว์เซอร์อ่านรายการนี้ครั้งเดียวเมื่อ class ถูกลงทะเบียน Attribute ที่ไม่อยู่ในรายการจะถูกละเว้นโดยไม่มีการแจ้งเตือน
+
+## attributeChangedCallback
+
+เมื่อ attribute ที่ถูกเฝ้าดูถูกเพิ่ม เปลี่ยนแปลง หรือลบออก เบราว์เซอร์จะเรียก:
+
+```js
+attributeChangedCallback(name, oldValue, newValue) {
+  // name     — attribute ไหนที่เปลี่ยน เช่น 'label'
+  // oldValue — สตริงค่าก่อนหน้า หรือ null เมื่อกำหนดครั้งแรก
+  // newValue — สตริงค่าใหม่ หรือ null เมื่อถูกลบ
+  this._render();
+}
+```
+
+เนื่องจาก setter เรียก `setAttribute` การกำหนด `element.label = 'X'` จึงเรียก `attributeChangedCallback` เช่นเดียวกับการเขียน `element.setAttribute('label', 'X')` โดยตรง callback นี้คือแหล่งข้อมูลเดียวที่เชื่อถือได้สำหรับการ re-render
+
+## รูปแบบสมบูรณ์
+
+```js
+class MyBadge extends HTMLElement {
+  static get observedAttributes() { return ['label', 'color']; }
+
+  get label() { return this.getAttribute('label') || ''; }
+  set label(v) { this.setAttribute('label', v); }
+
+  get color() { return this.getAttribute('color') || 'blue'; }
+  set color(v) { this.setAttribute('color', v); }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    this._render();
+  }
+
+  connectedCallback() { this._render(); }
+
+  _render() {
+    this.textContent = this.label;
+    this.style.color = this.color;
+  }
+}
+customElements.define('my-badge', MyBadge);
+```
+
+## เหตุใด reflection จึงสำคัญ
+
+การ reflect attribute มอบข้อดีในทางปฏิบัติให้กับ element ของคุณหลายประการ:
+
+- **มองเห็นใน DevTools** — ค่า attribute ปรากฏโดยตรงในแผง Elements โดยไม่ต้องขยาย shadow DOM ใด ๆ
+- **CSS attribute selector** — คุณสามารถกำหนด style ให้ `reflect-badge[color="#7c3aed"]` หรือ `reflect-badge[label]` ได้โดยไม่ต้องใช้ class เพิ่มเติม
+- **Server-side HTML** — สถานะเริ่มต้นสามารถฝังไว้ใน markup ได้เลย ไม่จำเป็นต้องใช้ JavaScript เพื่อกำหนดค่าแรก
+- **ความเข้ากันได้กับ Framework** — Framework อย่าง Vue, Svelte และ Angular bind กับ attribute เป็นค่าเริ่มต้น Property ที่ reflect แล้วทำให้ `<my-badge label={x}>` ทำงานได้ทันที
+
+## ตัวอย่างสด
+
+export const reflectHtml = `<reflect-badge label="Hello from HTML" color="#7c3aed"></reflect-badge>\n<div id="log" style="margin-top:.75rem;font-family:sans-serif;font-size:.875rem;color:#374151;"></div>`;
+
+export const reflectJs = `var ReflectBadge = (function() {
+  function ReflectBadge() {
+    var _this = HTMLElement.call(this);
+    return _this;
+  }
+  ReflectBadge.prototype = Object.create(HTMLElement.prototype);
+  ReflectBadge.prototype.constructor = ReflectBadge;
+
+  Object.defineProperty(ReflectBadge, 'observedAttributes', {
+    get: function() { return ['label', 'color']; }
+  });
+
+  Object.defineProperty(ReflectBadge.prototype, 'label', {
+    get: function() { return this.getAttribute('label') || ''; },
+    set: function(v) { this.setAttribute('label', v); }
+  });
+
+  Object.defineProperty(ReflectBadge.prototype, 'color', {
+    get: function() { return this.getAttribute('color') || '#6366f1'; },
+    set: function(v) { this.setAttribute('color', v); }
+  });
+
+  ReflectBadge.prototype.connectedCallback = function() {
+    this._render();
+    var self = this;
+    setTimeout(function() {
+      self.label = 'Changed via JS!';
+      var log = document.getElementById('log');
+      if (log) {
+        log.innerHTML =
+          '<strong>After JS set:</strong> ' +
+          'element.label === ' + JSON.stringify(self.label) +
+          ' | getAttribute("label") === ' + JSON.stringify(self.getAttribute('label'));
+      }
+    }, 1200);
+  };
+
+  ReflectBadge.prototype.attributeChangedCallback = function(name, oldValue, newValue) {
+    this._render();
+  };
+
+  ReflectBadge.prototype._render = function() {
+    var lbl = this.label;
+    var clr = this.color;
+    this.innerHTML =
+      '<span style="' +
+        'display:inline-block;' +
+        'padding:.25rem .9rem;' +
+        'border-radius:9999px;' +
+        'background:' + clr + ';' +
+        'color:#fff;' +
+        'font-weight:600;' +
+        'font-family:sans-serif;' +
+        'font-size:.875rem' +
+      '">' + lbl + '</span>';
+  };
+
+  return ReflectBadge;
+})();
+customElements.define('reflect-badge', ReflectBadge);`;
+
+<LivePreview client:visible html={reflectHtml} js={reflectJs} />
+
+หลังจาก 1.2 วินาที property `label` ของ element จะถูกกำหนดค่าจาก JavaScript บรรทัด `#log` ยืนยันว่า `element.label` และ `getAttribute('label')` คืนค่าสตริงเดียวกัน — หลักฐานว่า setter และ attribute ซิงก์กันอย่างสมบูรณ์แบบ
+
+<Tip title="หลีกเลี่ยง infinite loop">
+หาก setter ของคุณทำงานพิเศษก่อนเรียก `setAttribute` และ `attributeChangedCallback` เรียก setter อีกครั้ง อาจเกิด infinite loop ขึ้นได้ ป้องกันด้วยการตรวจสอบ `if (this.getAttribute(name) !== v)` ก่อนเรียก `setAttribute` หรือโดยการอ่านค่าจาก attribute ใน `_render` โดยตรงแทนที่จะเรียก setter
+</Tip>
+
+export const quizReflect = [
+  {
+    q: 'setter `set label(v)` ทำหน้าที่อะไรในรูปแบบ reflection?',
+    options: [
+      'เก็บค่าไว้ใน private field เท่านั้น',
+      'เรียก setAttribute เพื่อให้ HTML attribute ซิงก์กับ property',
+      'ส่ง change event ออกไป',
+      'เรียก connectedCallback อีกครั้ง',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'อะไรคือสิ่งที่จำเป็นเพื่อให้ `attributeChangedCallback` ถูกเรียก?',
+    options: [
+      'attribute ต้องถูกกำหนดผ่าน JavaScript เท่านั้น',
+      'element ต้องมี shadow DOM',
+      'ชื่อ attribute ต้องอยู่ใน static getter `observedAttributes`',
+      'element ต้องอยู่ใน viewport',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'CSS selector ใดที่ใช้ได้เมื่อ attribute ถูก reflect แล้ว?',
+    options: [
+      "reflect-badge[label='Hello']",
+      'reflect-badge.label-Hello',
+      "reflect-badge:label('Hello')",
+      'reflect-badge#label',
+    ],
+    answer: 0,
+  },
+];
+
+<Quiz client:visible id="attributes-properties-events/reflecting-attributes" questions={quizReflect} />
+
+<ProgressTracker client:visible id="attributes-properties-events/reflecting-attributes" />

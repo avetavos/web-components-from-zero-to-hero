@@ -1,0 +1,184 @@
+---
+title: "Constructor and connectedCallback"
+description: 'The constructor sets up internal state only — no DOM, no attributes. connectedCallback is where rendering and listeners belong.'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## The constructor: internal state only
+
+The `constructor` runs when the element is instantiated — either via `new MyElement()` or when the browser parses the HTML and creates a class instance. At this point:
+
+- The element may **not** yet be attached to any document
+- **Attributes are not yet parsed** — `this.getAttribute()` returns `null`
+- **Children are not yet present** — the element's children haven't been parsed yet
+- Setting `innerHTML`, `textContent`, or appending child nodes here will throw or produce unexpected results
+
+The constructor's job is narrow: call `super()`, set up internal JavaScript state (instance variables, default values, private Maps), and optionally attach a shadow root. Nothing more.
+
+```js
+class MyWidget extends HTMLElement {
+  constructor() {
+    super(); // MUST be first — gives you access to `this`
+    // Good: set up internal state
+    this._count = 0;
+    this._listeners = [];
+    // Good: attach shadow root
+    this.attachShadow({ mode: 'open' });
+    // BAD — do NOT do this in constructor:
+    // this.innerHTML = '<p>hello</p>';     // may throw
+    // this.getAttribute('label');          // always null here
+  }
+}
+```
+
+## connectedCallback: rendering and listeners
+
+`connectedCallback` fires each time the element is **inserted into a document** (or shadow root). By this point:
+
+- The element is in the DOM
+- Attributes set in HTML markup have been parsed and are readable via `getAttribute`
+- It is safe to set `innerHTML`, manipulate children, and attach event listeners
+
+`connectedCallback` can fire **more than once**. If you move an element from one parent to another using `appendChild`, it is first disconnected (triggering `disconnectedCallback`) and then reconnected (triggering `connectedCallback` again). Guard against double-initialization if needed.
+
+```js
+class MyWidget extends HTMLElement {
+  constructor() {
+    super();
+    this._initialized = false;
+  }
+
+  connectedCallback() {
+    if (this._initialized) return; // guard against re-connection
+    this._initialized = true;
+    var label = this.getAttribute('label') || 'default';
+    this.innerHTML = '<span>' + label + '</span>';
+    this.addEventListener('click', this._handleClick.bind(this));
+  }
+}
+```
+
+## Wrong vs. right
+
+```js
+// WRONG — DOM manipulation in constructor
+class BadWidget extends HTMLElement {
+  constructor() {
+    super();
+    this.innerHTML = '<p>' + this.getAttribute('title') + '</p>'; // title is null here!
+  }
+}
+
+// RIGHT — DOM manipulation in connectedCallback
+class GoodWidget extends HTMLElement {
+  constructor() {
+    super();
+    // only internal state
+    this._title = '';
+  }
+  connectedCallback() {
+    this._title = this.getAttribute('title') || 'Untitled';
+    this.innerHTML = '<p>' + this._title + '</p>'; // attribute is available now
+  }
+}
+```
+
+<Tip title="Always call super() first in the constructor">
+The very first statement in a custom element constructor must be `super()`. Without it you do not have access to `this` and the browser will throw a `ReferenceError`. This is a hard requirement of the Custom Elements spec.
+</Tip>
+
+## Live demo
+
+The element below appends a timestamped entry to the log for both `constructor` and `connectedCallback`. Use the buttons to remove and re-add the element and observe that `connectedCallback` fires each time while `constructor` fires only once.
+
+export const ctorHtml = '<div id="log" style="font-family:monospace;font-size:.85rem;background:#f3f4f6;padding:.5rem;border-radius:4px;margin-bottom:.5rem;min-height:2rem"></div>' +
+'<ctor-demo style="display:block;padding:.5rem;border:2px solid #10b981;border-radius:4px;margin-bottom:.5rem"></ctor-demo>' +
+'<button id="btn-remove" style="margin-right:.5rem">Remove element</button>' +
+'<button id="btn-add">Re-add element</button>';
+
+export const ctorJs = 'var savedEl = null;' +
+'\nvar savedParent = null;' +
+'\nfunction log(msg) {' +
+'\n  var logEl = document.getElementById("log");' +
+'\n  if (!logEl) return;' +
+'\n  var p = document.createElement("p");' +
+'\n  p.style.margin = "0 0 .15rem 0";' +
+'\n  p.textContent = new Date().toLocaleTimeString() + " → " + msg;' +
+'\n  logEl.appendChild(p);' +
+'\n}' +
+'\nclass CtorDemo extends HTMLElement {' +
+'\n  constructor() {' +
+'\n    super();' +
+'\n    log("constructor called");' +
+'\n    this.textContent = "ctor-demo (not yet connected)";' +
+'\n  }' +
+'\n  connectedCallback() {' +
+'\n    log("connectedCallback called");' +
+'\n    this.textContent = "ctor-demo — connected ✔";' +
+'\n  }' +
+'\n  disconnectedCallback() {' +
+'\n    log("disconnectedCallback called");' +
+'\n  }' +
+'\n}' +
+'\ncustomElements.define("ctor-demo", CtorDemo);' +
+'\ndocument.getElementById("btn-remove").addEventListener("click", function() {' +
+'\n  var el = document.querySelector("ctor-demo");' +
+'\n  if (el && el.parentNode) {' +
+'\n    savedParent = el.parentNode;' +
+'\n    savedEl = el;' +
+'\n    el.parentNode.removeChild(el);' +
+'\n  }' +
+'\n});' +
+'\ndocument.getElementById("btn-add").addEventListener("click", function() {' +
+'\n  if (savedEl && savedParent) {' +
+'\n    savedParent.insertBefore(savedEl, document.getElementById("btn-remove"));' +
+'\n    savedEl = null;' +
+'\n  }' +
+'\n});';
+
+<LivePreview client:visible html={ctorHtml} js={ctorJs} />
+
+Notice that `constructor` appears in the log only once — at element creation — while `connectedCallback` appears every time the element is re-inserted into the DOM.
+
+export const quizCtorConnected = [
+  {
+    q: 'Why should you not manipulate the DOM inside the constructor?',
+    options: [
+      'The constructor runs asynchronously and may conflict with rendering',
+      'At construction time attributes are not yet parsed and the element may not be in the document',
+      'The browser throws an error if any DOM method is called in a constructor',
+      'Constructors are not allowed in custom elements — use connectedCallback instead',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What does connectedCallback fire in response to?',
+    options: [
+      'The element being instantiated with new',
+      'An observed attribute changing value',
+      'The element being inserted into a document or shadow root',
+      'The element being upgraded from an unknown element',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'When can connectedCallback fire more than once for the same element instance?',
+    options: [
+      'It cannot — it fires exactly once per element lifetime',
+      'Each time an attribute on the element changes',
+      'Each time the element is moved to a new parent or re-inserted after removal',
+      'Only when the element is inside a shadow root',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="lifecycle/constructor-and-connected" questions={quizCtorConnected} />
+
+<ProgressTracker client:visible id="lifecycle/constructor-and-connected" />

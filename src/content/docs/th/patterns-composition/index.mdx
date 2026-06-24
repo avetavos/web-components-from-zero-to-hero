@@ -1,0 +1,112 @@
+---
+title: 'รูปแบบและการประกอบ'
+description: 'รูปแบบการประกอบและเทคนิคขั้นสูง: การสร้างคอมโพเนนต์ขนาดใหญ่จากคัสตอมเอลิเมนต์ขนาดเล็ก, ฟอร์ม-แอสโซซิเอทเทด, การเข้าถึง, และ declarative shadow DOM'
+sidebar:
+  order: 1
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## การประกอบใน Web Components คืออะไร?
+
+การประกอบ (Composition) หมายถึงการสร้างคัสตอมเอลิเมนต์ขนาดใหญ่ที่มีความสามารถมากขึ้น โดยการประกอบคัสตอมเอลิเมนต์ขนาดเล็กที่มีหน้าที่เฉพาะเข้าด้วยกัน แทนที่จะเขียนเอลิเมนต์ขนาดใหญ่ชิ้นเดียวที่ทำทุกอย่าง คุณแบ่งงานออกเป็นส่วนย่อย — แต่ละส่วนเป็นคัสตอมเอลิเมนต์ของตัวเอง — แล้วนำมาซ้อนกันเพื่อสร้างวิดเจ็ตที่สมบูรณ์
+
+แนวคิดนี้สะท้อนวิธีที่ HTML ดั้งเดิมทำงานอยู่แล้ว: `<form>` บรรจุ `<input>`, `<label>`, และ `<button>` ซึ่งแต่ละตัวรับผิดชอบส่วนเล็ก ๆ ของประสบการณ์โดยรวม Web Components ช่วยให้คุณสร้างโครงสร้างแบบเป็นชั้นที่นำกลับมาใช้ได้เช่นเดียวกันด้วยชื่อแท็กของคุณเอง
+
+## แผนภาพต้นไม้วิดเจ็ตที่ประกอบกัน
+
+แผนภาพด้านล่างแสดงเอลิเมนต์ `<card-widget>` ที่ประกอบจากสองเอลิเมนต์ภายใน ได้แก่ `<user-avatar>` และ `<action-button>`
+
+export const composedTreeDiagram = `flowchart LR
+  CW["card-widget"]
+  UA["user-avatar"]
+  AB["action-button"]
+  CW --> UA
+  CW --> AB`;
+
+<Mermaid title="A composed widget tree" code={composedTreeDiagram} />
+
+## บทเรียนในโมดูลนี้
+
+| บทเรียน | Slug | สิ่งที่คุณจะได้เรียนรู้ |
+|---|---|---|
+| การประกอบคอมโพเนนต์ | `composition` | การซ้อนเอลิเมนต์, การสื่อสารผ่าน attribute, และ CustomEvent bubbling |
+| ฟอร์ม-แอสโซซิเอทเทดเอลิเมนต์ | `form-associated` | การทำให้คัสตอมเอลิเมนต์มีส่วนร่วมในฟอร์ม HTML ดั้งเดิม |
+| รูปแบบการเข้าถึง | `accessibility` | ARIA roles, การนำทางด้วยคีย์บอร์ด, และการจัดการ focus |
+| Declarative Shadow DOM | `declarative-shadow-dom` | shadow roots ที่เรนเดอร์ฝั่งเซิร์ฟเวอร์ด้วย attribute `shadowrootmode` |
+
+## ตัวอย่างที่รันได้
+
+ตัวอย่างด้านล่างกำหนดคัสตอมเอลิเมนต์สองตัว: `<name-tag>` แสดงข้อความตัวหนาจาก attribute `name` และ `<greeting-card>` สร้าง `<name-tag>` และเพิ่มข้อความต้อนรับ — ประกอบสองเอลิเมนต์เข้าเป็นวิดเจ็ตเดียว
+
+export const indexHtml = `<greeting-card name="Alice"></greeting-card>`;
+
+export const indexJs = `var NameTag = function() { HTMLElement.call(this); };
+NameTag.prototype = Object.create(HTMLElement.prototype);
+NameTag.prototype.constructor = NameTag;
+NameTag.prototype.connectedCallback = function() {
+  var b = document.createElement('b');
+  b.textContent = this.getAttribute('name') || 'stranger';
+  this.appendChild(b);
+};
+customElements.define('name-tag', NameTag);
+
+var GreetingCard = function() { HTMLElement.call(this); };
+GreetingCard.prototype = Object.create(HTMLElement.prototype);
+GreetingCard.prototype.constructor = GreetingCard;
+GreetingCard.prototype.connectedCallback = function() {
+  var tag = document.createElement('name-tag');
+  tag.setAttribute('name', this.getAttribute('name') || 'friend');
+  this.appendChild(tag);
+  var span = document.createElement('span');
+  span.textContent = ' — welcome!';
+  this.appendChild(span);
+};
+customElements.define('greeting-card', GreetingCard);`;
+
+<LivePreview client:visible html={indexHtml} js={indexJs} />
+
+<Tip title="คอมโพเนนต์ซ้อนกันลึกแค่ไหนก็ได้">
+คัสตอมเอลิเมนต์สามารถบรรจุคัสตอมเอลิเมนต์อื่น ๆ ได้ เบราว์เซอร์อัปเกรดตามลำดับเอกสาร ดังนั้นเอลิเมนต์ภายในจะถูกอัปเกรดก่อนที่ JavaScript ของเอลิเมนต์ภายนอกจะพึ่งพาพวกมัน — แต่ควรใช้ `connectedCallback` (ไม่ใช่ `constructor`) เพื่อความปลอดภัย
+</Tip>
+
+export const quizIndex = [
+  {
+    q: '"การประกอบ" ใน Web Components หมายความว่าอะไร?',
+    options: [
+      'การใช้ CSS Grid เพื่อจัดวางคอมโพเนนต์',
+      'การสร้างเอลิเมนต์ขนาดใหญ่จากคัสตอมเอลิเมนต์ขนาดเล็กที่ซ้อนกัน',
+      'การสืบทอดจากหลาย HTMLElement class',
+      'การแชร์โมดูล JavaScript ระหว่างไฟล์',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'lifecycle callback ใดที่เหมาะสมในการ append child custom elements?',
+    options: [
+      'constructor',
+      'disconnectedCallback',
+      'connectedCallback',
+      'adoptedCallback',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'ในโมดูลนี้ บทเรียนใดครอบคลุมการมีส่วนร่วมในฟอร์ม HTML ดั้งเดิม?',
+    options: [
+      'composition',
+      'declarative-shadow-dom',
+      'accessibility',
+      'form-associated',
+    ],
+    answer: 3,
+  },
+];
+
+<Quiz client:visible id="patterns-composition/index" questions={quizIndex} />
+
+<ProgressTracker client:visible id="patterns-composition/index" />

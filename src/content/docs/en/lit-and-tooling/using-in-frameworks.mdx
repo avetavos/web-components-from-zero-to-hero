@@ -1,0 +1,175 @@
+---
+title: 'Using in Frameworks'
+description: 'Web components as DOM elements — how to use them in React, Vue, and Angular.'
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## Web components are just DOM elements
+
+A custom element registered with `customElements.define` is a standard DOM node. Any framework that outputs HTML can use it. You place it in JSX, a Vue template, or an Angular template the same way you place a `<div>`.
+
+Because frameworks ultimately produce real DOM nodes, they all interoperate with custom elements at the same level — the browser's own element API. Properties, attributes, and events work the same way regardless of which framework is rendering the surrounding tree.
+
+## React
+
+### React 18 and earlier
+
+In React 18 and earlier, custom elements receive string attributes, not rich object props. Pass primitives (strings, numbers, booleans) as attributes. For complex data (arrays, objects) or for listening to custom events you must use a `ref` callback:
+
+```jsx
+// React 18 — attach ref to wire up events
+import { useRef, useEffect } from 'react';
+
+function App() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    el.addEventListener('my-event', (e) => console.log(e.detail));
+    return () => el.removeEventListener('my-event', () => {});
+  }, []);
+  return <my-counter ref={ref} label="Score"></my-counter>;
+}
+```
+
+### React 19
+
+React 19 ships full custom element support. Properties and event handlers (prefixed with `on`) now bind directly without a `ref` workaround:
+
+```jsx
+// React 19 — direct prop and event binding
+function App() {
+  return (
+    <my-counter
+      label="Score"
+      count={0}
+      onmy-event={(e) => console.log(e.detail)}
+    />
+  );
+}
+```
+
+## Vue
+
+Vue treats custom elements as first-class citizens. Attributes and properties bind with `:prop="value"` (property) or `attr="value"` (attribute). Custom events are listened to with `@event-name`:
+
+```html
+<!-- Vue template -->
+<my-counter
+  :label="label"
+  :count="score"
+  @score-changed="handleChange"
+/>
+```
+
+Vue automatically differentiates between a property (set on the DOM node) and an attribute (set via `setAttribute`) based on whether the key exists on the element's prototype.
+
+## Angular
+
+Angular supports custom elements via the `CUSTOM_ELEMENTS_SCHEMA`. Add it to your module's `schemas` array to suppress unknown-element errors:
+
+```ts
+import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+
+@NgModule({
+  declarations: [AppComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+})
+export class AppModule {}
+```
+
+In templates, use `[property]` for property binding and `(event-name)` for custom events:
+
+```html
+<!-- Angular template -->
+<my-counter [label]="title" [count]="score" (score-changed)="onScoreChanged($event)"></my-counter>
+```
+
+## Runnable demo
+
+The demo below shows a vanilla web component (`<demo-badge>`) rendered in plain HTML — the same element would work identically when dropped into a React, Vue, or Angular tree because it is just a DOM node.
+
+export const frameworkHtml = `<demo-badge name="Frameworks" role="React / Vue / Angular"></demo-badge>`;
+
+export const frameworkJs = `(async () => {
+  const { LitElement, html, css } = await import('https://esm.sh/lit');
+  class DemoBadge extends LitElement {
+    static properties = {
+      name: { type: String },
+      role: { type: String },
+    };
+    static styles = css\`
+      :host {
+        display: inline-block;
+        font-family: sans-serif;
+        background: #f5f0ff;
+        border-left: 4px solid #6200ee;
+        border-radius: 4px;
+        padding: 8px 12px;
+        margin: 4px;
+      }
+      .name { font-weight: bold; color: #3d008a; }
+      .role { font-size: 0.85em; color: #555; }
+    \`;
+    constructor() {
+      super();
+      this.name = '';
+      this.role = '';
+    }
+    render() {
+      return html\`
+        <div class="name">\${this.name}</div>
+        <div class="role">\${this.role}</div>
+      \`;
+    }
+  }
+  customElements.define('demo-badge', DemoBadge);
+})();`;
+
+<LivePreview client:visible html={frameworkHtml} js={frameworkJs} />
+
+<Tip title="React < 19 gotcha">
+In React 18 and earlier, passing an array or object as a JSX attribute on a custom element will be stringified. Always use a `ref` to set complex properties imperatively, or upgrade to React 19.
+</Tip>
+
+export const quizUsingInFrameworks = [
+  {
+    q: 'In React 18, what is the recommended way to listen to a custom event fired by a web component?',
+    options: [
+      'Use the onCustomEvent JSX prop',
+      'Attach a ref and use addEventListener in useEffect',
+      'Pass a callback as a string attribute',
+      'Use a React Context provider',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'What does Vue use to decide whether to set a value as a DOM property or an HTML attribute on a custom element?',
+    options: [
+      'The type of the value (string vs object)',
+      "Whether the key exists on the element's prototype",
+      'A Vue configuration flag',
+      'The HTML spec attribute list',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Which Angular module token allows you to use unregistered custom element tag names without compile errors?',
+    options: [
+      'NO_ERRORS_SCHEMA',
+      'CUSTOM_ELEMENTS_SCHEMA',
+      'WEB_COMPONENTS_MODULE',
+      'ELEMENT_REGISTRY',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="lit-and-tooling/using-in-frameworks" questions={quizUsingInFrameworks} />
+
+<ProgressTracker client:visible id="lit-and-tooling/using-in-frameworks" />

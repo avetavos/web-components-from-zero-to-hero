@@ -1,5 +1,108 @@
 ---
-title: Intro & Custom Elements
-description: What Web Components are, and defining your first custom element.
+title: 'บทนำและ Custom Elements'
+description: 'เนื้อหาที่คอร์สนี้ครอบคลุม สามเสาหลักของ Web Components และ custom element ตัวแรกของคุณ'
+sidebar:
+  order: 1
 ---
-Coming soon.
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Mermaid from '../../../../components/Mermaid.astro';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+Web Components คือชุดมาตรฐานที่มาพร้อมกับเบราว์เซอร์ ซึ่งช่วยให้คุณนิยาม HTML element ของตัวเองได้ — นำกลับมาใช้ซ้ำได้ ห่อหุ้มเป็นเอกเทศ และไม่ผูกติดกับเฟรมเวิร์กใด ไม่ต้องมีขั้นตอน build ไม่ต้องมีไลบรารี มีแค่แพลตฟอร์มล้วน ๆ
+
+คอร์สนี้จะพาคุณไปทำความรู้จักกับสามเสาหลักที่เกี่ยวเนื่องกัน:
+
+export const pillarsDiagram = `
+flowchart LR
+  CE["Custom Elements\n(class + define)"]
+  SD["Shadow DOM\n(encapsulated tree)"]
+  TS["Templates & Slots\n(declarative markup)"]
+  CE --> SD
+  SD --> TS
+  CE --> TS
+`;
+
+<Mermaid code={pillarsDiagram} title="สามเสาหลักของ Web Components" />
+
+| เสาหลัก | สิ่งที่คุณจะได้ |
+|---|---|
+| Custom Elements | API แบบ class สำหรับสร้าง HTML tag ใหม่ |
+| Shadow DOM | DOM tree ส่วนตัวที่ห่อหุ้มเป็นเอกเทศ และขอบเขต CSS เฉพาะตัว |
+| Templates & Slots | ชิ้นส่วน HTML ที่นำกลับมาใช้ซ้ำได้ พร้อมจุดแทรกเนื้อหาที่ตั้งชื่อได้ |
+
+เมื่อจบโมดูลนี้ คุณจะได้นิยาม custom element ตัวแรกของคุณตั้งแต่ต้น และได้เห็นว่า Lit ต่อยอดจาก primitive เดียวกันนี้อย่างไร
+
+## Custom element ตัวแรกของคุณ
+
+โค้ดด้านล่างนิยาม `<hello-badge>` — custom element แบบ vanilla ที่อ่าน attribute ชื่อ `name` แล้วแสดงข้อความทักทาย
+
+export const helloJs = `class HelloBadge extends HTMLElement {
+  connectedCallback() {
+    this.textContent = 'Hello, ' + (this.getAttribute('name') || 'world') + '!';
+  }
+}
+customElements.define('hello-badge', HelloBadge);`;
+
+export const helloHtml = `<hello-badge name="Web Components"></hello-badge>`;
+
+<LivePreview client:visible html={helloHtml} js={helloJs} />
+
+## เกริ่นนำ Lit
+
+Lit คือไลบรารีบาง ๆ ที่เพิ่ม reactive properties และระบบ template แบบ declarative เข้าไปบน API มาตรฐานของ Custom Elements และ Shadow DOM โดยจะลงรายละเอียดในโมดูล **Lit and Tooling** — ตรงนี้เป็นแค่ตัวอย่างสั้น ๆ เพื่อยืนยันว่าเส้นทาง import ทำงานได้ในตัวรันเนอร์นี้:
+
+export const litJs = `(async () => {
+  const { LitElement, html } = await import('https://esm.sh/lit');
+  class LitHi extends LitElement {
+    render() { return html\`<p>Hi from Lit \${'⚡'}</p>\`; }
+  }
+  customElements.define('lit-hi', LitHi);
+})();`;
+
+export const litHtml = `<lit-hi></lit-hi>`;
+
+<LivePreview client:visible html={litHtml} js={litJs} />
+
+<Tip title="ออกแบบมาให้ไม่ผูกกับเฟรมเวิร์ก">
+Web Components ถูกสร้างไว้ในเบราว์เซอร์ในตัวอยู่แล้ว element `hello-badge` ใช้งานได้ทั้งในแอป React แอป Svelte หรือไฟล์ HTML ธรรมดา — เพราะสุดท้ายแล้วทั้งหมดก็เรนเดอร์ออกมาเป็น HTML
+</Tip>
+
+export const quizIndex = [
+  {
+    q: 'API ของเบราว์เซอร์ตัวใดที่ใช้ลงทะเบียนชื่อ HTML tag ใหม่?',
+    options: [
+      'document.createElement()',
+      'customElements.define()',
+      'HTMLElement.register()',
+      'window.defineElement()',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'สามเสาหลักของ Web Components คืออะไร?',
+    options: [
+      'Custom Elements, Virtual DOM และ JSX',
+      'Custom Elements, Shadow DOM และ Templates & Slots',
+      'Shadow DOM, Service Workers และ IndexedDB',
+      'Custom Elements, CSS Modules และ Web Workers',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Lit สร้างต่อยอดบนมาตรฐานที่มากับเบราว์เซอร์ตัวใด?',
+    options: [
+      'กลไกภายในของ React และการแปลงด้วย Babel',
+      'Service Workers และ IndexedDB',
+      'Custom Elements และ Shadow DOM',
+      'WebAssembly และ WASI',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="intro-custom-elements/index" questions={quizIndex} />
+
+<ProgressTracker client:visible id="intro-custom-elements/index" />

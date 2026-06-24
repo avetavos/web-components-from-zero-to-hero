@@ -1,0 +1,133 @@
+---
+title: 'การแนบ Shadow Root'
+description: 'วิธีเรียก attachShadow, เข้าถึง shadowRoot และแสดงเนื้อหาใน shadow tree'
+sidebar:
+  order: 2
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## การเรียก attachShadow
+
+ในการสร้าง shadow tree ให้เรียก `this.attachShadow()` บน host element และส่ง mode option เข้าไป method นี้จะคืนค่า shadow root ใหม่และเก็บไว้เป็น `this.shadowRoot` ด้วย
+
+```js
+class ScopedCard extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({ mode: 'open' });
+  }
+}
+```
+
+คุณสามารถเรียก `attachShadow` ได้ใน constructor หรือใน `connectedCallback` การใช้ constructor เหมาะเมื่อต้องการให้ shadow root พร้อมใช้งานทันที ส่วน `connectedCallback` ก็ใช้ได้ดีเมื่อต้องการเข้าถึง attribute ที่กำหนดใน HTML ด้วย
+
+## การเข้าถึง shadow root
+
+หลังจากเรียก `attachShadow` แล้ว shadow root จะเข้าถึงได้ 2 วิธี:
+
+```js
+// คืนค่าโดยตรงจากการเรียก
+var root = this.attachShadow({ mode: 'open' });
+
+// เก็บไว้เป็น property บน element ด้วย
+var root = this.shadowRoot;
+```
+
+ทั้งสอง reference ชี้ไปยัง `ShadowRoot` object เดียวกัน `ShadowRoot` ทำงานเหมือน `DocumentFragment` — คุณสามารถเรียก `querySelector`, `getElementById` และกำหนด `innerHTML` บนมันได้
+
+## การแสดงเนื้อหาด้วย innerHTML
+
+วิธีที่ง่ายที่สุดในการเติมเนื้อหาใน shadow tree คือการกำหนด `this.shadowRoot.innerHTML` วาง `<style>` tag ไว้ก่อน ตามด้วย markup:
+
+```js
+this.shadowRoot.innerHTML =
+  '<style>' +
+  '  .card { border: 2px solid #6366f1; border-radius: 8px; padding: 1rem; background: #eef2ff; }' +
+  '  h2 { color: #4f46e5; margin: 0 0 0.5rem; }' +
+  '</style>' +
+  '<div class="card"><h2>Shadow Card</h2><p>Styles scoped inside shadow root</p></div>';
+```
+
+สไตล์จะใช้ได้เฉพาะภายใน shadow tree เท่านั้น element `.card` ที่อยู่ใน light DOM จะไม่ได้รับผลกระทบ
+
+## ตัวอย่าง class เต็ม
+
+```js
+class ScopedCard extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({ mode: 'open' });
+    this.shadowRoot.innerHTML =
+      '<style>' +
+      '  .card { border: 2px solid #6366f1; border-radius: 8px; padding: 1rem; background: #eef2ff; }' +
+      '  h2 { color: #4f46e5; margin: 0 0 0.5rem; }' +
+      '  p { color: #3730a3; margin: 0; }' +
+      '</style>' +
+      '<div class="card"><h2>Shadow Card</h2><p>Styles scoped inside shadow root</p></div>';
+  }
+}
+customElements.define('scoped-card', ScopedCard);
+```
+
+## ตัวอย่างที่รันได้
+
+export const attachShadowJs = 'class ScopedCard extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    this.attachShadow({ mode: \'open\' });\n' +
+  '    this.shadowRoot.innerHTML =\n' +
+  '      \'<style>\' +\n' +
+  '      \'.card { border: 2px solid #6366f1; border-radius: 8px; padding: 1rem; background: #eef2ff; margin: 1rem 0; }\' +\n' +
+  '      \'h2 { color: #4f46e5; margin: 0 0 0.5rem; }\' +\n' +
+  '      \'p { color: #3730a3; margin: 0; }\' +\n' +
+  '      \'</style>\' +\n' +
+  '      \'<div class="card"><h2>Shadow Card</h2><p>Styles scoped inside shadow root</p></div>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'scoped-card\', ScopedCard);';
+
+export const attachShadowHtml = '<scoped-card></scoped-card>';
+
+<LivePreview client:visible html={attachShadowHtml} js={attachShadowJs} />
+
+<Tip title="attachShadow เป็นการกระทำถาวร">
+เรียก `attachShadow` ก่อนตั้งค่า `shadowRoot.innerHTML` เมื่อแนบ shadow root แล้วจะถาวร — ไม่สามารถลบหรือแทนที่ได้
+</Tip>
+
+export const quizAttachShadow = [
+  {
+    q: '`this.attachShadow({ mode: "open" })` คืนค่าอะไร?',
+    options: [
+      'host element นั่นเอง',
+      'HTMLElement ใหม่',
+      'shadow root ของ element',
+      'DocumentFragment clone',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'หลังจากเรียก `this.attachShadow({ mode: "open" })` แล้ว จะเข้าถึง shadow root ในภายหลังได้อย่างไร?',
+    options: [
+      'this.shadowTree',
+      'this.shadowRoot',
+      'this.root',
+      'document.shadowRoot',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'ต้องวาง `<style>` tag ที่ไหนเพื่อให้สไตล์มีขอบเขตเฉพาะใน shadow tree?',
+    options: [
+      'ใน document `<head>`',
+      'เป็น external stylesheet ที่ link จาก host element',
+      'ภายใน `this.shadowRoot.innerHTML`',
+      'ใน constructor ก่อนเรียก attachShadow',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="shadow-dom/attach-shadow" questions={quizAttachShadow} />
+
+<ProgressTracker client:visible id="shadow-dom/attach-shadow" />

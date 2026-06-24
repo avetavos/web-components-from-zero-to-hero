@@ -1,0 +1,129 @@
+---
+title: 'Style Encapsulation'
+description: 'How styles inside a shadow root are scoped and cannot leak out; how page styles cannot pierce in.'
+sidebar:
+  order: 3
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## The shadow boundary
+
+The shadow root acts as a two-way style barrier:
+
+- **Styles inside the shadow root** apply only to the shadow tree. They cannot leak out and affect elements in the light DOM.
+- **Styles in the light DOM** (page CSS, external stylesheets) cannot pierce the shadow boundary and style elements inside the shadow tree.
+
+This is the core value of Shadow DOM — you can build components that are truly self-contained, with no risk of accidental style collisions.
+
+## Shadow styles stay inside
+
+Consider a shadow element that declares `.box { color: red; }` inside its shadow root:
+
+```js
+class EncDemo extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({ mode: 'open' });
+    this.shadowRoot.innerHTML =
+      '<style>.box { color: red; font-weight: bold; }</style>' +
+      '<div class="box">Red — shadow style</div>';
+  }
+}
+```
+
+The `.box { color: red; }` rule has absolutely no effect on any `.box` element that exists outside this component.
+
+## Page styles stay outside
+
+Now consider page-level CSS that targets `.box`:
+
+```css
+/* page stylesheet */
+.box {
+  color: blue;
+  font-weight: bold;
+  border: 2px solid blue;
+}
+```
+
+This rule applies to every `.box` in the light DOM. It does **not** apply to the `.box` inside the shadow root of `<enc-demo>`. The shadow boundary blocks it.
+
+## Visual proof
+
+The demo below has two `.box` elements with the same class name. The one outside the custom element is styled blue by the page CSS. The one inside the shadow root is styled red by the shadow CSS. Neither style crosses the boundary.
+
+export const encapCss = '.box { color: #0ea5e9; font-weight: bold; border: 2px solid #0ea5e9; padding: 0.5rem; margin: 0.5rem 0; }';
+
+export const encapJs = 'class EncDemo extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    this.attachShadow({ mode: \'open\' });\n' +
+  '    this.shadowRoot.innerHTML =\n' +
+  '      \'<style>\' +\n' +
+  '      \'.box { color: #dc2626; font-weight: bold; border: 2px solid #dc2626; padding: 0.5rem; margin: 0.5rem 0; }\' +\n' +
+  '      \'p { margin: 0.25rem 0; }\' +\n' +
+  '      \'</style>\' +\n' +
+  '      \'<p>Inside shadow root:</p>\' +\n' +
+  '      \'<div class="box">Red — shadow style wins</div>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'enc-demo\', EncDemo);';
+
+export const encapHtml = '<div class="box">Blue — page style (outside shadow)</div><enc-demo></enc-demo>';
+
+<LivePreview client:visible html={encapHtml} css={encapCss} js={encapJs} />
+
+Both `div` elements carry `class="box"`, but they are styled independently because the shadow boundary separates them.
+
+<Tip title="The shadow boundary is a two-way barrier">
+The shadow boundary is a two-way barrier — styles inside cannot escape, and styles outside cannot enter (except CSS custom properties and `::part`).
+</Tip>
+
+export const quizEncapsulation = [
+  {
+    q: 'A page stylesheet declares `.title { color: red; }`. Does this rule apply to a `.title` element inside a shadow root?',
+    options: [
+      'Yes, page styles always win due to specificity',
+      'Yes, but only if the shadow root uses mode: "open"',
+      'No, page styles cannot pierce the shadow boundary',
+      'No, unless the element also has an id attribute',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'A shadow root contains `<style>p { font-size: 2rem; }</style>`. Which elements does this rule affect?',
+    options: [
+      'Every `<p>` on the page',
+      'Only `<p>` elements inside that shadow tree',
+      'Only `<p>` elements that are direct children of the host',
+      'Every `<p>` inside the host element and its descendants',
+    ],
+    answer: 1,
+  },
+  {
+    q: 'Which of the following CAN cross the shadow boundary?',
+    options: [
+      'A class selector from the page stylesheet',
+      'An id selector from the page stylesheet',
+      'A CSS custom property (variable) defined on the host',
+      'A universal selector `*` in the page stylesheet',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'What is the primary benefit of style encapsulation in Shadow DOM?',
+    options: [
+      'Faster CSS parsing',
+      'Automatic dark mode support',
+      'Component styles cannot accidentally collide with page or other component styles',
+      'Inline styles are no longer needed',
+    ],
+    answer: 2,
+  },
+];
+
+<Quiz client:visible id="shadow-dom/encapsulation" questions={quizEncapsulation} />
+
+<ProgressTracker client:visible id="shadow-dom/encapsulation" />

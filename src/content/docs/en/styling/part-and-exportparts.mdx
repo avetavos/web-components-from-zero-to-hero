@@ -1,0 +1,89 @@
+---
+title: "::part and exportparts"
+description: "Expose shadow-root internals for external styling with part attributes and ::part() selectors."
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+The `part="name"` attribute marks an element **inside the shadow root** as a named styling hook. Page CSS can then target it with the `::part(name)` pseudo-element on the host — crossing the shadow boundary without losing encapsulation for everything else. The component author controls exactly which internals are exposed.
+
+```html
+<theme-card></theme-card>
+```
+
+Page CSS uses `::part()` to style the exposed internals:
+
+```css
+theme-card::part(title) { color: #7c3aed; font-size: 1.2rem; font-weight: bold; }
+theme-card::part(body) { color: #374151; font-size: 0.95rem; margin-top: 0.5rem; }
+```
+
+The component's own shadow stylesheet should **not** include these part styles — it only sets structural or default layout rules. The `::part()` rules live entirely in page CSS (or in the `css` prop of LivePreview), and they win because of the explicit opt-in.
+
+## exportparts
+
+When a component **composes** another custom element internally, its shadow-DOM children's parts are not automatically visible to the page. The `exportparts` attribute re-exports inner parts under new names:
+
+```html
+<outer-card exportparts="label: card-label"></outer-card>
+```
+
+Now page CSS can write `outer-card::part(card-label)` to reach the inner component's `label` part without needing to know the inner element's tag name.
+
+## Demo
+
+The `css` prop below is injected as a `<style>` block in the page, outside the component's shadow root — exactly where `::part()` rules belong.
+
+export const partHtml = `<theme-card></theme-card>`;
+
+export const partCss = `theme-card::part(title) { color: #7c3aed; font-size: 1.2rem; font-weight: bold; }
+theme-card::part(body) { color: #374151; font-size: 0.95rem; margin-top: 0.5rem; }`;
+
+export const partJs = 'class ThemeCard extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    var shadow = this.attachShadow({mode: \'open\'});\n' +
+  '    var style = document.createElement(\'style\');\n' +
+  '    style.textContent = \':host{display:block;border:2px solid #e5e7eb;border-radius:8px;padding:1rem;max-width:300px;}\';\n' +
+  '    var title = document.createElement(\'div\');\n' +
+  '    title.setAttribute(\'part\', \'title\');\n' +
+  '    title.textContent = \'Card Title\';\n' +
+  '    var body = document.createElement(\'div\');\n' +
+  '    body.setAttribute(\'part\', \'body\');\n' +
+  '    body.textContent = \'This body text is styled from page CSS via ::part(body).\';\n' +
+  '    shadow.append(style, title, body);\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'theme-card\', ThemeCard);';
+
+<LivePreview client:visible html={partHtml} css={partCss} js={partJs} />
+
+<Tip title="::part() is opt-in">
+Only elements explicitly marked with `part='name'` can be styled from outside. This is intentional — component authors decide what is styleable, preserving encapsulation for everything else.
+</Tip>
+
+export const quizPart = [
+  {
+    q: "Where is the part='name' attribute placed?",
+    options: ["On the host element", "On elements inside the shadow root", "On the slot element", "In the page CSS"],
+    answer: 1,
+  },
+  {
+    q: "Where is the ::part(name) selector written?",
+    options: ["Inside the shadow root stylesheet", "In page CSS (outside the component)", "In the component constructor", "In a meta tag"],
+    answer: 1,
+  },
+  {
+    q: "What does exportparts='label: card-label' do?",
+    options: ["Renames the part inside the same component", "Re-exports an inner component part so the page can style it with ::part(card-label)", "Exports the whole shadow root", "Creates a CSS variable"],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="styling/part-and-exportparts" questions={quizPart}/>
+
+<ProgressTracker client:visible id="styling/part-and-exportparts"/>

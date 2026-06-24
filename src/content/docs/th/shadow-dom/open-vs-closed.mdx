@@ -1,0 +1,117 @@
+---
+title: 'โหมด Open และ Closed'
+description: 'ความแตกต่างระหว่าง mode open และ mode closed ใน attachShadow และข้อดีข้อเสีย'
+sidebar:
+  order: 4
+---
+
+import LivePreview from '../../../../components/LivePreview.tsx';
+import Tip from '../../../../components/Tip.astro';
+import Quiz from '../../../../components/Quiz.tsx';
+import ProgressTracker from '../../../../components/ProgressTracker.tsx';
+
+## โหมด open กับ closed
+
+เมื่อเรียก `attachShadow` คุณต้องระบุ `mode` เป็น `'open'` หรือ `'closed'` ซึ่งกำหนดว่า JavaScript ภายนอกจะเข้าถึง shadow root ผ่าน `.shadowRoot` property ได้หรือไม่
+
+| โหมด | `element.shadowRoot` คืนค่า | ใช้เมื่อ |
+|---|---|---|
+| `open` | shadow root object | ทั่วไป — DevTools, tests, Lit ต้องการ |
+| `closed` | `null` | ต้องการซ่อน internal จาก JS ภายนอก |
+
+## โหมด open
+
+ด้วยโหมด `open` shadow root จะเข้าถึงได้จากภายนอก component:
+
+```js
+var el = document.querySelector('open-box');
+console.log(el.shadowRoot); // ShadowRoot object
+```
+
+ซึ่งทำให้ DevTools, test frameworks และ libraries อย่าง Lit สามารถ inspect และ interact กับ shadow tree ได้
+
+## โหมด closed
+
+ด้วยโหมด `closed` property `.shadowRoot` จะคืนค่า `null` สำหรับ JavaScript ภายนอก:
+
+```js
+var el = document.querySelector('closed-box');
+console.log(el.shadowRoot); // null
+```
+
+shadow root ยังคงอยู่ภายใน — component เองก็ยังเข้าถึงได้ผ่าน variable ที่เก็บค่าที่ `attachShadow` คืนมา แต่โค้ดภายนอกไม่สามารถเข้าถึงได้ผ่าน `.shadowRoot`
+
+## ตัวอย่างที่รันได้
+
+export const openClosedJs = 'class OpenBox extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    this.attachShadow({ mode: \'open\' });\n' +
+  '    this.shadowRoot.innerHTML =\n' +
+  '      \'<style>div { background: #d1fae5; border: 2px solid #059669; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; }</style>\' +\n' +
+  '      \'<div>Open box (shadow visible externally)</div>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'open-box\', OpenBox);\n' +
+  '\n' +
+  'class ClosedBox extends HTMLElement {\n' +
+  '  connectedCallback() {\n' +
+  '    var root = this.attachShadow({ mode: \'closed\' });\n' +
+  '    root.innerHTML =\n' +
+  '      \'<style>div { background: #fee2e2; border: 2px solid #dc2626; padding: 0.75rem; border-radius: 6px; }</style>\' +\n' +
+  '      \'<div>Closed box (shadow hidden externally)</div>\';\n' +
+  '  }\n' +
+  '}\n' +
+  'customElements.define(\'closed-box\', ClosedBox);\n' +
+  '\n' +
+  'document.addEventListener(\'DOMContentLoaded\', function() {\n' +
+  '  var openRoot = document.querySelector(\'open-box\').shadowRoot;\n' +
+  '  var closedRoot = document.querySelector(\'closed-box\').shadowRoot;\n' +
+  '  document.getElementById(\'out\').textContent =\n' +
+  '    \'open-box.shadowRoot: \' + openRoot + \'\\n\' +\n' +
+  '    \'closed-box.shadowRoot: \' + closedRoot;\n' +
+  '});';
+
+export const openClosedHtml = '<open-box></open-box><closed-box></closed-box><pre id="out"></pre>';
+
+<LivePreview client:visible html={openClosedHtml} js={openClosedJs} />
+
+<Tip title="ใช้โหมด open เป็นค่าเริ่มต้น">
+ใช้ `mode: 'open'` สำหรับ component ที่ต้องการให้โค้ดอื่น (DevTools, tests, Lit) ตรวจสอบได้ โหมด closed ไม่ได้ให้ความปลอดภัยจริง และใช้งานได้ยากกว่า
+</Tip>
+
+export const quizOpenVsClosed = [
+  {
+    q: "element.shadowRoot คืนค่าอะไรเมื่อ mode เป็น 'open'?",
+    options: [
+      'null',
+      'shadow root object',
+      'undefined',
+      'host element',
+    ],
+    answer: 1,
+  },
+  {
+    q: "element.shadowRoot คืนค่าอะไรเมื่อ mode เป็น 'closed'?",
+    options: [
+      'shadow root object',
+      'DocumentFragment ที่ว่างเปล่า',
+      'null',
+      'undefined',
+    ],
+    answer: 2,
+  },
+  {
+    q: 'โหมดใดที่แนะนำสำหรับ web components ส่วนใหญ่?',
+    options: [
+      'closed เพื่อความปลอดภัย',
+      'open เพื่อการทำงานร่วมกัน',
+      'ทั้งสองโหมดเหมือนกัน',
+      'ไม่มีทั้งคู่ — หลีกเลี่ยง attachShadow',
+    ],
+    answer: 1,
+  },
+];
+
+<Quiz client:visible id="shadow-dom/open-vs-closed" questions={quizOpenVsClosed} />
+
+<ProgressTracker client:visible id="shadow-dom/open-vs-closed" />
