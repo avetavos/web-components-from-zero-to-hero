@@ -9,12 +9,12 @@ export default defineConfig({
   // GitHub Pages project site. Update `site` to your GitHub username and `base`
   // to your repo name if they differ.
   site: 'https://avetavos.github.io',
-  base: '/web-for-designers',
+  base: '/web-components-from-zero-to-hero',
   output: 'static',
   integrations: [starlight({
-      title: 'Web for Designers',
+      title: 'Web Components — From Zero to Hero',
       head: [
-        { tag: 'script', attrs: { type: 'module', src: '/web-for-designers/enhance.js' } },
+        { tag: 'script', attrs: { type: 'module', src: '/web-components-from-zero-to-hero/enhance.js' } },
       ],
       defaultLocale: 'en',
       locales: {
@@ -22,15 +22,16 @@ export default defineConfig({
         th: { label: 'ไทย', lang: 'th' },
       },
       customCss: ['./src/styles/custom.css'],
-      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/avetavos/web-for-designers' }],
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/avetavos/web-components-from-zero-to-hero' }],
       sidebar: [
-        { label: 'How the Web Works', items: [{ autogenerate: { directory: 'how-web-works' } }] },
-        { label: 'HTML — Structure & Content', items: [{ autogenerate: { directory: 'html' } }] },
-        { label: 'CSS — Styling Basics', items: [{ autogenerate: { directory: 'css' } }] },
-        { label: 'CSS Layout — Flexbox & Grid', items: [{ autogenerate: { directory: 'layout' } }] },
-        { label: 'Responsive Design', items: [{ autogenerate: { directory: 'responsive' } }] },
-        { label: 'A Little JavaScript', items: [{ autogenerate: { directory: 'javascript' } }] },
-        { label: 'Design-to-Code Workflow', items: [{ autogenerate: { directory: 'workflow' } }] },
+        { label: 'Intro & Custom Elements', items: [{ autogenerate: { directory: 'intro-custom-elements' } }] },
+        { label: 'Lifecycle Callbacks', items: [{ autogenerate: { directory: 'lifecycle' } }] },
+        { label: 'Shadow DOM', items: [{ autogenerate: { directory: 'shadow-dom' } }] },
+        { label: 'Templates & Slots', items: [{ autogenerate: { directory: 'templates-slots' } }] },
+        { label: 'Styling', items: [{ autogenerate: { directory: 'styling' } }] },
+        { label: 'Attributes, Properties & Events', items: [{ autogenerate: { directory: 'attributes-properties-events' } }] },
+        { label: 'Patterns & Composition', items: [{ autogenerate: { directory: 'patterns-composition' } }] },
+        { label: 'Lit & Tooling', items: [{ autogenerate: { directory: 'lit-and-tooling' } }] },
       ],
       }), preact()],
 });
