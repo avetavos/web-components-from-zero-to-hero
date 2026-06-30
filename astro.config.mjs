@@ -8,22 +8,22 @@ import preact from '@astrojs/preact';
 export default defineConfig({
   // GitHub Pages project site. Update `site` to your GitHub username and `base`
   // to your repo name if they differ.
-  site: 'https://web-components-from-zero-to-hero.avetavos.com',
-  base: '/',
+  site: 'https://web-platform.avetavos.com',
+  base: '/web-components',
   output: 'static',
   integrations: [starlight({
       title: 'Web Components — From Zero to Hero',
       head: [
-        { tag: 'script', attrs: { type: 'module', src: '/enhance.js' } },
-        { tag: 'link', attrs: { rel: 'manifest', href: '/manifest.webmanifest' } },
-        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
-        { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '192x192', href: '/icon-192.png' } },
+        { tag: 'script', attrs: { type: 'module', src: '/web-components/enhance.js' } },
+        { tag: 'link', attrs: { rel: 'manifest', href: '/web-components/manifest.webmanifest' } },
+        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/web-components/apple-touch-icon.png' } },
+        { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '192x192', href: '/web-components/icon-192.png' } },
         { tag: 'meta', attrs: { name: 'theme-color', content: '#059669' } },
         { tag: 'meta', attrs: { name: 'mobile-web-app-capable', content: 'yes' } },
         { tag: 'meta', attrs: { name: 'apple-mobile-web-app-capable', content: 'yes' } },
         { tag: 'meta', attrs: { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' } },
         { tag: 'meta', attrs: { name: 'apple-mobile-web-app-title', content: "Web Components" } },
-        { tag: 'script', content: "if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(){})})}" },
+        { tag: 'script', content: "if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/web-components/sw.js',{scope:'/web-components/'}).catch(function(){})})}" },
       ],
       defaultLocale: 'en',
       locales: {
