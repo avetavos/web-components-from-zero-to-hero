@@ -10,7 +10,9 @@ import Tip from '../../../../components/Tip.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-attribute `part="name"` ทำเครื่องหมาย element **ภายใน shadow root** ให้เป็น styling hook ที่ตั้งชื่อไว้ จากนั้น CSS ของหน้าสามารถกำหนดเป้าหมายไปยังมันด้วย pseudo-element `::part(name)` บน host — ข้ามขอบเขต shadow boundary โดยไม่สูญเสียการ encapsulation ของส่วนอื่นๆ ผู้เขียน component เป็นผู้ควบคุมว่า internals ใดบ้างที่จะถูกเปิดเผย
+Shadow DOM ปิดกั้นไม่ให้ CSS ภายนอก select เข้าไปจัดสไตล์ internals ได้ตามปกติ นั่นดีต่อ encapsulation แต่บางครั้งผู้เขียน component ก็อยากเปิดจุดให้ผู้ใช้ theme ได้แบบควบคุมได้ — `part` attribute คือกลไกที่ให้ทำสิ่งนั้น
+
+attribute `part="name"` ทำเครื่องหมาย element **ภายใน shadow root** ให้เป็น styling hook ที่ตั้งชื่อไว้ จากนั้น CSS ของหน้าสามารถกำหนดเป้าหมายไปยังมันด้วย pseudo-element `::part(name)` บน host ทำให้ข้ามขอบเขต shadow boundary ได้โดยไม่สูญเสียการ encapsulation ของส่วนอื่น ๆ ผู้เขียน component เป็นผู้ควบคุมว่า internals ใดบ้างที่จะถูกเปิดเผย
 
 ```html
 <theme-card></theme-card>
@@ -65,6 +67,25 @@ export const partJs = 'class ThemeCard extends HTMLElement {\n' +
 <Tip title="::part() เป็นแบบ opt-in">
 เฉพาะ elements ที่ทำเครื่องหมายด้วย `part='name'` อย่างชัดเจนเท่านั้นที่สามารถจัดสไตล์จากภายนอกได้ นี่เป็นความตั้งใจ — ผู้เขียน component เป็นผู้ตัดสินใจว่าอะไรจัดสไตล์ได้ โดยรักษาการ encapsulation สำหรับส่วนอื่นทั้งหมด
 </Tip>
+
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| `part` + `::part()` | เป็น styling API แบบ opt-in ที่ชัดเจน — เฉพาะ element ที่ทำเครื่องหมายไว้เท่านั้นที่จัดสไตล์จากภายนอกได้ รักษา encapsulation ของส่วนที่เหลือ | ชื่อ part กลายเป็น public contract ที่ต้อง maintain เหมือน API — เปลี่ยนชื่อหรือลบ part ทีหลังคือ breaking change สำหรับผู้ใช้ที่พึ่งพา `::part()` อยู่ |
+| `exportparts` | ส่งออก part ของ component ที่ถูกประกอบซ้อนกันได้ โดยไม่ต้อง expose shadow tree ทั้งหมดของ component ภายใน | เพิ่มชั้นของ mapping ที่ต้อง sync ด้วยมือ หาก inner component เปลี่ยนชื่อ part เดิม `exportparts` ของ outer component จะพังตาม |
+
+## Common Mistakes
+
+- **มองว่า part เป็นแค่รายละเอียดภายใน** — เปลี่ยนชื่อหรือลบ `part="name"` โดยไม่คิดว่ามันคือ public API เวอร์ชันหนึ่งที่ CSS ภายนอกพึ่งพาอยู่ ทำให้ `::part()` ของผู้ใช้พังแบบไม่มีการแจ้งเตือนใด ๆ
+- **ลืมใช้ `exportparts` เมื่อ compose component** — part ของ custom element ที่ซ้อนอยู่ภายในจะไม่ถูกส่งออกให้ host ภายนอกเห็นโดยอัตโนมัติ ต้องประกาศ `exportparts="inner: outer-name"` อย่างชัดเจนเสมอ
+- **ใส่ `part` attribute ผิดตำแหน่ง** — `part` ต้องอยู่บน element ภายใน shadow root เท่านั้น จะใช้ `::part()` อ้างถึงตัว host เองไม่ได้ ให้ใช้ `:host` / `:host()` แทนสำหรับสไตล์ของ host
+
+> 💡 Real World Example
+>
+> **Adobe Spectrum (Spectrum Web Components)** — ใช้ `::part` อย่างกว้างขวางเป็น styling API สำหรับ theme internals ของทุก component พร้อมเอกสารกำกับชื่อ part แต่ละตัวไว้อย่างเป็นทางการ เหมือน public API จริง ๆ
+>
+> **Shoelace** — เอกสาร part names ทั้งหมดของแต่ละ component ไว้ในหน้า docs และถือว่าการเปลี่ยนชื่อ part ในเวอร์ชันถัดไปคือ breaking change
 
 export const quizPart = [
   {

@@ -79,6 +79,25 @@ export const openClosedHtml = '<open-box></open-box><closed-box></closed-box><pr
 ใช้ `mode: 'open'` สำหรับ component ที่ต้องการให้โค้ดอื่น (DevTools, tests, Lit) ตรวจสอบได้ โหมด closed ไม่ได้ให้ความปลอดภัยจริง และใช้งานได้ยากกว่า
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| `mode: 'open'` | DevTools, test frameworks และ library อย่าง Lit เข้าถึง `shadowRoot` ได้ตามปกติ ใช้งานง่าย debug ง่าย | internal structure เข้าถึงได้จาก JavaScript ภายนอกทั้งหมด ไม่มีการซ่อนจริง |
+| `mode: 'closed'` | `.shadowRoot` คืนค่า `null` จากภายนอก ให้ความรู้สึกว่า internal ถูกซ่อน | เขียน test และ debug ยากขึ้นมาก เครื่องมือ inspect มาตรฐานเข้าไม่ถึง และไม่ได้เป็น security boundary จริง |
+
+## Common Mistakes
+
+- **เลือก `mode: 'closed'` เพราะคิดว่าปลอดภัยกว่า** — closed mode แค่ซ่อน reference จาก `.shadowRoot` แต่ยังตรวจสอบ DOM ผ่าน `document.querySelector` และ dev tools บางส่วนได้อยู่ดี ไม่ใช่ security boundary จริง อย่าใช้แทนการป้องกันข้อมูลจริง
+- **ใช้ `mode: 'closed'` แล้วลืมเก็บ reference ของ shadow root ไว้เอง** — เพราะ `this.shadowRoot` จะเป็น `null` ต้องเก็บค่าที่ `attachShadow` คืนมาไว้ใน variable หรือ private field ของ instance เอง
+- **เลือก closed mode โดยไม่คิดถึง tooling** — test frameworks, DevTools inspector และ library หลายตัว (เช่น Lit) คาดหวัง `mode: 'open'` การเลือก closed โดยไม่จำเป็นทำให้ debug และ test component ยากขึ้นโดยไม่ได้อะไรกลับมาคุ้มค่า
+
+> 💡 Real World Example
+>
+> **Salesforce Lightning (LWC)** — เลือกใช้ `mode: 'open'` เป็นค่าเริ่มต้นสำหรับ component เพื่อให้ DevTools และ automated test เข้าถึง shadow tree ได้ในระดับ enterprise
+>
+> **YouTube** — video player component ใช้ `mode: 'open'` เพื่อให้ยังคง debug และ inspect ได้ผ่าน DevTools แม้จะ encapsulate style และ DOM ไว้
+
 export const quizOpenVsClosed = [
   {
     q: '`element.shadowRoot` คืนค่าอะไรเมื่อแนบ shadow root ด้วย `mode: "closed"`?',

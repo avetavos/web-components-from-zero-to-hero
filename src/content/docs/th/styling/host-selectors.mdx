@@ -49,6 +49,25 @@ export const hostJs = 'class BadgeHost extends HTMLElement {\n' +
 สไตล์ `:host` มีผลกับ tag ของ custom element ภายนอกตามที่เห็นใน document พวกมันมี specificity ต่ำกว่าสไตล์ของหน้าที่กำหนดเป้าหมายไปยัง element เดียวกัน — ดังนั้น rule ของหน้าอย่าง `badge-host { background: pink }` จะ override `:host { background: blue }`
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| `:host` / `:host()` | เขียนสไตล์ layout และ variants ของตัว component เองไว้ข้าง ๆ shadow tree โดยตรง ไม่ต้องพึ่ง class ภายนอก | specificity ต่ำกว่าสไตล์ของหน้าที่กำหนดเป้าหมาย element เดียวกันด้วย tag หรือ class ทำให้ page CSS override ได้ง่ายโดยไม่ตั้งใจ |
+| `:host-context()` | ปรับตัวตาม ancestor context (เช่น dark mode) ได้อัตโนมัติ โดยหน้าไม่ต้องรู้ internals ของ component | ผูก component เข้ากับชื่อ class ของ ancestor ที่เฉพาะเจาะจง กลายเป็น dependency แบบซ่อนเร้นต่อโครงสร้างของหน้าที่ใช้งาน |
+
+## Common Mistakes
+
+- **คิดว่า `:host` ชนะสไตล์ของหน้าเสมอ** — ลืมว่า `:host` มี specificity ต่ำกว่า selector ของหน้าที่กำหนดเป้าหมาย element เดียวกันโดยตรง เช่น `badge-host { background: pink }` จะ override `:host { background: blue }` แบบไม่คาดคิด
+- **ใช้ `:host-context()` แทน custom properties เพื่อทำธีม** — การผูก styling เข้ากับชื่อ class ของ ancestor ตรง ๆ ทำให้ component เปราะบางและย้ายไปใช้ในหน้าอื่นยาก ควรใช้ CSS custom properties สำหรับ theming ที่พกพาได้มากกว่า
+- **ลืมกำหนด `display` บน `:host`** — ไม่ตั้งค่า `:host { display: ... }` ตั้งแต่ต้น ทำให้ custom element มีค่าเริ่มต้นเป็น `display: inline` ซึ่งมักทำให้เลย์เอาต์เพี้ยนเมื่อฝังในหน้าจริง
+
+> 💡 Real World Example
+>
+> **Adobe Spectrum (Spectrum Web Components)** — ใช้ `:host` ร่วมกับ CSS custom properties กำหนด layout เริ่มต้นของแต่ละ component ให้สอดคล้องกับ design system โดยไม่ต้องพึ่ง `:host-context()` ที่ผูกกับโครงสร้างหน้าตรง ๆ
+>
+> **Shoelace** — ทุก component ตั้งค่า `:host { display: ... }` อย่างชัดเจนตั้งแต่ต้น เพื่อป้องกันปัญหา `display: inline` เริ่มต้นที่ทำให้เลย์เอาต์เพี้ยนเมื่อถูกฝังในหน้าจริง
+
 export const quizHost = [
   {
     q: ":host ภายใน shadow root หมายถึงอะไร?",

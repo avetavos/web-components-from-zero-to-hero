@@ -12,7 +12,9 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ## template element คืออะไร
 
-`<template>` element เก็บ markup ของ HTML ที่จะไม่ถูก render เมื่อหน้าเว็บโหลด ต่างจาก `<div>` ที่ซ่อนไว้ เนื้อหาของ template ไม่มี side-effect เลย คือ script ภายในไม่ทำงาน รูปไม่โหลด และ style ไม่ถูกนำมาใช้ property `content` ของมันเปิดเผย markup ออกมาในรูปของ `DocumentFragment` ซึ่งเป็น container ที่เบาบรรจุ node ที่ถูก parse แล้ว และอยู่นอก document tree จริงจนกว่าคุณจะแทรกมันเข้าไปอย่างชัดเจน
+เวลาต้อง stamp DOM structure เดิมซ้ำ ๆ หลายครั้ง (เช่น การ์ดในลิสต์) การสร้าง element ด้วย `innerHTML` string ทุกครั้งทั้งช้าและเสี่ยง XSS — `<template>` แก้ปัญหานี้โดยให้คุณนิยาม markup ไว้ล่วงหน้าแบบ parse ครั้งเดียวแล้ว clone ได้ไม่จำกัด
+
+`<template>` element เก็บ markup ของ HTML ที่จะไม่ถูก render เมื่อหน้าเว็บโหลด ต่างจาก `<div>` ที่ซ่อนไว้ เนื้อหาของ template ไม่มี side-effect เลย script ภายในไม่ทำงาน รูปไม่โหลด และ style ไม่ถูกนำมาใช้ property `content` ของมันเปิดเผย markup ออกมาในรูปของ `DocumentFragment` ซึ่งเป็น container ที่เบา บรรจุ node ที่ถูก parse แล้วไว้ล่วงหน้า และอยู่นอก document tree จริงจนกว่าคุณจะแทรกมันเข้าไปอย่างชัดเจน
 
 ## การเข้าถึงและการ clone
 
@@ -67,6 +69,25 @@ customElements.define('my-card', MyCard);`;
 <Tip title="หนึ่ง template หลาย instance">
 เนื่องจาก `cloneNode(true)` คัดลอก DocumentFragment ได้อย่างประหยัด คุณจึง stamp instance ได้หลายสิบตัวโดยไม่ต้อง parse string ของ HTML ซ้ำในแต่ละครั้ง
 </Tip>
+
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| `<template>` + `cloneNode(true)` | parse markup เพียงครั้งเดียว แล้ว clone ได้เร็วและปลอดภัยจาก XSS เพราะไม่ผ่าน string parsing ซ้ำ | ต้องเขียนโค้ดเพิ่มเพื่อดึงและ clone content ไม่ได้สั้นเท่าการต่อ string ตรง ๆ |
+| สร้าง markup ด้วย `innerHTML` string ซ้ำ ๆ | เขียนง่าย เห็นผลเร็วสำหรับ prototype | ช้ากว่าเพราะต้อง parse HTML ใหม่ทุกครั้ง และเสี่ยง XSS ถ้ามีข้อมูลจากผู้ใช้งานปนอยู่ใน string |
+
+## Common Mistakes
+
+- **ลืมเรียก `.cloneNode(true)` ก่อนใช้งาน content ของ template** — `template.content` เป็น `DocumentFragment` ที่ใช้ร่วมกันเพียงชุดเดียว การแทรกมันตรง ๆ โดยไม่ clone จะทำให้ fragment ต้นฉบับถูกย้าย (moved) ออกไป ทำให้ instance ถัดไปได้ fragment ว่างเปล่า
+- **เรียก `cloneNode()` โดยไม่ใส่ `true`** — จะได้ shallow clone ที่ไม่มี node ลูกหลานเลย ต้องระบุ `true` เสมอเพื่อทำ deep copy
+- **คาดหวังว่า script หรือ style ภายใน `<template>` จะทำงานทันทีตอนหน้าเว็บโหลด** — เนื้อหาของ template เป็น inert จนกว่าจะถูก clone และแทรกเข้า document จริง script จะไม่รันและ style จะไม่ถูกนำไปใช้จนกว่าจะถึงตอนนั้น
+
+> 💡 Real World Example
+>
+> **Lit** ใช้แนวคิดคล้าย `<template>` ภายใน internal เพื่อ cache parsed markup แล้ว clone ซ้ำเมื่อ re-render คอมโพเนนต์ ลดต้นทุนการ parse ซ้ำ
+>
+> **Shoelace** และ web component library อื่น ๆ มักใช้ `<template>` ร่วมกับ `cloneNode(true)` ในคอมโพเนนต์ที่ต้อง stamp โครงสร้างเดิมซ้ำหลายครั้ง เช่น list item หรือ menu option
 
 export const quizTemplates = [
   {

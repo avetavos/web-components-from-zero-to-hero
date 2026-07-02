@@ -138,6 +138,25 @@ export const distJs = `(async () => {
 การ import โมดูลของ web component (เช่น `import 'my-counter'`) เป็นการ import แบบ side-effect คือมันจะรันโค้ดระดับบนสุดของไฟล์ (ซึ่งเรียก `customElements.define`) โดยไม่ได้ import ชื่อที่ export ออกมาเลย นี่คือรูปแบบมาตรฐานสำหรับการลงทะเบียน components จากภายนอก
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| เผยแพร่เป็น unbundled ES module พร้อมประกาศ Lit เป็น `peerDependencies` | Bundler ฝั่ง consumer สามารถ dedupe และ tree-shake Lit ได้เต็มที่ ลดโอกาสโหลดซ้ำ | ต้องพึ่งพาว่า consumer มี bundler ที่ resolve ESM ได้ถูกต้อง |
+| Bundle/minify Lit เข้าไปในไฟล์ package ของตัวเอง | ใช้งานได้ทันทีแม้ consumer ไม่มี build step | เสี่ยงโหลด Lit runtime ซ้ำหลายชุดเมื่อหน้าเดียวมี component จากหลาย vendor ทำให้ bundle บวม |
+
+## Common Mistakes
+
+- **Bundle Lit runtime เข้าไปในทุก component ที่เผยแพร่** แทนที่จะประกาศเป็น shared dependency — ถ้าหน้าเว็บใช้ component จากหลาย vendor ผู้ใช้จะโหลด Lit ซ้ำหลายชุดโดยไม่รู้ตัว ทำให้ bundle บวมเกินจำเป็น
+- **เผยแพร่เฉพาะไฟล์ที่ minify/bundle แล้วเท่านั้น** (ไม่มี unbundled ESM ให้เลือก) — ทำลายความสามารถ tree-shaking และ code-splitting ของ bundler ฝั่ง consumer
+- **ลืมระบุ browser support หรือ polyfill requirement ไว้ใน README** — ผู้ใช้ที่ต้อง support เบราว์เซอร์เก่าจะไม่รู้ว่าต้องติดตั้ง `@webcomponents/polyfills` เพิ่มเอง
+
+> 💡 Real World Example
+>
+> **Home Assistant** — เผยแพร่และดูแล custom elements จำนวนมากที่ใช้ Lit เป็น shared dependency ตัวเดียวทั่วทั้งแอป แทนที่จะ bundle Lit แยกในแต่ละ element
+>
+> **Google Material Web** — เผยแพร่แต่ละ component เป็น unbundled ES module แยกตัว ทำให้ consumer เลือก import และ tree-shake เฉพาะส่วนที่ใช้ได้
+
 export const quizDistributingAndSupport = [
   {
     q: 'จุดประสงค์ของไฟล์ Custom Elements Manifest คืออะไร?',

@@ -109,6 +109,25 @@ export const customEventsJs = 'var _count = 0;' +
 เมื่อคุณเรียก `dispatchEvent` แล้ว ออบเจกต์ `detail` ที่คุณส่งเข้าไปจะสามารถเข้าถึงได้ใน event object ของทุก listener ในรูป `e.detail` การแก้ไขค่าภายใน listener นั้นทำได้ในทางเทคนิค แต่ไม่แนะนำอย่างยิ่ง — ให้ถือว่า `detail` เป็น snapshot ที่ไม่เปลี่ยนแปลงของ state ณ ขณะที่ dispatch
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| `CustomEvent` + `detail` payload | ข้อมูลที่ส่งออกมีโครงสร้างชัดเจน เชื่อมต่อแบบหลวม หลาย listener subscribe พร้อมกันได้โดย element ไม่ต้องรู้ว่าใครฟังอยู่ | ไม่มี type-checking ในตัว ต้องพึ่งเอกสารกำกับ shape ของ `detail` เอง ผู้ใช้ component อาจเข้าใจผิดได้ถ้าไม่มีเอกสาร |
+| Callback prop (ส่งฟังก์ชันเป็น property) | เรียกกลับตรงไปตรงมา รับ return value จาก caller กลับมาใช้ต่อได้ | ผูกมัดแน่นกับ consumer เฉพาะราย รองรับผู้ฟังได้แค่คนเดียวต่อครั้ง และต้องตั้งค่า callback ก่อน element ใช้งาน |
+
+## Common Mistakes
+
+- **ลืม `bubbles: true`** — ยิง `CustomEvent` โดยไม่ตั้ง `bubbles` ทำให้เฉพาะ element ที่ dispatch เท่านั้นที่รับรู้ event ancestor หรือ `document` จะไม่มีทางเห็น event เลย
+- **แก้ไขค่าใน `e.detail` จาก listener** — `detail` ควรถือเป็น snapshot ที่ไม่เปลี่ยนแปลงของ state ณ ขณะ dispatch การแก้ไขค่าจาก listener หนึ่งจะกระทบ listener อื่นที่รับ event เดียวกันแบบไม่คาดคิด
+- **ตั้งชื่อ event แบบ camelCase เช่น `countChange`** — ควรใช้รูปแบบตัวพิมพ์เล็กคั่นด้วยขีดกลางแบบ DOM event มาตรฐาน เช่น `count-change` เพื่อหลีกเลี่ยงปัญหา case-sensitivity ใน HTML attribute event handler
+
+> 💡 Real World Example
+>
+> **GitHub's Catalyst** framework — ใช้แบบแผน `CustomEvent` พร้อม `detail` อย่างเคร่งครัดสำหรับ custom element ทุกตัว เพื่อให้ event payload คาดเดาได้และทดสอบง่าย
+>
+> **Shoelace / Web Awesome design system** — component เช่น `sl-select` dispatch event `sl-change` พร้อม `detail` ที่บอก item ที่ถูกเลือก ทำให้ consumer อ่านค่าที่เปลี่ยนได้โดยไม่ต้อง query เข้าไปใน shadow DOM เอง
+
 export const quizCustomEvents = [
   {
     q: 'Property ใดของ `CustomEvent` ที่ใช้เก็บ event payload?',

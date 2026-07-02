@@ -48,7 +48,7 @@ element นี้ยังคงเป็น `<button>` อยู่ — มั�
 
 ## ข้อควรระวังเรื่องการรองรับ
 
-**Safari ไม่รองรับ customized built-ins** และได้ปฏิเสธอย่างชัดเจนว่าจะไม่ทำการรองรับ นี่เป็นปัญหาด้านการพกพาที่สำคัญ: `<button is="fancy-button">` จะถูกเรนเดอร์เป็นปุ่มธรรมดาที่ไม่มีสไตล์ใน Safari
+**Safari ไม่รองรับ customized built-ins** และได้ปฏิเสธอย่างชัดเจนว่าจะไม่รองรับ นี่เป็นปัญหาด้านการพกพาที่สำคัญ: `<button is="fancy-button">` จะถูกเรนเดอร์เป็นปุ่มธรรมดาที่ไม่มีสไตล์ใน Safari
 
 มี polyfill อยู่ (เช่น `@ungap/custom-elements`) แต่มันเพิ่มน้ำหนักและความซับซ้อน
 
@@ -101,6 +101,25 @@ export const cbiHtml = `<x-button label="Autonomous element" color="#059669"></x
 <Tip title="autonomous elements คือตัวเลือกที่พกพาได้">
 autonomous custom elements (`extends HTMLElement`) ทำงานได้ในเบราว์เซอร์หลักทุกตัว ส่วน customized built-ins (`extends HTMLButtonElement` ใช้คู่กับ `is="..."`) ไม่รองรับใน Safari — ใช้มันเฉพาะเมื่อคุณสามารถ polyfill ได้ หรือเจาะจงเป้าหมายเฉพาะ Chromium/Firefox เท่านั้น
 </Tip>
+
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Customized built-in (`is="..."`) | สืบทอด semantics เนทีฟของ element เดิมได้ครบ (focus, form submission, accessibility) โดยไม่ต้องเขียนเอง | Safari ปฏิเสธที่จะรองรับอย่างถาวร ทำให้พกพาข้ามเบราว์เซอร์ไม่ได้ |
+| Autonomous element (`extends HTMLElement`) | รองรับเต็มรูปแบบในทุกเบราว์เซอร์หลัก | ต้องเขียน semantics ที่เนทีฟให้ฟรี (เช่น `role`, keyboard handling) ด้วยตัวเอง |
+
+## Common Mistakes
+
+- **ลืมใส่ `{ extends: 'button' }`** — ถ้าไม่ส่ง option ตัวที่สามให้ `customElements.define` เบราว์เซอร์จะไม่รู้ว่านี่คือ customized built-in และ `is="fancy-button"` จะไม่ทำงาน
+- **ไม่ทดสอบใน Safari ก่อน deploy** — ความล้มเหลวเป็นแบบเงียบ ไม่มี error ใน console แค่เรนเดอร์เป็น `<button>` ธรรมดาไม่มีสไตล์ ทำให้พลาดง่ายถ้าทดสอบแค่ Chrome/Firefox
+- **ใส่ polyfill โดยไม่ชั่งน้ำหนักต้นทุน** — `@ungap/custom-elements` ช่วยแก้ปัญหาได้ แต่เพิ่ม bundle size และความซับซ้อนให้ทุก request แม้ในเบราว์เซอร์ที่รองรับอยู่แล้ว
+
+> 💡 Real World Example
+>
+> **GitHub** — เลือกสร้าง `<relative-time>` และ `<clipboard-copy>` เป็น autonomous elements แทนที่จะใช้ customized built-ins เพื่อให้ทำงานได้ในทุกเบราว์เซอร์รวมถึง Safari
+>
+> **Adobe Spectrum** — ดีไซน์ระบบ Spectrum Web Components เลือกใช้ autonomous elements เป็นหลักด้วยเหตุผลด้านการพกพาข้ามเบราว์เซอร์เดียวกันนี้
 
 export const quizCbi = [
   {

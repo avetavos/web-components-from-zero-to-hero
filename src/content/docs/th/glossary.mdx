@@ -1,0 +1,75 @@
+---
+title: Glossary
+description: คำศัพท์ Web Components ที่ใช้ตลอด course นี้ — รักษา terminology ภาษาอังกฤษตามที่ developer ใช้จริง
+sidebar:
+  order: 99
+---
+
+import Tip from '../../../components/Tip.astro';
+import ProgressTracker from '../../../components/ProgressTracker.tsx';
+
+## Core
+
+| English | Thai Style | หมายเหตุ |
+|---------|-----------|---------|
+| Custom element | custom element | HTML element ที่ผู้เขียนนิยามเองด้วย tag name ที่มีขีดกลาง (hyphen) |
+| Shadow DOM | shadow DOM | DOM tree ที่แยกขอบเขตออกจาก document หลัก ทั้งด้าน style และ markup |
+| Template | template | `<template>` element ที่เก็บ markup ไว้ล่วงหน้าโดยไม่ render จนกว่าจะถูก clone |
+| Slot | slot | จุดที่ light DOM content ของผู้ใช้ถูกแทรกเข้าไปใน shadow tree |
+| Light DOM | light DOM | markup ปกติที่ผู้ใช้ component เขียนไว้ ณ ตำแหน่งที่เรียกใช้ custom element |
+
+## Registration & Lifecycle
+
+| English | Thai Style | หมายเหตุ |
+|---------|-----------|---------|
+| Define | define | การลงทะเบียน class กับ tag name ผ่าน `customElements.define()` |
+| Upgrade | upgrade | ขั้นตอนที่ browser แทนที่ unknown element ด้วย constructor ที่ลงทะเบียนแล้ว |
+| connectedCallback | connectedCallback | lifecycle callback ที่ทำงานเมื่อ element ถูกแทรกเข้า DOM |
+| disconnectedCallback | disconnectedCallback | lifecycle callback ที่ทำงานเมื่อ element ถูกถอดออกจาก DOM |
+| observedAttributes | observedAttributes | static getter ที่ระบุรายชื่อ attribute ที่ต้องการให้ browser เฝ้าดูการเปลี่ยนแปลง |
+| attributeChangedCallback | attributeChangedCallback | lifecycle callback ที่ทำงานเมื่อ attribute ใน `observedAttributes` เปลี่ยนค่า |
+
+## Styling
+
+| English | Thai Style | หมายเหตุ |
+|---------|-----------|---------|
+| :host | :host | selector ที่ใช้จัดสไตล์ host element จากภายใน shadow root |
+| ::slotted | ::slotted | pseudo-element ที่จัดสไตล์ light DOM content ที่ถูก slot เข้ามา (top-level เท่านั้น) |
+| ::part | ::part | pseudo-element ที่ให้ CSS ภายนอกจัดสไตล์ internals ที่ผู้เขียน component เปิดเผยไว้ผ่าน `part` attribute |
+| Constructable stylesheet | constructable stylesheet | `CSSStyleSheet` ที่สร้างด้วย JS แล้ว share ข้าม shadow root หลายตัวได้โดยไม่ต้อง clone `<style>` |
+| CSS custom property | CSS custom property | ตัวแปร CSS (`--name`) ที่ทะลุผ่าน shadow boundary ได้ ใช้เป็นช่องทาง theming หลัก |
+
+## Data & Events
+
+| English | Thai Style | หมายเหตุ |
+|---------|-----------|---------|
+| Attribute | attribute | ค่าที่ประกาศใน HTML markup เสมอเป็น string |
+| Property | property | ค่าบน JS object ของ element เก็บ type ใดก็ได้ ไม่จำกัดแค่ string |
+| Reflection | reflection | การ sync ค่าไปมาระหว่าง attribute กับ property |
+| Composed event | composed event | event ที่ตั้ง `composed: true` จึงข้าม shadow boundary ออกไปได้ |
+| Bubbles | bubbles | คุณสมบัติ event ที่กำหนดว่า event จะลอยขึ้นไปตาม DOM tree หรือไม่ |
+
+## Ecosystem
+
+| English | Thai Style | หมายเหตุ |
+|---------|-----------|---------|
+| Lit | Lit | library ที่ช่วยลด boilerplate ของ native custom element (reactive properties, template diffing) |
+| Form-associated | form-associated custom element | custom element ที่เข้าร่วมกับ `<form>` ได้เหมือน native form control ผ่าน `static formAssociated = true` |
+| ElementInternals | ElementInternals | API ที่ให้ custom element เข้าถึง form participation และ ARIA semantics แบบเนทีฟ |
+| Declarative shadow DOM | declarative shadow DOM (DSD) | การประกาศ shadow root ด้วย HTML ล้วน (`<template shadowrootmode>`) โดยไม่ต้องใช้ JavaScript — สำคัญมากสำหรับ SSR |
+
+## เมื่อ **ไม่** ควรใช้ literal Thai translation
+
+| หลีกเลี่ยง | ใช้แทน |
+|------------|--------|
+| การเข้ารหัสแบบกำหนดเอง (custom element) | custom element |
+| เงาโดม (shadow DOM) | shadow DOM |
+| แม่แบบ (template) | template |
+| ช่องเสียบ (slot) | slot |
+| การสะท้อนกลับ (reflection) | reflection |
+
+<Tip title="ทำไมคำเหล่านี้ไม่แปลเป็นไทยทั้งหมด">
+Course นี้เก็บคำศัพท์หลักของ Web Components ไว้เป็นภาษาอังกฤษ เพราะเป็นคำที่ developer ใช้พูดคุยกันจริงในทีมและในเอกสารทางการของ MDN/spec การแปลคำเหล่านี้ทั้งหมด (เช่น "เงาโดม" แทน shadow DOM) จะทำให้อ่านเข้าใจยากขึ้นและค้นหาเอกสารอ้างอิงต่อไม่ได้ จุดสำคัญคือให้เข้าใจ *concept* ที่คำนั้นสื่อ ไม่ใช่ท่องจำคำแปล
+</Tip>
+
+<ProgressTracker client:visible id="th/glossary" />

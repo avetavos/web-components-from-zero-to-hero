@@ -65,6 +65,25 @@ customElements.define('my-box', MyBox);`;
 เนื้อหาที่วางไว้ภายใน `<slot>` element ทำหน้าที่เป็น fallback เมื่อไม่มีอะไรถูกฉายเข้ามา และยังทำหน้าที่เป็นเอกสารในตัวสำหรับผู้ใช้งานคอมโพเนนต์ไปพร้อมกัน
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Default slot เดี่ยว | เรียบง่าย ใช้งานง่ายสำหรับ use case ที่มีเนื้อหาเดียว ไม่ต้องเรียนรู้ syntax เพิ่ม | ไม่สามารถแยกส่วนเนื้อหาหลายส่วนได้ ถ้าต้องการ layout หลายจุดต้องเปลี่ยนไปใช้ named slots |
+| Fallback content ใน `<slot>` | ให้เอกสารในตัวและ UI ที่ไม่ว่างเปล่าเมื่อไม่มีลูกถูกฉายเข้ามา | เพิ่ม markup เล็กน้อยในทุก `<slot>` และต้องดูแลให้ตรงกับ design จริง |
+
+## Common Mistakes
+
+- **คิดว่าเนื้อหาที่ฉายเข้า slot ถูกย้ายออกจาก light DOM** — จริง ๆ node ยังอยู่ใน light DOM เดิม มีแค่ตำแหน่ง render เท่านั้นที่เปลี่ยน การ query ด้วย `document.querySelector` ยังคืนค่า node เดิม
+- **ลืมว่า fallback content แสดงเฉพาะตอนไม่มีลูกถูกฉายเลย** — ถ้ามีลูกแม้แต่ node เดียวถูกฉายเข้ามา fallback จะถูกซ่อนทั้งหมด ไม่ใช่แสดงร่วมกัน
+- **พยายามสไตล์เนื้อหาที่ถูกฉายเข้า slot ทั้งหมดจาก shadow root ด้วย `::slotted()` แบบลึก** — `::slotted()` เลือกได้เฉพาะ top-level element ที่ถูกฉายเข้ามาเท่านั้น ไม่สามารถเลือก descendant ของมันได้
+
+> 💡 Real World Example
+>
+> **Lit** ใช้ default slot เป็นแพทเทิร์นพื้นฐานสำหรับ content projection ในคอมโพเนนต์ที่มีเนื้อหาลูกแบบอิสระ เช่น wrapper หรือ container component
+>
+> **Shoelace** ใช้ default slot ร่วมกับ named slot ในคอมโพเนนต์อย่าง `<sl-card>` เพื่อให้เนื้อหาหลักตกลงไปอยู่ใน default slot ขณะที่ header/footer ใช้ named slot แยกต่างหาก
+
 export const quizDefaultSlot = [
   {
     q: "ลูกใน light DOM แบบไหนที่ถูกฉายเข้า default slot?",

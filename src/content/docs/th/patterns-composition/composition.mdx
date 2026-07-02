@@ -141,6 +141,25 @@ customElements.define('star-rating', StarRating);`;
 ตั้งค่า `bubbles: true` เพื่อให้ event เดินทางขึ้นไปบน DOM tree และตั้งค่า `composed: true` เพื่อให้มันข้ามขอบเขตของ shadow DOM ได้ ทั้งสองค่ามีค่าเริ่มต้นเป็น `false`
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| สื่อสารผ่าน attribute (parent ตั้งค่า attribute ให้ child) | เขียนง่าย ตรวจสอบค่าได้ตรง ๆ ผ่าน DOM inspector | attribute เป็น string ล้วน ต้อง serialize/deserialize เองเมื่อข้อมูลซับซ้อนขึ้น |
+| สื่อสารผ่าน custom event (child dispatch event ขึ้นไปหา parent) | ส่งข้อมูลชนิดใดก็ได้ผ่าน `detail` และไม่ผูก parent เข้ากับ implementation ภายในของ child | ต้องตั้งค่า `bubbles`/`composed` ให้ถูกต้อง ไม่งั้น event จะไม่ไปถึงที่ที่ควรไปถึง |
+
+## Common Mistakes
+
+- **ลืมตั้ง `composed: true`** — event ที่ dispatch จากภายใน shadow DOM แต่ไม่ตั้ง `composed` จะไม่ข้ามออกไปนอก shadow boundary ทำให้ parent ที่ listen อยู่ใน light DOM ไม่เคยได้รับ event เลย
+- **ส่งข้อมูลซับซ้อนผ่าน attribute แทน property หรือ event** — attribute เก็บได้แค่ string ทำให้ต้อง `JSON.stringify`/`parse` ไปมาโดยไม่จำเป็น ทั้งที่ควรส่งผ่าน property หรือ `event.detail` แทน
+- **Parent เข้าถึง internals ของ child ผ่าน `shadowRoot` โดยตรง** — ทำลาย encapsulation และผูก parent เข้ากับ implementation ภายในของ child เมื่อโครงสร้างภายในของ child เปลี่ยน parent จะพังตาม
+
+> 💡 Real World Example
+>
+> **GitHub** — Catalyst elements ใช้ custom event เป็นช่องทางหลักในการสื่อสารระหว่าง component เพื่อคง encapsulation ไว้ ไม่ให้ parent เข้าไปยุ่งกับ internals ของ child โดยตรง
+>
+> **Ionic Framework** — component ที่ซ้อนกัน (เช่น `<ion-select>` กับ `<ion-select-option>`) dispatch custom event ขึ้นไปหา parent เพื่อรายงานการเปลี่ยนแปลง state แทนที่จะให้ parent poll ค่าจาก child เอง
+
 export const quizComposition = [
   {
     q: 'property ใดบนออปชันของ CustomEvent ที่ทำให้ event ข้ามขอบเขตของ shadow DOM ได้?',

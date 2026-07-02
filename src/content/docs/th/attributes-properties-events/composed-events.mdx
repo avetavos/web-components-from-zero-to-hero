@@ -165,6 +165,25 @@ export const composedJs = 'var ComposedDemo = (function() {\n' +
 `event.composedPath()` จะคืนค่า node เฉพาะในขณะที่ event handler กำลังทำงานอยู่เท่านั้น เก็บ array ไว้ในตัวแปรหากคุณต้องการใช้ในภายหลัง — หลังจาก handler return แล้ว array จะว่างเปล่า
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| `composed: true` | event ทะลุออกจาก shadow boundary ทำให้โค้ดภายนอก เช่น analytics หรือ parent app ฟัง event ได้โดยไม่ต้องรู้โครงสร้างภายในของ component | เผย public event surface มากขึ้น เปลี่ยนชื่อหรือจังหวะของ event ทีหลังจะกระทบ consumer ภายนอกที่ผูก listener ไว้แล้ว |
+| ไม่ตั้ง `composed` (ปล่อยเป็นค่าเริ่มต้น `false`) | event ยังคงเป็นรายละเอียดภายในของ component เปลี่ยนแปลงหรือลบได้อย่างอิสระโดยไม่กระทบใคร | โค้ดภายนอก รวมถึง test ที่ query จาก `document` ไม่มีทางฟัง event นั้นได้เลย แม้จะตั้ง `bubbles: true` ไว้ก็ตาม |
+
+## Common Mistakes
+
+- **ตั้ง `bubbles: true` แต่ลืม `composed: true`** — คิดว่า event จะออกจาก shadow root ได้เพราะตั้ง bubble แล้ว แต่จริงๆ ยังหยุดที่ shadow boundary เหมือนเดิม ต้องตั้งทั้งสอง flag พร้อมกันถ้าต้องการให้ listener ภายนอก shadow tree ฟังได้
+- **ตั้ง `composed: true` ให้ event ภายในทุกตัวโดยไม่เลือก** — ทำให้รายละเอียดการทำงานภายใน component รั่วไหลออกสู่ภายนอกโดยไม่จำเป็น ควรเลือกเฉพาะ event ที่เป็นส่วนหนึ่งของ public API เท่านั้น
+- **เก็บผลลัพธ์จาก `composedPath()` ไว้ใช้ทีหลัง** — `composedPath()` คืนค่าที่ถูกต้องเฉพาะขณะ event handler กำลังทำงานอยู่เท่านั้น ถ้าเก็บ reference ไว้ใช้ใน callback แบบ async ในภายหลัง จะได้ array ว่างเปล่า
+
+> 💡 Real World Example
+>
+> **Shoelace / Web Awesome design system** — component อย่าง `sl-dialog` dispatch event เช่น `sl-show`, `sl-hide` ด้วย `composed: true` เสมอ เพื่อให้ framework ภายนอกอย่าง React หรือ Vue ผูก event handler ได้ตามปกติโดยไม่ต้องเจาะเข้าไปใน shadow tree
+>
+> **YouTube web components** — ปุ่ม like และ subscribe ที่อยู่ภายใน shadow DOM dispatch custom event ด้วย `composed: true` เพื่อให้ analytics script ระดับหน้าเว็บดักฟังการโต้ตอบของผู้ใช้ได้
+
 export const quizComposed = [
   {
     q: 'ต้องตั้งค่า option ใดเพื่อให้ CustomEvent ข้าม shadow DOM boundary ได้?',

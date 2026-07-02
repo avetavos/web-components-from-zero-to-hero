@@ -75,6 +75,25 @@ customElements.define('my-card', MyCard);`;
 มอง named slot เป็น public API ของคอมโพเนนต์ของคุณ ผู้ใช้งานเติม `slot='header'` และ `slot='body'` ส่วนคอมโพเนนต์เป็นผู้ควบคุมว่าจะนำเสนอชิ้นส่วนเหล่านั้นอย่างไร
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Named slots หลายตัว | เปิดให้ผู้ใช้งานประกอบ layout เองได้อย่างยืดหยุ่น เหมาะกับคอมโพเนนต์ที่มีหลายส่วน เช่น card, dialog | เพิ่ม learning curve ให้ผู้ใช้งานต้องรู้ชื่อ slot ที่ถูกต้อง พิมพ์ผิดแล้วเนื้อหาหายไปเงียบ ๆ |
+| ผูก slot name ไว้ตัวเดียว (default slot เดี่ยว) | เรียนรู้ง่าย ไม่มีโอกาสพิมพ์ชื่อ slot ผิด | จำกัดความสามารถในการจัดวางหลายส่วนเนื้อหาแยกกัน |
+
+## Common Mistakes
+
+- **พิมพ์ชื่อ `slot` attribute ผิดหรือไม่ตรงกับ named slot ใน shadow tree** — เนื้อหานั้นจะไม่ถูก render เลยแบบเงียบ ๆ ไม่มี error ใด ๆ ให้เห็น ควรตรวจสอบชื่อให้ตรงกันเสมอ
+- **คาดหวังว่าจะสไตล์ descendant ของเนื้อหาที่ถูกฉายเข้า named slot ได้ทั้งหมดจาก shadow root** — `::slotted()` เลือกได้เฉพาะ element ระดับบนสุดที่ถูกฉายเข้ามาเท่านั้น ไม่ทะลุเข้าไปถึงลูกหลานของมัน
+- **ลืมกำหนด fallback content ให้ named slot ที่อาจไม่มีใครใส่ข้อมูลมา** — ทำให้ UI ว่างเปล่าโดยไม่มีคำอธิบายเมื่อผู้ใช้งานคอมโพเนนต์ลืมใส่ slot นั้น
+
+> 💡 Real World Example
+>
+> **Shoelace** ใช้ named slots อย่างกว้างขวางในการออกแบบ API ของคอมโพเนนต์ เช่น slot `prefix`/`suffix` ใน `<sl-input>` หรือ slot `icon` ใน `<sl-button>` เพื่อให้ผู้ใช้งาน inject ไอคอนหรือเนื้อหาเสริมได้อย่างยืดหยุ่น
+>
+> **Lit** แนะนำแพทเทิร์นการใช้ named slots ในการสร้างคอมโพเนนต์แบบ composable เช่น layout component ที่มี slot `header`, `content`, `footer` แยกกัน
+
 export const quizNamedSlots = [
   {
     q: "คุณกำหนดลูกใน light DOM ให้กับ named slot ที่ชื่อ 'header' ได้อย่างไร?",

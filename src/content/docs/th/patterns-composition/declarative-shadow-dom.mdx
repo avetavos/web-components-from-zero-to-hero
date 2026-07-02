@@ -35,7 +35,7 @@ Declarative Shadow DOM (DSD) ช่วยให้คุณแนบ shadow root
 
 ## เรื่องราวของการ hydration
 
-เมื่อ JavaScript โหลดขึ้นมา `customElements.define('my-card', MyCard)` จะอัปเกรด element หาก class เรียก `attachShadow` ใน constructor ของมัน เบราว์เซอร์จะข้ามการสร้าง shadow root ตัวที่สอง (เพราะมีอยู่แล้ว) และนำตัวที่มีอยู่กลับมาใช้ใหม่ ซึ่งหมายความว่าเนื้อหาที่ถูก render จากเซิร์ฟเวอร์จะถูกรักษาไว้ ซึ่งเป็นคุณสมบัติที่สำคัญยิ่งสำหรับ SSR hydration
+เมื่อ JavaScript โหลดขึ้นมา `customElements.define('my-card', MyCard)` จะอัปเกรด element หาก class เรียก `attachShadow` ใน constructor ของมัน เบราว์เซอร์จะข้ามการสร้าง shadow root ตัวที่สอง (เพราะมีอยู่แล้ว) และนำตัวที่มีอยู่กลับมาใช้ใหม่ นั่นหมายความว่าเนื้อหาที่ถูก render จากเซิร์ฟเวอร์จะถูกรักษาไว้ — คุณสมบัตินี้สำคัญมากสำหรับ SSR hydration
 
 ```js
 class MyCard extends HTMLElement {
@@ -91,6 +91,25 @@ document.body.appendChild(out);`;
 <Tip title="Great for SSR">
 Declarative Shadow DOM โดดเด่นในสถานการณ์ server-side rendering ส่ง shadow tree ไปเป็น HTML แล้วเบราว์เซอร์จะ render มันทันที ก่อนที่ JavaScript ใด ๆ จะถูกดาวน์โหลด, parse หรือ execute จากนั้น JavaScript hydration จึงค่อยเพิ่มความสามารถในการโต้ตอบโดยไม่ต้อง render ซ้ำ
 </Tip>
+
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Declarative Shadow DOM (`<template shadowrootmode>`) | shadow root มีอยู่ตั้งแต่ parse HTML เลย ไม่ต้องรอ JavaScript โหลดเพื่อ render — สำคัญมากสำหรับ SSR และ first paint | server ต้อง duplicate markup ของ template ไว้ในทุก instance ของ component ทำให้ payload HTML ใหญ่ขึ้นตามจำนวน component บนหน้า |
+| attachShadow แบบ JavaScript ปกติ | markup ฝั่ง server เล็กกว่า ไม่มี template ซ้ำ | ต้องรอ JavaScript โหลดและรันก่อน ระหว่างนั้นผู้ใช้อาจเห็นเนื้อหาไม่มีสไตล์ (FOUC) หรือไม่เห็นเนื้อหาเลย |
+
+## Common Mistakes
+
+- **สับสนว่าต้องเรียก `attachShadow` ซ้ำใน `connectedCallback`** — ถ้า shadow root ถูกแนบแบบ declarative ไว้แล้ว เบราว์เซอร์จะข้ามให้เฉย ๆ ไม่ throw error แต่ถ้า logic ของคุณ assume ว่าต้องสร้างเองเสมอ อาจเขียน initialization ผิดที่และเผลอทับ shadow root ที่มีอยู่แล้ว
+- **ไม่เช็คการรองรับของเบราว์เซอร์ก่อน deploy** — เบราว์เซอร์รุ่นเก่าที่ไม่รองรับ DSD จะ render `<template>` เป็น element ธรรมดาที่มองเห็นได้ ทำให้ markup ภายในหลุดออกมาแสดงตรง ๆ กลางหน้า
+- **ไม่ตรวจสอบ `this.shadowRoot` ก่อน hydrate ฝั่ง client** — ถ้า client-side code สร้าง shadow root ใหม่ทับของเดิมโดยไม่เช็คก่อน จะทำให้เนื้อหาที่ render จาก server หายไปและต้อง render ซ้ำโดยไม่จำเป็น เสียประโยชน์ของ DSD ไปเปล่า ๆ
+
+> 💡 Real World Example
+>
+> **Lit SSR (`@lit-labs/ssr`)** — render component เป็น Declarative Shadow DOM บนฝั่ง server แล้วส่ง HTML ที่มี shadow tree ครบไปให้เบราว์เซอร์ทันที ลด time-to-first-paint และไม่ต้อง render ซ้ำตอน hydrate
+>
+> **Adobe Spectrum Web Components** — ออกแบบให้ compatible กับ SSR และ Declarative Shadow DOM เพื่อให้ design system ขนาดใหญ่ render ได้เร็วตั้งแต่ first paint โดยไม่ต้องรอ JavaScript hydrate
 
 export const quizDsd = [
   {

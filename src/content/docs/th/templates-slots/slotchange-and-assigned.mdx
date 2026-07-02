@@ -81,6 +81,25 @@ customElements.define('my-list', MyList);`;
 `slotchange` event จะ fire เมื่อ element เชื่อมต่อเป็นครั้งแรกพร้อมกับมีลูกอยู่ใน light DOM แล้ว คุณไม่จำเป็นต้องเรียก `connectedCallback` แยกต่างหากเพื่อ bootstrap สถานะเริ่มต้น — แค่พึ่งพา `slotchange` ครั้งแรกก็พอ
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| ฟัง `slotchange` event เพื่อซิงค์สถานะ | คอมโพเนนต์ตอบสนองต่อการเปลี่ยนแปลงเนื้อหาแบบ real-time โดยไม่ต้อง poll | ต้องเขียน event listener และจัดการ cleanup เพิ่มเติม เพิ่มความซับซ้อนของ lifecycle |
+| ใช้ `MutationObserver` แทน `slotchange` | ตรวจจับการเปลี่ยนแปลงได้ละเอียดกว่า เช่น การเปลี่ยน attribute หรือ text content ภายในลูก | มี overhead สูงกว่าและตั้งค่าซับซ้อนกว่า `slotchange` ซึ่งถูกออกแบบมาสำหรับ use case นี้โดยเฉพาะ |
+
+## Common Mistakes
+
+- **ลืมฟัง `slotchange` event เมื่อเนื้อหาที่ถูกฉายเข้า slot เปลี่ยนแปลงแบบไดนามิก** — ทำให้ UI ภายใน shadow DOM ค้างอยู่กับข้อมูลเก่า ไม่อัปเดตตามลูกที่ถูกเพิ่มหรือลบออกจริง
+- **ใช้ `slot.assignedNodes()` แล้วคาดหวังว่าจะได้เฉพาะ Element** — `assignedNodes()` คืน text node และ comment node ด้วย ถ้าต้องการเฉพาะ element ควรใช้ `slot.assignedElements()` แทน
+- **ลืมส่ง `{ flatten: true }` เมื่อมี slot ซ้อนอยู่ใน slot** — ทำให้ได้ assigned nodes ไม่ครบ เพราะ node ที่อยู่ใน nested slot จะไม่ถูกรวมเข้ามาโดย default
+
+> 💡 Real World Example
+>
+> **Lit** ใช้แพทเทิร์นการฟัง `slotchange` ร่วมกับ `assignedElements()` ในคอมโพเนนต์ที่ต้องนับหรือตรวจสอบชนิดของลูกที่ถูกฉายเข้ามา เช่น tab list ที่ต้องรู้ว่ามี tab กี่ตัว
+>
+> **Shoelace** ใช้ `slotchange` ภายในคอมโพเนนต์อย่าง `<sl-select>` เพื่อตรวจจับเมื่อ option ที่ถูกฉายเข้ามาเปลี่ยนแปลง แล้วซิงค์สถานะ selected ให้ตรงกัน
+
 export const quizSlotchange = [
   {
     q: 'slotchange event fire บน slot element เมื่อใด?',

@@ -113,6 +113,25 @@ customElements.define('timer-demo', TimerDemo);`;
 กำหนด interval ID, timeout ID หรือ reference ของ event handler ไว้เป็น property บน element instance (เช่น `this._intervalId`) ภายใน `connectedCallback` แล้ว `disconnectedCallback` จะสามารถหาและยกเลิกมันได้เสมอ
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Cleanup ทุกอย่างใน `disconnectedCallback` | ป้องกัน memory leak, CPU leak และ event listener ค้างอย่างครบถ้วน symmetry ชัดเจนกับ `connectedCallback` | ต้องเขียน logic คู่กันเสมอ (setup/teardown) เพิ่ม boilerplate และเสี่ยงลืมคู่ที่ตรงกัน |
+| ปล่อยให้ garbage collector จัดการเอง | โค้ดสั้นลง ไม่ต้องเขียน disconnectedCallback | listener, timer, observer ที่ยังอ้างอิงถึง element จะไม่ถูกเก็บกวาดจนกว่า reference ทั้งหมดจะหลุด ทำให้เกิด memory และ CPU leak โดยเฉพาะกับ element ที่ถูกสร้าง/ลบซ้ำๆ (เช่น ใน list ที่ scroll) |
+
+## Common Mistakes
+
+- **ไม่ implement `disconnectedCallback` เลย** — event listener, `setInterval`/`setTimeout`, และ observer ที่ตั้งไว้ใน `connectedCallback` จะยังทำงานต่อแม้ element ถูกลบออกจาก DOM แล้ว ทำให้เกิด memory leak สะสมเมื่อ element ถูกสร้างและลบซ้ำๆ
+- **ลืม disconnect `MutationObserver`/`ResizeObserver`/`IntersectionObserver`** — observer เหล่านี้ถือ reference ไปยัง element และ callback ทำให้ garbage collector เก็บกวาดไม่ได้จนกว่าจะเรียก `.disconnect()` อย่างชัดเจน
+- **สมมติว่า `disconnectedCallback` จะถูกเรียกตอน page unload** — มันไม่ถูกเรียกอย่างน่าเชื่อถือเมื่อผู้ใช้ปิด tab หรือ refresh หน้า ถ้าต้องเซฟข้อมูลก่อนออกจากหน้า ให้ใช้ event `beforeunload` หรือ `pagehide` แทน ไม่ใช่พึ่งพา `disconnectedCallback`
+
+> 💡 Real World Example
+>
+> **GitHub** — `<relative-time>` element ของ GitHub ใช้ `setInterval` เพื่ออัปเดตข้อความ "3 minutes ago" และต้อง clear interval ใน `disconnectedCallback` ทุกครั้งเพื่อไม่ให้ leak เมื่อ timeline ถูก scroll และ element ถูกสร้าง/ลบซ้ำจำนวนมาก
+>
+> **X (Twitter)** — timeline แบบ virtualized ของ X สร้างและทำลาย custom element จำนวนมากขณะ scroll การไม่ cleanup listener ใน disconnectedCallback อย่างถูกต้องจะทำให้ memory ค่อยๆ โตขึ้นเรื่อยๆ จนหน้าเว็บหน่วง
+
 export const quizDisconnectedCleanup = [
   {
     q: 'disconnectedCallback ทำงานเมื่อไหร่?',

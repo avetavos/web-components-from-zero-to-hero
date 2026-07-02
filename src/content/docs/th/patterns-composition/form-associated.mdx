@@ -107,6 +107,25 @@ customElements.define('fancy-input', FancyInput);`;
 เรียก `this.attachInternals()` ใน `constructor` ไม่ใช่ใน `connectedCallback` object internals ต้องถูกสร้างเพียงครั้งเดียวต่อ element และ constructor คือที่ที่เหมาะสมในการทำเช่นนั้น
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Native form-associated (`static formAssociated = true` + `ElementInternals`) | custom element เข้าร่วมกับ `<form>` ได้เหมือน native control เช่น validate, reset, submit ค่าไปพร้อม form โดยไม่ต้องเขียน JavaScript เพิ่ม | รองรับเฉพาะเบราว์เซอร์ที่ค่อนข้างใหม่ และ API ของ `ElementInternals` ยังมีรายละเอียดปลีกย่อยที่ต้องเรียนรู้ |
+| Polyfill / native `<input>` ที่ซ่อนอยู่ข้างใน shadow DOM | รองรับเบราว์เซอร์เก่าได้กว้างกว่า | เพิ่มความซับซ้อนของ DOM ต้อง sync ค่าระหว่าง custom element กับ input ที่ซ่อนไว้เอง และเสี่ยงเรื่อง accessibility ถ้า sync พลาด |
+
+## Common Mistakes
+
+- **ลืมตั้ง `static formAssociated = true`** — ถ้าไม่ตั้ง flag นี้ `attachInternals()` จะไม่คืนค่า `ElementInternals` ที่เข้าร่วม form ได้ และ `setFormValue()` จะไม่มีผลใด ๆ ทำให้ค่าของ custom input ไม่เคยถูก submit ไปพร้อม form เลย
+- **เรียก `attachInternals()` ใน `connectedCallback` แทน `constructor`** — object internals ต้องถูกสร้างเพียงครั้งเดียวต่อ element ถ้าเรียกซ้ำใน `connectedCallback` (ซึ่งอาจทำงานหลายครั้ง) จะได้ error เพราะเรียก `attachInternals` ซ้ำไม่ได้
+- **ไม่เรียก `setFormValue()` ทุกครั้งที่ค่าเปลี่ยน** — ถ้าอัปเดต internal state ของ element แต่ลืม sync ไปยัง form value ผ่าน `internals.setFormValue()` ฟอร์มจะ submit ค่าเก่าหรือค่าว่างแทนค่าที่ผู้ใช้เพิ่งกรอก
+
+> 💡 Real World Example
+>
+> **Adobe Photoshop on the web** — ใช้ Lit ร่วมกับ form-associated custom elements เพื่อให้ custom input controls ของแอปเข้าร่วมกับ native `<form>` semantics ได้เต็มรูปแบบ
+>
+> **Shoelace** — form control อย่าง `<sl-input>` และ `<sl-checkbox>` implement form-associated custom elements เพื่อให้ทำงานร่วมกับ native `<form>` submission และ validation ได้เหมือน native element
+
 export const quizFormAssociated = [
   {
     q: 'property แบบ static ใดที่ต้องตั้งค่าเป็น true เพื่อทำให้ custom element เป็น form-associated?',

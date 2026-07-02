@@ -29,7 +29,7 @@ class AccessibleCard extends HTMLElement {
 }
 ```
 
-การตั้งค่า `role="region"` บอกเทคโนโลยีสิ่งอำนวยความสะดวกว่า element นี้คือ landmark region ส่วน `aria-label` ให้ชื่อที่เข้าถึงได้ (accessible name) แก่มัน attribute ทั้งสองจะถูกสะท้อนเข้าไปใน accessibility tree ทันที
+การตั้งค่า `role="region"` บอก assistive technology ว่า element นี้คือ landmark region ส่วน `aria-label` ให้ชื่อที่เข้าถึงได้ (accessible name) แก่มัน attribute ทั้งสองจะถูกสะท้อนเข้าไปใน accessibility tree ทันที
 
 ## delegatesFocus ใน attachShadow
 
@@ -56,11 +56,11 @@ this.addEventListener('keydown', function(e) {
 });
 ```
 
-## internals.role และการสะท้อนค่า ARIA
+## internals.role และ ARIA reflection
 
-ผ่าน `ElementInternals` คุณสามารถตั้งค่า property ของ ARIA ได้โดยตรงโดยไม่ทำให้รายการ attribute ของ element เลอะเทอะ ตัวอย่างเช่น `internals.role = 'button'` และ `internals.ariaLabel = 'Close'` property ของ ARIA เหล่านี้จะสะท้อนไปยัง accessibility tree โดยไม่ปรากฏให้เห็นเป็น HTML attribute วิธีนี้ทำให้พื้นผิว attribute ของ element สะอาด และหลีกเลี่ยงความขัดแย้งกับ attribute ที่ผู้เขียนตั้งค่าไว้
+ผ่าน `ElementInternals` คุณสามารถตั้งค่า property ของ ARIA ได้โดยตรงโดยไม่ทำให้รายการ attribute ของ element เลอะเทอะ ตัวอย่างเช่น `internals.role = 'button'` และ `internals.ariaLabel = 'Close'` property ของ ARIA เหล่านี้จะสะท้อนไปยัง accessibility tree โดยไม่ปรากฏให้เห็นเป็น HTML attribute วิธีนี้ทำให้ attribute ของ element ไม่รกเกินจำเป็น และหลีกเลี่ยงความขัดแย้งกับ attribute ที่ผู้เขียนตั้งค่าไว้
 
-การสะท้อนค่า ARIA ผ่าน `ElementInternals` ต้องใช้ `attachInternals()` ซึ่งในทางกลับกันก็ต้องใช้ `static formAssociated = true` เฉพาะเมื่อคุณต้องการการเข้าร่วม form ด้วยเท่านั้น สำหรับการสะท้อนค่า ARIA ล้วน ๆ คุณสามารถเรียก `attachInternals()` ได้โดยไม่ต้องมี `formAssociated`
+ARIA reflection ผ่าน `ElementInternals` ต้องใช้ `attachInternals()` ซึ่งในทางกลับกันก็ต้องใช้ `static formAssociated = true` เฉพาะเมื่อคุณต้องการการเข้าร่วม form ด้วยเท่านั้น สำหรับ ARIA reflection ล้วน ๆ คุณสามารถเรียก `attachInternals()` ได้โดยไม่ต้องมี `formAssociated`
 
 ## เดโมที่รันได้
 
@@ -103,6 +103,25 @@ customElements.define('focus-btn', FocusBtn);`;
 <Tip title="Test with a keyboard">
 หลังจากสร้าง custom element แบบโต้ตอบได้แล้ว ให้นำทางไปยังมันโดยใช้แค่ Tab และเรียกใช้งานด้วย Enter และ Space หากคุณเข้าถึงมันไม่ได้หรือกระตุ้นมันไม่ได้โดยไม่ใช้เมาส์ ผู้ใช้ของคุณที่พึ่งพาคีย์บอร์ดหรือเทคโนโลยีสิ่งอำนวยความสะดวกก็จะทำไม่ได้เช่นกัน
 </Tip>
+
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| ตั้งค่า ARIA ผ่าน `setAttribute('role', ...)` บน host | เขียนง่าย ตรวจสอบผ่าน DOM inspector ได้ตรง ๆ | attribute อาจถูก override โดยผู้เขียน HTML ที่เรียกใช้ element ของคุณโดยไม่ตั้งใจ |
+| ตั้งค่า ARIA ผ่าน `internals.role` / `internals.ariaLabel` (ElementInternals) | ไม่ทำให้ attribute list ของ element รกและไม่ชนกับค่าที่ผู้เขียนตั้งเอง | ต้องเรียก `attachInternals()` ก่อน และเบราว์เซอร์รุ่นเก่ากว่าสนับสนุนได้จำกัดกว่า attribute ธรรมดา |
+
+## Common Mistakes
+
+- **ลืม `delegatesFocus`** — เมื่อสร้าง custom input ที่มี focusable element อยู่ใน shadow DOM แต่ไม่ส่ง `delegatesFocus: true` ให้ `attachShadow` การคลิก host จะไม่ย้าย focus เข้าไปข้างใน ทำให้ผู้ใช้คีย์บอร์ดงงว่าทำไม tab ไม่ไปที่ element ที่คาดไว้
+- **ข้าม keyboard handling บน interactive element** — การทำให้ element ทำหน้าที่เหมือนปุ่มด้วย `role="button"` แต่ไม่จัดการ `keydown` สำหรับ Enter/Space ทำให้ element นั้นใช้ไม่ได้เลยสำหรับผู้ใช้คีย์บอร์ดและ screen reader แม้ดูเหมือนกดได้ด้วยเมาส์ก็ตาม
+- **ตั้ง ARIA role โดยไม่ตั้ง `tabindex`** — การใส่ `role="button"` เฉยๆ ไม่ได้ทำให้ element focus ได้อัตโนมัติเหมือน `<button>` เนทีฟ ต้องเพิ่ม `tabindex="0"` เองด้วย ไม่งั้น element จะถูกข้ามไปตอนกด Tab
+
+> 💡 Real World Example
+>
+> **GitHub** — ใช้ custom element (`<relative-time>`, `<clipboard-copy>` เป็นต้น) ที่ผ่านการทดสอบ accessibility อย่างเข้มงวด เพื่อให้ผู้ใช้ screen reader ใช้งานฟีเจอร์ทั้งหมดได้เท่าเทียมกับผู้ใช้เมาส์
+>
+> **Adobe Spectrum Web Components** — ออกแบบทุก component ให้รองรับ `delegatesFocus` และ ARIA reflection ผ่าน `ElementInternals` เพื่อให้ใช้งานได้ในระบบ design system ระดับ enterprise ที่ต้องผ่านมาตรฐาน accessibility
 
 export const quizA11y = [
   {

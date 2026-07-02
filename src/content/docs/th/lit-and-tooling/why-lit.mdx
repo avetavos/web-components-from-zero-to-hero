@@ -118,6 +118,25 @@ class LitCounter extends LitElement {
 Lit รองรับ tree-shaking อย่างสมบูรณ์ หากคุณใช้เพียง `LitElement` และ `html` จะมีเฉพาะ module เหล่านั้นเท่านั้นที่ถูก bundle
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| ใช้ `LitElement` (Lit) | Developer experience ดีขึ้นมากจาก reactive properties และ template diffing ที่ทำให้ไม่ต้องเขียน DOM update เอง | เพิ่ม runtime ประมาณ +5-6KB (gzip) เข้าไปใน bundle ของทุก component |
+| ใช้ raw `HTMLElement` (ไม่มี library) | ไม่มี runtime เพิ่มเลย และอิงตาม web standard ล้วนๆ ทำให้มีอายุการใช้งานยาวที่สุด | ต้องเขียน boilerplate เองทั้งหมด เช่น attribute parsing, dirty-checking และ DOM diffing ด้วยมือ |
+
+## Common Mistakes
+
+- **เลือก Lit ทั้งที่ element ไม่มี state** — ถ้า component เป็นแค่โครงสร้าง static ล้วนๆ การดึง Lit เข้ามาเพิ่ม +5-6KB โดยไม่ได้ประโยชน์อะไร ใช้ `HTMLElement` เปล่าๆ ก็เพียงพอ
+- **กลัวว่า Lit จะ "ผูกติด" กับ project ระยะยาว** — `LitElement` compile ออกมาเป็น standard custom element ธรรมดา ไม่ได้ล็อก runtime แบบ framework ทั่วไป การย้ายออกในอนาคตจึงไม่ยากเท่าที่คิด
+- **เขียน diffing เองทั้งที่ state ซับซ้อนหลายจุด** — การจัดการ re-render ด้วยมือเมื่อมี state หลายตัวมักจบลงด้วยโค้ดที่หนักกว่าและบั๊กง่ายกว่าใช้ template diffing ของ Lit ที่ผ่านการทดสอบมาแล้ว
+
+> 💡 Real World Example
+>
+> **Google Material Web** — ชุด component มาตรฐานของ Google (Material Design) สร้างด้วย Lit และใช้งานจริงในโปรดักต์ของ Google หลายตัว
+>
+> **Home Assistant** — แพลตฟอร์ม home automation แบบ open-source ที่ได้รับความนิยมสูง สร้าง frontend UI ทั้งหมดด้วย custom elements ที่อิง Lit
+
 ## ทดสอบความเข้าใจ
 
 <Quiz client:visible id="lit-and-tooling/why-lit" questions={quizWhyLit} />

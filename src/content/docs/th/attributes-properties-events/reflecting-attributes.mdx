@@ -167,6 +167,25 @@ customElements.define('reflect-badge', ReflectBadge);`;
 หาก setter ของคุณทำงานพิเศษก่อนเรียก `setAttribute` และ `attributeChangedCallback` เรียก setter อีกครั้ง อาจเกิด infinite loop ขึ้นได้ ป้องกันด้วยการตรวจสอบ `if (this.getAttribute(name) !== v)` ก่อนเรียก `setAttribute` หรือโดยการอ่านค่าจาก attribute ใน `_render` โดยตรงแทนที่จะเรียก setter
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Reflect property ไปยัง attribute | สถานะมองเห็นได้ใน DevTools ใช้เป็น CSS attribute selector ได้ และรองรับ server-rendered HTML โดยไม่ต้องพึ่ง JavaScript ตอนโหลดหน้าแรก | เสี่ยงเกิด infinite loop ถ้า setter กับ `attributeChangedCallback` เรียกกันไปมา และ attribute เก็บได้แค่ string เท่านั้น |
+| ไม่ reflect (เก็บค่าไว้ใน private field เฉยๆ) | หลีกเลี่ยงปัญหา infinite loop ได้ทั้งหมด และรองรับข้อมูลชนิดใดก็ได้ ไม่จำกัดแค่ string | สถานะไม่ปรากฏใน markup หรือ DevTools ใช้ CSS attribute selector เลือก element ตาม state ไม่ได้ |
+
+## Common Mistakes
+
+- **ลืมประกาศชื่อ attribute ใน `observedAttributes`** — ถ้าไม่อยู่ในรายการนี้ `attributeChangedCallback` จะไม่ถูกเรียกเลย ไม่ว่าจะเปลี่ยน attribute จาก HTML, DevTools หรือ JavaScript
+- **ทำให้ setter เรียก `setAttribute` โดยไม่เช็คว่าค่าต่างจากเดิมก่อน** — ทำให้เกิด infinite loop ระหว่าง setter กับ `attributeChangedCallback` ที่เรียก setter อีกที ต้องเช็ค `if (this.getAttribute(name) !== v)` ก่อนเขียนเสมอ
+- **reflect property ที่เป็นข้อมูลซับซ้อน เช่น array หรือ object กลับไปเป็น attribute** — attribute เป็น string เท่านั้น การพยายาม reflect object จะได้ `[object Object]` ที่ไร้ประโยชน์ ควร reflect เฉพาะ string, boolean หรือ number ธรรมดาเท่านั้น
+
+> 💡 Real World Example
+>
+> Element `<input>` ดั้งเดิมของเบราว์เซอร์ reflect property อย่าง `disabled` และ `checked` ไปยัง attribute โดยตรง ทำให้ `input:disabled` ใช้เป็น CSS selector ได้ทันทีโดยไม่ต้องเขียน JavaScript เพิ่ม
+>
+> **GitHub's Catalyst** framework ใช้ decorator `@attr` เพื่อ generate getter/setter reflection pattern นี้อัตโนมัติ ลดโค้ด boilerplate ที่ต้องเขียนซ้ำในทุก custom element
+
 export const quizReflect = [
   {
     q: 'setter `set label(v)` ทำหน้าที่อะไรในรูปแบบ reflection?',

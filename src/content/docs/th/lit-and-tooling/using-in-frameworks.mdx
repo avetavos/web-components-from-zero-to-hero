@@ -122,6 +122,25 @@ export const frameworkJs = `(async () => {
 ใน React 18 และก่อนหน้านั้น การส่ง array หรือ object เป็น JSX attribute บน custom element จะถูกแปลงเป็น string ใช้ `ref` เพื่อตั้งค่า property ที่ซับซ้อนด้วยตนเอง หรืออัปเกรดเป็น React 19
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| ใช้ native interop ของ framework ตรงๆ (เช่น React 19 direct binding, Vue `:prop`) | ไม่มี dependency เพิ่ม, bundle เล็กลง และใช้ API มาตรฐานของเบราว์เซอร์ล้วนๆ | ต้องจัดการ complex props/events เอง โดยเฉพาะบน React 18 ที่ต้องพึ่ง `ref` |
+| ใช้ wrapper library เช่น `@lit/react` | ได้ typed component พร้อม props/events ที่ผูกให้อัตโนมัติ ลด boilerplate ฝั่งผู้ใช้ | เพิ่ม dependency และ layer พิเศษที่ต้องดูแลให้ตรงกับเวอร์ชันของ element เดิม |
+
+## Common Mistakes
+
+- **สร้าง wrapper component ขึ้นมาเองทั้งที่ framework รองรับ native interop อยู่แล้ว** (เช่น React 19) — เพิ่ม layer และโค้ดดูแลรักษาที่ไม่จำเป็น ทั้งที่ผูก property/event ตรงได้เลย
+- **ส่ง array/object เป็น JSX attribute บน React 18 แล้วงงว่าทำไมค่าไม่ถูกต้อง** — React 18 และก่อนหน้าจะแปลงทุกอย่างเป็น string attribute ต้องใช้ `ref` ตั้งค่า property โดยตรง หรืออัปเกรดเป็น React 19
+- **ผูก custom event ด้วย attribute syntax ปกติแทน syntax เฉพาะของ framework** — ลืมใช้ `@event-name` ใน Vue หรือ `(event-name)` ใน Angular ทำให้ event handler ไม่ถูกเรียกเลย
+
+> 💡 Real World Example
+>
+> **Google Material Web** — เอกสารของโปรเจกต์สาธิตการใช้ component เดียวกันข้าม React, Angular และ Vue โดยไม่ต้องเขียน wrapper แยกสำหรับแต่ละ framework
+>
+> **Home Assistant** — ฝัง custom elements ที่สร้างจาก Lit ไว้ใน dashboard UI ที่ผสมกับโค้ด frontend อื่นๆ ได้โดยตรงผ่าน native DOM interop
+
 export const quizUsingInFrameworks = [
   {
     q: 'ใน React 18 วิธีที่แนะนำในการฟัง custom event ที่ถูกยิงจาก web component คืออะไร?',

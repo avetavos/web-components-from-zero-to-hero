@@ -47,6 +47,25 @@ export const encapHtml = '<div class="box">Blue — page style (outside shadow)<
 สไตล์ภายในไม่สามารถหลุดออกไปได้ และสไตล์ภายนอกไม่สามารถเข้ามาได้ (ยกเว้น CSS custom properties และ `::part`)
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Style encapsulation (shadow boundary) | สไตล์ของ component ไม่ชนกับสไตล์หน้าโดยไม่ตั้งใจ ปลอดภัยต่อการนำไปใช้ซ้ำ | ธีมจากภายนอกเข้าถึง internal ไม่ได้โดยตรง ต้องพึ่ง CSS custom properties หรือ `::part` แทน |
+| ไม่ใช้ Shadow DOM (global CSS ธรรมดา) | ปรับสไตล์จากภายนอกได้อิสระ ไม่ต้องเปิด API เพิ่ม | เสี่ยง class name ชนกัน และสไตล์รั่วเข้า-ออกโดยไม่ตั้งใจเมื่อโปรเจกต์โต |
+
+## Common Mistakes
+
+- **คาดหวังให้ CSS หน้าเว็บ selector ธรรมดาเข้าไปสไตล์ภายใน shadow root ได้** — เช่นเขียน `.my-widget .title { color: red }` แล้วสงสัยว่าทำไมไม่ทำงาน shadow boundary ถูกออกแบบมาให้กันแบบนี้โดยเจตนา
+- **ลืมว่า class name ข้างในและข้างนอก shadow root เป็นคนละ scope** — ตั้ง `.box` ทั้งสองฝั่งแล้วคิดว่าต้องแก้ไขให้ไม่ชนกัน ทั้งที่จริงๆ ไม่ชนกันอยู่แล้วเพราะ encapsulation
+- **ไม่รู้ว่ามี escape hatch อย่าง CSS custom properties และ `::part`** — พอ styling จากภายนอกไม่ได้เลยเลิกใช้ Shadow DOM ทั้งที่ควรออกแบบ custom property API ให้ theme ได้แบบควบคุมได้
+
+> 💡 Real World Example
+>
+> **Salesforce Lightning (LWC)** — ใช้ style encapsulation เพื่อให้ component นับพันตัวจากทีมต่างๆ ไม่ชนสไตล์กันใน enterprise app ขนาดใหญ่
+>
+> **YouTube** — video player component ใช้ encapsulation กันไม่ให้สไตล์ของหน้าเว็บ YouTube ที่เปลี่ยนบ่อยไปกระทบ UI ของ player
+
 export const quizEncapsulation = [
   {
     q: 'CSS ของหน้าประกาศ `.title { color: red; }` กฎนี้จะส่งผลต่อ element `.title` ภายใน shadow root หรือไม่?',

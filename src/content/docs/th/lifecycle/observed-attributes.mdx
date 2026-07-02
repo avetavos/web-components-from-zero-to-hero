@@ -103,6 +103,25 @@ customElements.define('attr-color', AttrColor);`;
 เนื่องจาก `observedAttributes` เป็น static getter browser จึงประเมินค่ามันตอนที่ลงทะเบียน class ไม่ใช่ทุกครั้งที่สร้าง element ใหม่ รายการ attribute ที่ตรวจสอบจะถูกใช้ร่วมกันในทุก instance ของ element คุณไม่สามารถเปลี่ยนแปลง attribute ที่ตรวจสอบได้ขณะ runtime
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| ใช้ `observedAttributes` + `attributeChangedCallback` | Reactive ต่อการเปลี่ยน attribute จากภายนอกโดยอัตโนมัติ (เช่น จาก framework หรือ dev tools) เหมาะกับ declarative API | ต้อง parse ค่า string เองทุกครั้ง และเสี่ยง render ซ้ำถ้าไม่เช็ค `oldValue`/`newValue` ก่อน |
+| ให้ผู้ใช้เรียก method/setter แทนการตั้ง attribute | ควบคุม type ได้ตรงกว่า (ไม่ใช่ string เสมอ) และไม่ต้อง re-render ทุกครั้งที่ attribute เปลี่ยน | ไม่ reactive ต่อการแก้ attribute ตรงๆ ใน HTML หรือ dev tools ผู้ใช้ต้องรู้ API เฉพาะของ element |
+
+## Common Mistakes
+
+- **ลืมประกาศ static `observedAttributes`** — ถ้าไม่มี getter นี้ หรือคืนค่า array ว่าง `attributeChangedCallback` จะไม่ถูกเรียกเลยไม่ว่า attribute จะเปลี่ยนกี่ครั้งก็ตาม โดยไม่มี error แจ้งเตือน ทำให้ debug ยาก
+- **ลืมว่า `observedAttributes` เป็น static** — ต้องประกาศเป็น `static get observedAttributes()` ไม่ใช่ instance method ถ้าใส่ผิดที่ getter จะไม่ถูกเรียกและพฤติกรรมจะเหมือนไม่ได้ประกาศเลย
+- **ไม่เช็คว่า `oldValue === newValue` ก่อน re-render** — บางกรณี browser อาจเรียก `attributeChangedCallback` แม้ค่าจะไม่เปลี่ยนจริง (เช่นตอน `connectedCallback` sync ค่าเริ่มต้น) การ render โดยไม่เช็คก่อนจะทำให้เปลือง CPU โดยไม่จำเป็น
+
+> 💡 Real World Example
+>
+> **GitHub** — element `<relative-time>` ใช้ `attributeChangedCallback` เพื่อ re-render ข้อความเมื่อ attribute `datetime` ถูกอัปเดตจาก server-rendered HTML หรือ JavaScript ภายนอก
+>
+> **Shoelace / Web Awesome** — design system component library ใช้ `observedAttributes` อย่างกว้างขวางเพื่อให้ property ของ component (เช่น `size`, `variant`, `disabled`) sync กับ attribute ใน HTML ได้แบบ two-way โดยอัตโนมัติ
+
 export const quizObservedAttributes = [
   {
     q: 'static get observedAttributes() ต้องคืนค่าอะไร?',

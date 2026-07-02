@@ -12,9 +12,9 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ## "Upgrade" คืออะไร
 
-เมื่อ browser ทำการ parse HTML อาจพบ tag เช่น `<my-el>` ก่อนที่ JavaScript จะทำงาน ณ จุดนั้น browser ยังไม่มี constructor ที่ลงทะเบียนสำหรับ `my-el` จึงสร้าง element นั้นเป็น `HTMLElement` ธรรมดา — เรียกว่า *unknown element* ที่ยังไม่มีพฤติกรรมพิเศษ
+เมื่อ browser parse HTML อาจพบ tag เช่น `<my-el>` ก่อนที่ JavaScript จะทำงาน ณ จุดนั้น browser ยังไม่มี constructor ที่ลงทะเบียนสำหรับ `my-el` จึงสร้าง element นั้นเป็น `HTMLElement` ธรรมดา — เรียกว่า *unknown element* ที่ยังไม่มีพฤติกรรมพิเศษ
 
-ต่อมาเมื่อ script เรียก `customElements.define('my-el', MyEl)` browser จะทำการ **upgrade**: มันจะวนหา element ทุกตัวที่ตรงกับ tag นั้นในเอกสาร แล้วเรียก constructor ของ `MyEl` กับแต่ละตัว จากนั้นเรียก `connectedCallback` หาก element นั้นอยู่ใน DOM อยู่แล้ว
+ต่อมาเมื่อ script เรียก `customElements.define('my-el', MyEl)` browser จะ **upgrade**: มันจะวนหา element ทุกตัวที่ตรงกับ tag นั้นในเอกสาร แล้วเรียก constructor ของ `MyEl` กับแต่ละตัว จากนั้นเรียก `connectedCallback` หาก element นั้นอยู่ใน DOM อยู่แล้ว
 
 หมายความว่า upgrade เกิดได้สองลำดับ:
 
@@ -122,6 +122,25 @@ export const upgradeJs = `setTimeout(function() {
 <Tip title="ซ่อน element ที่ยังไม่ถูก upgrade ด้วย :not(:defined)">
 ใช้ `my-el:not(:defined) { visibility: hidden; }` เพื่อซ่อน element ที่ยังไม่ถูก upgrade วิธีนี้ป้องกันการแสดง placeholder แบบ raw ชั่วคราวในขณะที่ script กำลังโหลดและ define element อยู่
 </Tip>
+
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Define ก่อน parse (script บล็อกใน `<head>`) | Element ถูก construct และ upgrade ทันทีที่ parser พบ tag ไม่มีช่วง "unknown element" ให้เห็น | Script บล็อก parsing ทำให้หน้าเว็บ render ช้าลง โดยเฉพาะถ้า bundle ใหญ่ |
+| Define หลัง parse (`defer` หรือโหลดแบบ lazy) | ไม่บล็อก initial render, โหลด script ได้ตามความจำเป็น | มีช่วงเวลาที่ element เป็น unknown element (ไม่มีพฤติกรรม, ไม่มี style พิเศษ) ต้องจัดการ FOUC เอง เช่นด้วย `:not(:defined)` |
+
+## Common Mistakes
+
+- **เข้าถึง custom API ของ element ก่อนเช็คว่า upgrade แล้วหรือยัง** — ถ้าเรียก method หรืออ่าน property เฉพาะของ custom element ทันทีหลัง query โดยไม่รอ `customElements.whenDefined()` อาจได้ element ที่ยังเป็น `HTMLElement` ธรรมดาและไม่มี method นั้นอยู่ ทำให้เกิด `TypeError`
+- **ไม่จัดการ FOUC ด้วย `:not(:defined)`** — ถ้าไม่ซ่อน element ที่ยังไม่ถูก upgrade ผู้ใช้จะเห็น raw content หรือ placeholder ที่ไม่มี style ชั่วครู่ก่อนที่ script จะโหลดเสร็จ ทำให้ UI กระพริบ
+- **สมมติว่า element ทุกตัวถูก upgrade พร้อมกันเสมอ** — ถ้ามีการเพิ่ม element ใหม่เข้า DOM ผ่าน JavaScript หลังจาก `define` ไปแล้ว element นั้นจะถูก upgrade แบบ synchronous ทันที แต่ element ที่มีอยู่ก่อน `define` จะถูก upgrade เป็น batch — การไม่เข้าใจความต่างนี้ทำให้ debug timing bug ได้ยาก
+
+> 💡 Real World Example
+>
+> **CSS `:defined` pattern** — เว็บไซต์จำนวนมากที่ใช้ custom elements ใช้ `my-el:not(:defined) { visibility: hidden; }` ร่วมกับ loading placeholder เพื่อป้องกัน Flash of Undefined Content ระหว่างรอ script โหลดและ define element
+>
+> **YouTube** — custom elements บนหน้า YouTube ต้องรองรับกรณีที่ script โหลดแบบ async ทำให้ element ปรากฏใน DOM ก่อนที่ definition จะพร้อม การจัดการ upgrade timing อย่างถูกต้องจึงจำเป็นต่อการไม่ให้ UI พังหรือกระพริบ
 
 export const quizUpgradeAndTiming = [
   {

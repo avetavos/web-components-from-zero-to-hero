@@ -12,6 +12,8 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ## การเรียก attachShadow
 
+Shadow tree ไม่ได้เกิดขึ้นเองเมื่อ custom element ถูกสร้าง — คุณต้องขอมันอย่างชัดเจนก่อน ถึงจะได้ DOM ที่แยกขอบเขตออกจากหน้าเว็บภายนอก
+
 ในการสร้าง shadow tree ให้เรียก `this.attachShadow()` บน host element และส่ง mode option เข้าไป method นี้จะคืนค่า shadow root ใหม่และเก็บไว้เป็น `this.shadowRoot` ด้วย
 
 ```js
@@ -94,6 +96,25 @@ export const attachShadowHtml = '<scoped-card></scoped-card>';
 <Tip title="attachShadow เป็นการกระทำถาวร">
 เรียก `attachShadow` ก่อนตั้งค่า `shadowRoot.innerHTML` เมื่อแนบ shadow root แล้วจะถาวร — ไม่สามารถลบหรือแทนที่ได้
 </Tip>
+
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| เรียก `attachShadow` ใน constructor | shadow root พร้อมใช้งานทันทีตั้งแต่สร้าง instance | ยังอ่าน attribute จาก HTML ไม่ได้ในจังหวะนี้ |
+| เรียก `attachShadow` ใน `connectedCallback` | อ่าน attribute ที่ประกาศใน HTML ได้ตั้งแต่ครั้งแรกที่ element เข้า DOM | ต้องเช็คก่อนว่ามี shadow root อยู่แล้วหรือยัง เผื่อ element ถูก reconnect |
+
+## Common Mistakes
+
+- **เรียก `attachShadow` ซ้ำ** — ถ้า element ถูกย้ายตำแหน่งใน DOM (`disconnectedCallback` ตามด้วย `connectedCallback` อีกครั้ง) และโค้ดเรียก `attachShadow` ใหม่ทุกครั้ง จะได้ error เพราะ shadow root แนบได้แค่ครั้งเดียวต่อ element ควรเช็ค `this.shadowRoot` ก่อนเรียกซ้ำ
+- **ตั้งค่า `innerHTML` ก่อนเรียก `attachShadow`** — `this.shadowRoot` จะยังเป็น `null` จนกว่าจะเรียก `attachShadow` แล้ว ต้องเรียกก่อนเสมอ
+- **ต่อ string HTML ด้วยมือจาก user input** — การ concatenate `innerHTML` แบบในตัวอย่างสะดวกสำหรับ demo แต่ถ้าข้อมูลมาจากภายนอกควรใช้ `textContent` หรือ sanitize ก่อน ไม่งั้นเสี่ยง XSS
+
+> 💡 Real World Example
+>
+> **YouTube** — ใช้ `attachShadow` ในการสร้าง video player component (`<yt-icon-button>` และองค์ประกอบอื่นๆ) เพื่อแยกโครงสร้างภายในออกจากหน้าเว็บหลัก
+>
+> **Salesforce Lightning (LWC)** — เรียก `attachShadow` เป็นส่วนหนึ่งของ lifecycle ของทุก component เพื่อ encapsulate UI ระดับ enterprise ที่มีหลายทีมพัฒนาพร้อมกัน
 
 export const quizAttachShadow = [
   {

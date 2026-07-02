@@ -83,6 +83,25 @@ export const wacHtml = `<my-greeting></my-greeting>`;
 Custom element ก็เป็นแค่ class ที่ extend `HTMLElement` แล้วลงทะเบียนผ่าน `customElements.define` ไม่ต้องมีเฟรมเวิร์ก ไม่ต้องมีเครื่องมือ build ไม่ต้องมี virtual DOM — มีแค่จุดต่อขยายของเบราว์เซอร์เองเท่านั้น
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Web Components (มาตรฐานเนทีฟ) | ไม่ผูกกับเฟรมเวิร์กใด ใช้งานได้ทุกที่ที่มีเบราว์เซอร์ ไม่ต้อง transpile หรือมี runtime library | DX สู้เฟรมเวิร์กอย่าง React/Vue ไม่ได้ — ไม่มี reactive state, JSX, หรือ ecosystem tooling ให้ในตัว |
+| Customized built-ins (ส่วนหนึ่งของสเปก) | สืบทอด semantics ของ element เนทีฟได้ฟรี | Safari ปฏิเสธที่จะรองรับ ทำให้ใช้งานจริงข้ามเบราว์เซอร์ไม่ได้เต็มที่ |
+
+## Common Mistakes
+
+- **คิดว่า Web Components มาแทนที่เฟรมเวิร์กได้ทั้งหมด** — จริง ๆ แล้วมันเป็น building block ระดับเบราว์เซอร์ ไม่ได้มี routing, state management หรือ tooling ระดับแอปให้เหมือนเฟรมเวิร์ก
+- **ลืมกฎเครื่องหมายขีดตอนตั้งชื่อ tag** — ชื่อ tag ที่ไม่มีขีดจะไม่ถูกยอมรับเป็น custom element ที่ถูกต้องตามสเปก
+- **สมมติว่าทั้งสามมาตรฐาน (Custom Elements, Shadow DOM, Templates/Slots) รองรับเท่ากันทุกเบราว์เซอร์** — customized built-ins เป็นข้อยกเว้นสำคัญที่ Safari ไม่รองรับ ทั้งที่ส่วนอื่นรองรับครบแล้ว
+
+> 💡 Real World Example
+>
+> **YouTube** — สร้างฟรอนต์เอนด์ทั้งเว็บด้วย custom elements ของตัวเอง แสดงให้เห็นว่ามาตรฐานเนทีฟสเกลไปถึงระดับ production ขนาดใหญ่ได้โดยไม่ต้องพึ่งเฟรมเวิร์ก
+>
+> **Adobe Spectrum** — ใช้ Web Components (Spectrum Web Components) เป็นดีไซน์ระบบที่ใช้ข้ามผลิตภัณฑ์และข้ามเฟรมเวิร์กของ Adobe ได้โดยไม่ผูกกับ React หรือ Vue
+
 export const quizWac = [
   {
     q: 'ข้อใดต่อไปนี้อธิบาย custom element ได้ถูกต้อง?',

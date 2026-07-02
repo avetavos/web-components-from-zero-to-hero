@@ -163,6 +163,25 @@ HTML กำหนด attribute `premium` ตรงใน markup JavaScript จ�
 | ค่าที่กำหนดจาก HTML markup เท่านั้น | Attribute |
 | ค่าที่กำหนดจาก JavaScript | ได้ทั้งคู่ — แนะนำ property สำหรับค่าที่ไม่ใช่ string |
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Attribute | มองเห็นได้ตรงใน HTML markup และ DevTools ใช้เป็น CSS attribute selector ได้ รองรับ server-rendered HTML โดยไม่ต้องใช้ JavaScript | เก็บได้แค่ string เสมอ ส่งข้อมูลซับซ้อน เช่น array หรือ object เข้าไปตรงๆ ไม่ได้ |
+| Property | รับค่า JS type ใดก็ได้ ไม่ว่าจะเป็น object, array หรือ function เข้าถึงเร็วกว่าผ่าน dot notation | ไม่ปรากฏใน HTML markup หรือแผง Elements ของ DevTools ทำให้ debug จาก markup อย่างเดียวยากขึ้น |
+
+## Common Mistakes
+
+- **เทียบ `getAttribute('disabled') === 'true'`** — boolean attribute ทำงานด้วยการมีอยู่ ไม่ใช่ค่าของ string ต้องใช้ `hasAttribute` แทนเสมอ
+- **ใช้ `JSON.stringify()` ยัด object เข้า attribute string** เช่น `data='{"a":1}'` — attribute เก็บได้แค่ string เปราะบางและ parse ผิดพลาดง่าย ควรส่งผ่าน property setter โดยตรงแทน
+- **คาดหวังว่ากำหนด property แล้ว attribute จะอัปเดตตามอัตโนมัติ** — ถ้าไม่ได้เขียน reflection pattern เอง (getter/setter ที่เรียก `setAttribute`) การกำหนด property เปล่าๆ จะไม่ sync กลับไปที่ attribute ทำให้ state ที่เห็นใน markup กับใน JS ไม่ตรงกัน
+
+> 💡 Real World Example
+>
+> Element `<input>` ดั้งเดิมของเบราว์เซอร์คือตัวอย่างที่ชัดเจนที่สุดของความแตกต่างนี้ — attribute `value` คือค่าเริ่มต้น (default value) ที่ตั้งมาจาก HTML ส่วน property `.value` คือค่าปัจจุบันที่ผู้ใช้พิมพ์อยู่ตอนนี้ ทั้งสองค่าต่างกันได้ทันทีที่ผู้ใช้เริ่มพิมพ์
+>
+> **GitHub's Catalyst** framework แนะนำให้ custom element เปิด property สำหรับข้อมูลซับซ้อนเสมอ และสงวน attribute ไว้สำหรับค่า config ที่เป็น string ธรรมดาเท่านั้น
+
 export const quizPropAttr = [
   {
     q: 'What type does `getAttribute` always return?',

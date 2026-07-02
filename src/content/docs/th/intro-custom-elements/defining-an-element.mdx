@@ -87,6 +87,25 @@ export const defHtml = `<hello-badge name="Web Components"></hello-badge>`;
 ชื่อ tag ต้องมีเครื่องหมายขีด — ตัวอย่างเช่น `hello-badge` นี่คือวิธีที่เบราว์เซอร์ใช้แยกแยะ custom element ออกจาก element ที่มีมาในตัว ชื่อที่ไม่มีเครื่องหมายขีดจะถูกถือว่าเป็น `HTMLUnknownElement` แบบเงียบ ๆ
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Native custom elements (`customElements.define`) | ไม่ผูกกับเฟรมเวิร์กใด ทำงานได้ทุกที่ที่มี DOM โดยไม่ต้องมี build step | DX ไม่ลื่นไหลเท่าเฟรมเวิร์กอย่าง React/Vue — ไม่มี JSX, ไม่มี reactive state ให้ในตัว ต้องจัดการเอง |
+| ตั้งชื่อ tag ตามกฎ hyphen | เบราว์เซอร์แยกแยะ element ของคุณจาก element เนทีฟทั้งปัจจุบันและอนาคตได้ชัดเจน | ต้องคิดชื่อที่มีขีดเสมอ เพิ่มภาระเล็กน้อยตอนออกแบบ naming convention |
+
+## Common Mistakes
+
+- **ตั้งชื่อ tag โดยไม่มีเครื่องหมายขีด** — เช่น `mybadge` เบราว์เซอร์จะปฏิเสธการลงทะเบียนหรือถือว่าเป็น `HTMLUnknownElement` แบบเงียบ ๆ
+- **เรียก `customElements.define()` ซ้ำด้วยชื่อ tag เดิม** — จะโยน error ทันที ต้องเช็คด้วย `customElements.get(tagName)` ก่อนถ้าไม่แน่ใจว่าลงทะเบียนไปแล้วหรือยัง
+- **ใช้คำนำหน้าที่สงวนไว้** — เช่น `font-face-*` หรือ `annotation-xml` จะลงทะเบียนไม่ได้เพราะสเปกกันไว้ให้ใช้ในอนาคต
+
+> 💡 Real World Example
+>
+> **YouTube** — ฟรอนต์เอนด์ทั้งเว็บสร้างขึ้นบน custom elements ภายในระบบของตัวเอง ผ่านการเรียก `customElements.define` จำนวนมากสำหรับแต่ละ component
+>
+> **GitHub** — ลงทะเบียน element อย่าง `<relative-time>` ด้วยชื่อที่มีขีดตามกฎสเปก แล้วนำไปใช้ตรง ๆ ใน HTML ของหน้าเว็บจริง
+
 export const quizDef = [
   {
     q: 'ชื่อ tag ใดเป็นชื่อ autonomous custom element ที่ถูกต้อง?',

@@ -128,6 +128,25 @@ Lit จะนำ stylesheet นี้เข้าสู่ Shadow DOM ของ 
 Lit ซิงค์ property (`this.count`) กับ attribute (`count="0"`) โดยอัตโนมัติเมื่อตั้ง `reflect: true` ในออปชันของ property โดยไม่มี `reflect` property จะเป็นแหล่งความจริงหลัก และ attribute จะถูกใช้เฉพาะตอนเริ่มต้นเท่านั้น
 </Tip>
 
+## Trade-offs
+
+| ตัวเลือก | Benefit | Cost |
+|---|---|---|
+| Reactive properties ของ Lit (`static properties`) | Lit จัดการ dirty-checking, batching และ re-render ให้อัตโนมัติ ลด boilerplate ไปมากเมื่อเทียบกับการเขียนเอง | เพิ่ม runtime ประมาณ +5-6KB และมี behavior บางส่วน (เช่น microtask scheduling) ที่ต้องเรียนรู้เพิ่ม |
+| จัดการ state และ re-render เองใน `HTMLElement` | ควบคุมทุก timing ได้เต็มที่ ไม่มี runtime เพิ่ม | ต้องเขียน attribute parsing, dirty-checking และ DOM diffing เองทั้งหมดด้วยมือ |
+
+## Common Mistakes
+
+- **ลืมประกาศ property ใน `static properties`** — ถ้าไม่ประกาศ Lit จะไม่ track ค่า ทำให้ตั้งค่าแล้ว UI ไม่ re-render ตาม
+- **Mutate array/object ใน property โดยตรง** เช่น `this.items.push(x)` แทนที่จะสร้าง reference ใหม่ — Lit เทียบค่าด้วย `!==` เป็นค่าเริ่มต้น จึงตรวจไม่พบว่าเปลี่ยนแปลง และไม่ re-render
+- **ใส่ logic หนักไว้ใน `render()` โดยตรง** แทนที่จะคำนวณ/cache ไว้ล่วงหน้า — เพราะ `render()` อาจถูกเรียกบ่อยกว่าที่คิด ทำให้ performance แย่ลงโดยไม่จำเป็น
+
+> 💡 Real World Example
+>
+> **Home Assistant** — frontend ทั้งหมดของแพลตฟอร์ม home automation นี้สร้างจาก custom elements ที่ extend `LitElement` โดยตรง
+>
+> **Google Material Web** — component ของ Material Design ใช้ reactive properties และ scoped styles ของ `LitElement` เป็นแกนหลักในการ implement ทุกตัว
+
 ## ทดสอบความเข้าใจ
 
 <Quiz client:visible id="lit-and-tooling/lit-element" questions={quizLitElement} />
