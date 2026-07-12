@@ -184,17 +184,17 @@ HTML กำหนด attribute `premium` ตรงใน markup JavaScript จ�
 
 export const quizPropAttr = [
   {
-    q: 'What type does `getAttribute` always return?',
+    q: '`getAttribute` คืนค่าเป็น type อะไรเสมอ?',
     options: [
       'boolean',
       'number',
-      'string or null',
+      'string หรือ null',
       'object',
     ],
     answer: 2,
   },
   {
-    q: 'How should you check if a boolean attribute like `disabled` is present?',
+    q: 'ควรเช็คว่า boolean attribute อย่าง `disabled` มีอยู่หรือไม่ยังไง?',
     options: [
       "this.getAttribute('disabled') === true",
       "this.getAttribute('disabled') === 'true'",
@@ -204,17 +204,17 @@ export const quizPropAttr = [
     answer: 2,
   },
   {
-    q: 'When is using a JS property better than an HTML attribute?',
+    q: 'ตอนไหนที่ใช้ JS property ดีกว่า HTML attribute?',
     options: [
-      'When the value is a short string',
-      'When the value is an object, array, or a boolean',
-      'When the element has a shadow root',
-      'When the element is not yet connected',
+      'ตอนที่ค่าเป็น string สั้น ๆ',
+      'ตอนที่ค่าเป็น object, array หรือ boolean',
+      'ตอนที่ element มี shadow root',
+      'ตอนที่ element ยังไม่ถูก connect',
     ],
     answer: 1,
   },
   {
-    q: 'Setting `<my-el count="5">` — what is the type of `this.getAttribute(\'count\')`?',
+    q: 'กำหนด `<my-el count="5">` แล้ว `this.getAttribute(\'count\')` มี type เป็นอะไร?',
     options: [
       'number 5',
       'boolean true',
