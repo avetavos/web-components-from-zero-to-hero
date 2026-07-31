@@ -10,11 +10,11 @@ import Tip from '../../../../components/Tip.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-Custom elements สื่อสารออกไปภายนอกด้วยการ dispatch events คอนสตรัคเตอร์ `CustomEvent` ที่มีมาในเบราว์เซอร์ช่วยให้คุณแนบ payload ตามต้องการ — ซึ่งก็คือออบเจกต์ `detail` — เพื่อให้ parent รับข้อมูลที่มีโครงสร้างได้โดยไม่ต้องยื่นมือเข้าไปภายใน element นี้ หน้านี้จะอธิบายวิธีสร้าง ส่ง และรับฟัง custom events
+Custom elements สื่อสารออกไปภายนอกด้วยการ dispatch events คอนสตรัคเตอร์ `CustomEvent` ที่มีมาใน browser ช่วยให้คุณแนบ payload ตามต้องการ — ซึ่งก็คือออบเจกต์ `detail` — เพื่อให้ parent รับข้อมูลที่มีโครงสร้างได้โดยไม่ต้องยื่นมือเข้าไปภายใน element นี้ หน้านี้จะอธิบายวิธีสร้าง ส่ง และรับฟัง custom events
 
 ## คอนสตรัคเตอร์ `CustomEvent`
 
-`CustomEvent` ถูกสร้างด้วย string ที่บอก type และออบเจกต์ options ตัวเลือกที่สำคัญที่สุดคือ `detail` ซึ่งเป็นที่เก็บ payload ของคุณ:
+`CustomEvent` ถูกสร้างด้วย string ที่บอก type และออบเจกต์ options ตัวเลือกที่สำคัญที่สุดคือ `detail` ที่เป็นที่เก็บ payload ของคุณ:
 
 ```js
 var event = new CustomEvent('count-change', {
@@ -47,7 +47,7 @@ class MyCounter extends HTMLElement {
 customElements.define('my-counter', MyCounter);
 ```
 
-Element ไม่สนใจว่าใครกำลังฟังอยู่ มันเพียงแค่ประกาศว่ามีบางอย่างเกิดขึ้นและส่งข้อมูลออกไป นี่คือกุญแจสำคัญในการทำให้ elements นำกลับมาใช้ใหม่ได้
+Element ไม่สนใจว่าใครกำลังฟังอยู่ แค่ประกาศว่ามีบางอย่างเกิดขึ้นแล้วส่งข้อมูลออกไป นี่คือกุญแจสำคัญในการทำให้ elements นำกลับมาใช้ใหม่ได้
 
 ## การรับฟังจากภายนอก
 
@@ -64,17 +64,17 @@ document.querySelector('my-counter').addEventListener('count-change', (e) => {
 
 ## ทำไมต้องใช้ Events แทน Callback Props?
 
-รูปแบบ callback-prop — การส่งฟังก์ชันเป็น property — ใช้งานได้ใน JavaScript แต่มันสร้างการผูกมัดที่แน่นแฟ้น: element ต้องรู้ว่า consumer คาดหวังฟังก์ชันบน property ที่ชื่อเฉพาะ และ consumer ต้องมั่นใจว่าตั้งค่าฟังก์ชันนั้นไว้ก่อนที่ element จะใช้
+รูปแบบ callback-prop — การส่งฟังก์ชันเป็น property — ใช้งานได้ใน JavaScript แต่สร้างการผูกมัดที่แน่นแฟ้น: element ต้องรู้ว่า consumer คาดหวังฟังก์ชันบน property ที่ชื่อเฉพาะ และ consumer ต้องมั่นใจว่าตั้งค่าฟังก์ชันนั้นไว้ก่อนที่ element จะใช้
 
-Events ถูกออกแบบมาให้มีการเชื่อมต่อแบบหลวม ผู้ฟังจำนวนมากเท่าไรก็ได้สามารถ subscribe หรือ unsubscribe ได้ทุกเวลาโดยที่ element ไม่รับรู้ public API ของ element ยังคงคาดเดาได้: มันจะ dispatch named event พร้อม `detail` shape ที่มีเอกสารกำกับ และไม่มีอะไรมากกว่านั้น
+Events ถูกออกแบบมาให้มีการเชื่อมต่อแบบหลวม ผู้ฟังจำนวนมากเท่าไรก็ได้สามารถ subscribe หรือ unsubscribe ได้ทุกเวลาโดยที่ element ไม่รับรู้ public API ของ element ยังคงคาดเดาได้: จะ dispatch named event พร้อม `detail` shape ที่มีเอกสารกำกับ และไม่มีอะไรมากกว่านั้น
 
 <Tip title="ตั้งชื่อ Events แบบ DOM Events">
-ใช้ชื่อตัวพิมพ์เล็กที่มีขีดกลางสำหรับ custom events — เช่น `count-change` แทนที่จะเป็น `countChange` วิธีนี้ตรงกับแบบแผนของเบราว์เซอร์เอง (`pointerdown`, `input`, `before-match`) และหลีกเลี่ยงปัญหาที่เกิดจากความแตกต่างของตัวพิมพ์ใหญ่-เล็กใน HTML attribute handlers
+ใช้ชื่อตัวพิมพ์เล็กที่มีขีดกลางสำหรับ custom events — เช่น `count-change` แทนที่จะเป็น `countChange` วิธีนี้ตรงกับแบบแผนของ browser เอง (`pointerdown`, `input`, `before-match`) และหลีกเลี่ยงปัญหาที่เกิดจากความแตกต่างของตัวพิมพ์ใหญ่-เล็กใน HTML attribute handlers
 </Tip>
 
 ## ตัวอย่างสด
 
-Element `click-counter` ด้านล่างนับจำนวนครั้งที่ปุ่มของมันถูกกด แต่ละครั้งที่กดจะ dispatch event `counter-change` พร้อม `{ value: N }` ใน `detail` หน้าเพจรับฟังที่ระดับ `document` และแสดงค่าล่าสุดในพื้นที่ log
+Element `click-counter` ด้านล่างนับจำนวนครั้งที่ปุ่มของตัวเองถูกกด แต่ละครั้งที่กดจะ dispatch event `counter-change` พร้อม `{ value: N }` ใน `detail` หน้าเพจรับฟังที่ระดับ `document` และแสดงค่าล่าสุดในพื้นที่ log
 
 export const customEventsHtml = '<click-counter></click-counter>' +
 '\n<div id="log" style="margin-top:.75rem;font-family:monospace;font-size:.85rem;background:#f3f4f6;padding:.5rem;border-radius:4px;min-height:2rem">Click the button...</div>';
@@ -109,20 +109,20 @@ export const customEventsJs = 'var _count = 0;' +
 เมื่อคุณเรียก `dispatchEvent` แล้ว ออบเจกต์ `detail` ที่คุณส่งเข้าไปจะสามารถเข้าถึงได้ใน event object ของทุก listener ในรูป `e.detail` การแก้ไขค่าภายใน listener นั้นทำได้ในทางเทคนิค แต่ไม่แนะนำอย่างยิ่ง — ให้ถือว่า `detail` เป็น snapshot ที่ไม่เปลี่ยนแปลงของ state ณ ขณะที่ dispatch
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
 | `CustomEvent` + `detail` payload | ข้อมูลที่ส่งออกมีโครงสร้างชัดเจน เชื่อมต่อแบบหลวม หลาย listener subscribe พร้อมกันได้โดย element ไม่ต้องรู้ว่าใครฟังอยู่ | ไม่มี type-checking ในตัว ต้องพึ่งเอกสารกำกับ shape ของ `detail` เอง ผู้ใช้ component อาจเข้าใจผิดได้ถ้าไม่มีเอกสาร |
 | Callback prop (ส่งฟังก์ชันเป็น property) | เรียกกลับตรงไปตรงมา รับ return value จาก caller กลับมาใช้ต่อได้ | ผูกมัดแน่นกับ consumer เฉพาะราย รองรับผู้ฟังได้แค่คนเดียวต่อครั้ง และต้องตั้งค่า callback ก่อน element ใช้งาน |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **ลืม `bubbles: true`** — ยิง `CustomEvent` โดยไม่ตั้ง `bubbles` ทำให้เฉพาะ element ที่ dispatch เท่านั้นที่รับรู้ event ancestor หรือ `document` จะไม่มีทางเห็น event เลย
 - **แก้ไขค่าใน `e.detail` จาก listener** — `detail` ควรถือเป็น snapshot ที่ไม่เปลี่ยนแปลงของ state ณ ขณะ dispatch การแก้ไขค่าจาก listener หนึ่งจะกระทบ listener อื่นที่รับ event เดียวกันแบบไม่คาดคิด
 - **ตั้งชื่อ event แบบ camelCase เช่น `countChange`** — ควรใช้รูปแบบตัวพิมพ์เล็กคั่นด้วยขีดกลางแบบ DOM event มาตรฐาน เช่น `count-change` เพื่อหลีกเลี่ยงปัญหา case-sensitivity ใน HTML attribute event handler
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **GitHub's Catalyst** framework — ใช้แบบแผน `CustomEvent` พร้อม `detail` อย่างเคร่งครัดสำหรับ custom element ทุกตัว เพื่อให้ event payload คาดเดาได้และทดสอบง่าย
 >

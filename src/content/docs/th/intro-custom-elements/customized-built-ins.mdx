@@ -21,7 +21,7 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ## Customized built-ins: ไวยากรณ์
 
-customized built-in extend จาก class ของ HTML element ตัวใดตัวหนึ่งโดยเฉพาะ และประกาศว่ามัน extend element ที่มีมาในตัวตัวใดในอาร์กิวเมนต์ตัวที่สามของ `define`:
+customized built-in extend จาก class ของ HTML element ตัวใดตัวหนึ่งโดยเฉพาะ และประกาศว่า extend element ที่มีมาในตัวตัวใดในอาร์กิวเมนต์ตัวที่สามของ `define`:
 
 ```js
 class FancyButton extends HTMLButtonElement {
@@ -44,13 +44,13 @@ customElements.define('fancy-button', FancyButton, { extends: 'button' });
 <button is="fancy-button">Click me</button>
 ```
 
-element นี้ยังคงเป็น `<button>` อยู่ — มันสืบทอด semantics ที่มีมาในตัวทั้งหมด (โฟกัสได้ ส่ง form ได้ ตอบสนองต่อ `disabled`) บวกกับพฤติกรรมที่คุณกำหนดเอง
+element นี้ยังคงเป็น `<button>` อยู่ — จึงสืบทอด semantics ที่มีมาในตัวทั้งหมด (โฟกัสได้ ส่ง form ได้ ตอบสนองต่อ `disabled`) บวกกับพฤติกรรมที่คุณกำหนดเอง
 
 ## ข้อควรระวังเรื่องการรองรับ
 
 **Safari ไม่รองรับ customized built-ins** และได้ปฏิเสธอย่างชัดเจนว่าจะไม่รองรับ นี่เป็นปัญหาด้านการพกพาที่สำคัญ: `<button is="fancy-button">` จะถูกเรนเดอร์เป็นปุ่มธรรมดาที่ไม่มีสไตล์ใน Safari
 
-มี polyfill อยู่ (เช่น `@ungap/custom-elements`) แต่มันเพิ่มน้ำหนักและความซับซ้อน
+มี polyfill อยู่ (เช่น `@ungap/custom-elements`) แต่เพิ่มน้ำหนักและความซับซ้อน
 
 ```html
 <!-- This renders correctly in Chrome/Firefox but NOT in Safari: -->
@@ -73,11 +73,11 @@ class XButton extends HTMLElement {
 customElements.define('x-button', XButton);
 ```
 
-คุณจะเสียการสืบทอด semantics ของ `<button>` เนทีฟแบบอัตโนมัติไป (คุณต้องเพิ่ม `role="button"` และจัดการคีย์บอร์ดด้วยตัวเอง) แต่คุณจะได้การรองรับข้ามเบราว์เซอร์อย่างเต็มที่
+คุณจะเสียการสืบทอด semantics ของ `<button>` เนทีฟแบบอัตโนมัติไป (คุณต้องเพิ่ม `role="button"` และจัดการคีย์บอร์ดด้วยตัวเอง) แต่คุณจะได้การรองรับข้าม browser อย่างเต็มที่
 
 ## เดโมที่รันได้ (autonomous element)
 
-เดโมด้านล่างใช้ autonomous element — มันทำงานได้ในทุกเบราว์เซอร์ ส่วนไวยากรณ์ของ customized built-in แสดงไว้เพื่อเป็นข้อมูลอ้างอิงเท่านั้น
+เดโมด้านล่างใช้ autonomous element — ทำงานได้ในทุก browser ส่วนไวยากรณ์ของ customized built-in แสดงไว้เพื่อเป็นข้อมูลอ้างอิงเท่านั้น
 
 export const cbiJs = `class XButton extends HTMLElement {
   connectedCallback() {
@@ -96,30 +96,30 @@ export const cbiHtml = `<x-button label="Autonomous element" color="#059669"></x
 
 <LivePreview client:visible html={cbiHtml} js={cbiJs} height="120px" />
 
-> **หมายเหตุเรื่องเบราว์เซอร์:** รูปแบบ customized built-in (`class extends HTMLButtonElement` + `<button is="...">`) ไม่รองรับใน Safari ให้ใช้ autonomous elements (`class extends HTMLElement`) เพื่อให้ได้ Web Components ที่พกพาได้และทำงานข้ามเบราว์เซอร์
+> **หมายเหตุเรื่อง browser:** รูปแบบ customized built-in (`class extends HTMLButtonElement` + `<button is="...">`) ไม่รองรับใน Safari ให้ใช้ autonomous elements (`class extends HTMLElement`) เพื่อให้ได้ Web Components ที่พกพาได้และทำงานข้าม browser
 
 <Tip title="autonomous elements คือตัวเลือกที่พกพาได้">
-autonomous custom elements (`extends HTMLElement`) ทำงานได้ในเบราว์เซอร์หลักทุกตัว ส่วน customized built-ins (`extends HTMLButtonElement` ใช้คู่กับ `is="..."`) ไม่รองรับใน Safari — ใช้มันเฉพาะเมื่อคุณสามารถ polyfill ได้ หรือเจาะจงเป้าหมายเฉพาะ Chromium/Firefox เท่านั้น
+autonomous custom elements (`extends HTMLElement`) ทำงานได้ใน browser หลักทุกตัว ส่วน customized built-ins (`extends HTMLButtonElement` ใช้คู่กับ `is="..."`) ไม่รองรับใน Safari — ใช้เฉพาะเมื่อคุณ polyfill ได้ หรือเจาะจงเป้าหมายเฉพาะ Chromium/Firefox เท่านั้น
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
-| Customized built-in (`is="..."`) | สืบทอด semantics เนทีฟของ element เดิมได้ครบ (focus, form submission, accessibility) โดยไม่ต้องเขียนเอง | Safari ปฏิเสธที่จะรองรับอย่างถาวร ทำให้พกพาข้ามเบราว์เซอร์ไม่ได้ |
-| Autonomous element (`extends HTMLElement`) | รองรับเต็มรูปแบบในทุกเบราว์เซอร์หลัก | ต้องเขียน semantics ที่เนทีฟให้ฟรี (เช่น `role`, keyboard handling) ด้วยตัวเอง |
+| Customized built-in (`is="..."`) | สืบทอด semantics เนทีฟของ element เดิมได้ครบ (focus, form submission, accessibility) โดยไม่ต้องเขียนเอง | Safari ปฏิเสธที่จะรองรับอย่างถาวร ทำให้พกพาข้าม browser ไม่ได้ |
+| Autonomous element (`extends HTMLElement`) | รองรับเต็มรูปแบบในทุก browser หลัก | ต้องเขียน semantics ที่เนทีฟให้ฟรี (เช่น `role`, keyboard handling) ด้วยตัวเอง |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
-- **ลืมใส่ `{ extends: 'button' }`** — ถ้าไม่ส่ง option ตัวที่สามให้ `customElements.define` เบราว์เซอร์จะไม่รู้ว่านี่คือ customized built-in และ `is="fancy-button"` จะไม่ทำงาน
+- **ลืมใส่ `{ extends: 'button' }`** — ถ้าไม่ส่ง option ตัวที่สามให้ `customElements.define` browser จะไม่รู้ว่านี่คือ customized built-in และ `is="fancy-button"` จะไม่ทำงาน
 - **ไม่ทดสอบใน Safari ก่อน deploy** — ความล้มเหลวเป็นแบบเงียบ ไม่มี error ใน console แค่เรนเดอร์เป็น `<button>` ธรรมดาไม่มีสไตล์ ทำให้พลาดง่ายถ้าทดสอบแค่ Chrome/Firefox
-- **ใส่ polyfill โดยไม่ชั่งน้ำหนักต้นทุน** — `@ungap/custom-elements` ช่วยแก้ปัญหาได้ แต่เพิ่ม bundle size และความซับซ้อนให้ทุก request แม้ในเบราว์เซอร์ที่รองรับอยู่แล้ว
+- **ใส่ polyfill โดยไม่ชั่งน้ำหนักต้นทุน** — `@ungap/custom-elements` ช่วยแก้ปัญหาได้ แต่เพิ่ม bundle size และความซับซ้อนให้ทุก request แม้ใน browser ที่รองรับอยู่แล้ว
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
-> **GitHub** — เลือกสร้าง `<relative-time>` และ `<clipboard-copy>` เป็น autonomous elements แทนที่จะใช้ customized built-ins เพื่อให้ทำงานได้ในทุกเบราว์เซอร์รวมถึง Safari
+> **GitHub** — เลือกสร้าง `<relative-time>` และ `<clipboard-copy>` เป็น autonomous elements แทนที่จะใช้ customized built-ins เพื่อให้ทำงานได้ในทุก browser รวมถึง Safari
 >
-> **Adobe Spectrum** — ดีไซน์ระบบ Spectrum Web Components เลือกใช้ autonomous elements เป็นหลักด้วยเหตุผลด้านการพกพาข้ามเบราว์เซอร์เดียวกันนี้
+> **Adobe Spectrum** — ดีไซน์ระบบ Spectrum Web Components เลือกใช้ autonomous elements เป็นหลักด้วยเหตุผลด้านการพกพาข้าม browser เดียวกันนี้
 
 export const quizCbi = [
   {
@@ -143,7 +143,7 @@ export const quizCbi = [
     answer: 2,
   },
   {
-    q: 'เบราว์เซอร์ตัวใดที่ไม่รองรับ customized built-in elements?',
+    q: 'browser ตัวใดที่ไม่รองรับ customized built-in elements?',
     options: [
       'Chrome',
       'Edge',

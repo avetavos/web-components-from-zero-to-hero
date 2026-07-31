@@ -10,7 +10,7 @@ import Tip from '../../../../components/Tip.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-pseudo-element `::slotted(selector)` ช่วยให้คุณเขียน CSS rules **ภายใน shadow root** เพื่อกำหนดเป้าหมาย node ใน light DOM ที่ถูก project เข้าไปใน `<slot>` เมื่อผู้ใช้วาง `<p>` หรือ `<strong>` ไว้ภายใน custom element ของคุณ node เหล่านั้นยังคงอยู่ใน light DOM แต่ถูก render ให้เห็นภายใน shadow tree — `::slotted()` คือวิธีที่คุณจัดสไตล์พวกมันจากภายใน
+pseudo-element `::slotted(selector)` ช่วยให้คุณเขียน CSS rules **ภายใน shadow root** เพื่อกำหนดเป้าหมาย node ใน light DOM ที่ถูก project เข้าไปใน `<slot>` เมื่อผู้ใช้วาง `<p>` หรือ `<strong>` ไว้ภายใน custom element ของคุณ node เหล่านั้นยังคงอยู่ใน light DOM แต่ถูก render ให้เห็นภายใน shadow tree — `::slotted()` คือวิธีจัดสไตล์ node เหล่านั้นจากภายใน
 
 ```css
 ::slotted(p) { color: steelblue; }
@@ -21,7 +21,7 @@ rule ข้างต้นอยู่ภายในบล็อก `<style>` �
 
 ## ข้อจำกัด
 
-`::slotted()` สามารถ match ได้เฉพาะ **node ที่ถูก slot โดยตรงระดับบนสุด** — children โดยตรงของ host ที่ตกลงไปอยู่ใน slot มันไม่สามารถเข้าถึง subtree ของ element ที่ถูก slot ได้:
+`::slotted()` สามารถ match ได้เฉพาะ **node ที่ถูก slot โดยตรงระดับบนสุด** — children โดยตรงของ host ที่ตกลงไปอยู่ใน slot ไม่สามารถเข้าถึง subtree ของ element ที่ถูก slot ได้:
 
 - `::slotted(div span)` **ไม่** ทำงาน — คุณไม่สามารถกำหนดเป้าหมาย `<span>` ที่ซ้อนอยู่ภายใน `<div>` ที่ถูก slot ได้
 - เฉพาะ compound selectors ที่มี slotted element ระดับเดียวเท่านั้นที่ถูกต้อง
@@ -47,23 +47,23 @@ export const slottedJs = 'class CardSlot extends HTMLElement {\n' +
 <LivePreview client:visible html={slottedHtml} js={slottedJs} />
 
 <Tip title="ขีดจำกัดความลึกของ slotted">
-`::slotted(selector)` สามารถ match ได้เฉพาะ children ที่ถูก slot โดยตรง — มันไม่สามารถเข้าถึง subtree ของพวกมันได้ ในการจัดสไตล์เนื้อหาที่ลึกขึ้น ให้ปรับโครงสร้าง HTML ของคุณ หรือใช้ CSS custom properties ที่ส่งเข้ามาจากภายนอก
+`::slotted(selector)` สามารถ match ได้เฉพาะ children ที่ถูก slot โดยตรง — ไม่สามารถเข้าถึง subtree ของ children เหล่านั้นได้ ในการจัดสไตล์เนื้อหาที่ลึกขึ้น ให้ปรับโครงสร้าง HTML ของคุณ หรือใช้ CSS custom properties ที่ส่งเข้ามาจากภายนอก
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
 | `::slotted()` จาก shadow root | ผู้เขียน component กำหนด default style ให้เนื้อหาที่ถูก slot ได้ โดยผู้ใช้ไม่ต้องเขียน CSS เองเลย | match ได้เฉพาะ node ที่ถูก slot โดยตรงระดับบนสุดเท่านั้น ควบคุม subtree ลึกไม่ได้ และ specificity ต่ำ ทำให้ page CSS override ได้ง่าย |
 | ปล่อยให้หน้าจัดสไตล์ light DOM เอง / ส่ง custom properties เข้าไป | ผู้ใช้ควบคุม styling ของเนื้อหาตัวเองได้เต็มที่อยู่แล้วเพราะเป็น light DOM ไม่ต้องพึ่ง `::slotted()` เลย | component author เสียการควบคุม default appearance ถ้าไม่ตั้ง baseline ไว้เลย เนื้อหาที่ slot เข้ามาอาจดูไม่สอดคล้องกับ component |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
-- **คาดหวังว่า descendant selector ใน `::slotted()` จะทำงาน** — เขียน `::slotted(p) span {}` แล้วคาดว่าจะจัดสไตล์ `span` ที่ซ้อนอยู่ใน `p` ที่ถูก slot ได้ แต่ไวยากรณ์นี้ **ไม่ถูกต้อง** — `::slotted()` match ได้แค่ตัว element ที่ถูก slot โดยตรงระดับบนสุดเท่านั้น ไม่ใช่ descendant ของมัน
+- **คาดหวังว่า descendant selector ใน `::slotted()` จะทำงาน** — เขียน `::slotted(p) span {}` แล้วคาดว่าจะจัดสไตล์ `span` ที่ซ้อนอยู่ใน `p` ที่ถูก slot ได้ แต่ไวยากรณ์นี้ **ไม่ถูกต้อง** — `::slotted()` match ได้แค่ตัว element ที่ถูก slot โดยตรงระดับบนสุดเท่านั้น ไม่ใช่ descendant ของตัวเอง
 - **ใช้ compound selector ลึกอย่าง `::slotted(div span)`** — คาดว่าจะกำหนดเป้าหมาย `span` ที่ซ้อนอยู่ใน `div` ที่ถูก slot ได้ แต่ spec อนุญาตให้ match ได้เฉพาะ compound selector ระดับเดียวกับ slotted node เท่านั้น
 - **ลืมว่า specificity ของ `::slotted()` ต่ำ** — เทียบเท่ากับ `(0,0,1,0)` เท่านั้น ทำให้สไตล์ของหน้าที่กำหนดเป้าหมาย element เดียวกันโดยตรงสามารถชนะได้อย่างเงียบ ๆ โดยไม่ต้องใช้ `!important`
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Shoelace** — component อย่าง `<sl-card>` ใช้ `::slotted()` ตั้ง margin เริ่มต้นให้ content ที่ผู้ใช้ slot เข้ามา เผื่อผู้ใช้ไม่ได้ตั้งสไตล์เอง โดยยอมรับข้อจำกัดว่าปรับได้แค่ node ระดับบนสุด
 >

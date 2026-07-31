@@ -10,7 +10,7 @@ import Tip from '../../../../components/Tip.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-pseudo-class `:host` ช่วยให้คุณจัดสไตล์ตัว custom element เองจากภายใน shadow root ของมัน มีสามรูปแบบที่คุณจะใช้เป็นประจำ:
+pseudo-class `:host` ช่วยให้คุณจัดสไตล์ตัว custom element เองจากภายใน shadow root ของตัวเอง มีสามรูปแบบที่คุณจะใช้เป็นประจำ:
 
 - **`:host`** — มีผลกับ host element เสมอ ไม่ว่าจะอยู่ในบริบทใด
 - **`:host(.modifier)`** — มีผลเฉพาะเมื่อ host element มี class ที่ระบุ
@@ -46,23 +46,23 @@ export const hostJs = 'class BadgeHost extends HTMLElement {\n' +
 <LivePreview client:visible html={hostHtml} js={hostJs} />
 
 <Tip title="ขอบเขตของ host selector">
-สไตล์ `:host` มีผลกับ tag ของ custom element ภายนอกตามที่เห็นใน document พวกมันมี specificity ต่ำกว่าสไตล์ของหน้าที่กำหนดเป้าหมายไปยัง element เดียวกัน — ดังนั้น rule ของหน้าอย่าง `badge-host { background: pink }` จะ override `:host { background: blue }`
+สไตล์ `:host` มีผลกับ tag ของ custom element ภายนอกตามที่เห็นใน document สไตล์เหล่านี้มี specificity ต่ำกว่าสไตล์ของหน้าที่กำหนดเป้าหมายไปยัง element เดียวกัน — ดังนั้น rule ของหน้าอย่าง `badge-host { background: pink }` จะ override `:host { background: blue }`
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
 | `:host` / `:host()` | เขียนสไตล์ layout และ variants ของตัว component เองไว้ข้าง ๆ shadow tree โดยตรง ไม่ต้องพึ่ง class ภายนอก | specificity ต่ำกว่าสไตล์ของหน้าที่กำหนดเป้าหมาย element เดียวกันด้วย tag หรือ class ทำให้ page CSS override ได้ง่ายโดยไม่ตั้งใจ |
 | `:host-context()` | ปรับตัวตาม ancestor context (เช่น dark mode) ได้อัตโนมัติ โดยหน้าไม่ต้องรู้ internals ของ component | ผูก component เข้ากับชื่อ class ของ ancestor ที่เฉพาะเจาะจง กลายเป็น dependency แบบซ่อนเร้นต่อโครงสร้างของหน้าที่ใช้งาน |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **คิดว่า `:host` ชนะสไตล์ของหน้าเสมอ** — ลืมว่า `:host` มี specificity ต่ำกว่า selector ของหน้าที่กำหนดเป้าหมาย element เดียวกันโดยตรง เช่น `badge-host { background: pink }` จะ override `:host { background: blue }` แบบไม่คาดคิด
 - **ใช้ `:host-context()` แทน custom properties เพื่อทำธีม** — การผูก styling เข้ากับชื่อ class ของ ancestor ตรง ๆ ทำให้ component เปราะบางและย้ายไปใช้ในหน้าอื่นยาก ควรใช้ CSS custom properties สำหรับ theming ที่พกพาได้มากกว่า
 - **ลืมกำหนด `display` บน `:host`** — ไม่ตั้งค่า `:host { display: ... }` ตั้งแต่ต้น ทำให้ custom element มีค่าเริ่มต้นเป็น `display: inline` ซึ่งมักทำให้เลย์เอาต์เพี้ยนเมื่อฝังในหน้าจริง
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Adobe Spectrum (Spectrum Web Components)** — ใช้ `:host` ร่วมกับ CSS custom properties กำหนด layout เริ่มต้นของแต่ละ component ให้สอดคล้องกับ design system โดยไม่ต้องพึ่ง `:host-context()` ที่ผูกกับโครงสร้างหน้าตรง ๆ
 >
@@ -81,7 +81,7 @@ export const quizHost = [
   },
   {
     q: ":host-context(dark-theme) ทำอะไร?",
-    options: ["จัดสไตล์ element เฉพาะเมื่อมันเป็น dark-theme element", "จัดสไตล์ element เมื่อ ancestor ตรงกับ selector dark-theme", "จัดสไตล์ลูกทั้งหมดใน dark-theme", "ไม่ใช่ CSS selector ที่ถูกต้อง"],
+    options: ["จัดสไตล์ element เฉพาะเมื่อตัว element เองเป็น dark-theme", "จัดสไตล์ element เมื่อ ancestor ตรงกับ selector dark-theme", "จัดสไตล์ลูกทั้งหมดใน dark-theme", "ไม่ใช่ CSS selector ที่ถูกต้อง"],
     answer: 1,
   },
 ];

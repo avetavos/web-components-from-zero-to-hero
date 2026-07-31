@@ -1,6 +1,6 @@
 ---
 title: 'Web Components คืออะไร?'
-description: 'ปัญหาที่ Web Components แก้ ความแตกต่างจาก component ของเฟรมเวิร์ก และการรองรับของเบราว์เซอร์ในปัจจุบัน'
+description: 'ปัญหาที่ Web Components แก้ ความแตกต่างจาก component ของเฟรมเวิร์ก และการรองรับของ browser ในปัจจุบัน'
 sidebar:
   order: 2
 ---
@@ -14,7 +14,7 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ก่อนจะมี Web Components การแชร์ UI widget ระหว่างโปรเจกต์หมายถึงการคัดลอกและวางมาร์กอัปไปมา หรือไม่ก็ต้องผูกตัวเองกับเฟรมเวิร์กใดเฟรมเวิร์กหนึ่ง component ปุ่มของ React ไม่สามารถนำไปวางในแอป Vue ได้ การ์ดของ Svelte ก็นำกลับมาใช้ซ้ำในโปรเจกต์ Angular ไม่ได้
 
-Web Components แก้ปัญหานี้ด้วยมาตรฐานสามอย่างที่มากับเบราว์เซอร์:
+Web Components แก้ปัญหานี้ด้วยมาตรฐานสามอย่างที่มากับ browser:
 
 - **Custom Elements** — นิยาม HTML tag ใหม่ในรูปแบบ ES class
 - **Shadow DOM** — ห่อหุ้ม DOM และ CSS ของ element ไม่ให้สไตล์รั่วเข้าหรือออก
@@ -30,7 +30,7 @@ Web Components แก้ปัญหานี้ด้วยมาตรฐา�
 
 ## Component ของเฟรมเวิร์ก เทียบกับ Web Components
 
-Component ของเฟรมเวิร์ก (React, Vue, Svelte) อยู่ภายในรันไทม์ของเฟรมเวิร์กตัวนั้นทั้งหมด เบราว์เซอร์ไม่เคยเห็น `<MyButton>` เลย — มันเห็นแค่สิ่งที่เฟรมเวิร์กเรนเดอร์ออกมาแทนที่
+Component ของเฟรมเวิร์ก (React, Vue, Svelte) อยู่ภายในรันไทม์ของเฟรมเวิร์กตัวนั้นทั้งหมด browser ไม่เคยเห็น `<MyButton>` เลย — เห็นแค่สิ่งที่เฟรมเวิร์กเรนเดอร์ออกมาแทน
 
 ```html
 <!-- React JSX — compiled away, never in the DOM -->
@@ -40,9 +40,9 @@ Component ของเฟรมเวิร์ก (React, Vue, Svelte) อยู
 <my-button variant="primary">Save</my-button>
 ```
 
-Web Components เป็น DOM node จริง ๆ คุณสามารถ query มันด้วย `document.querySelector` ดักฟัง event ของมันด้วย `addEventListener` และตรวจสอบมันใน DevTools ได้ — เหมือนกับ element ที่มีมาในตัวทุกประการ
+Web Components เป็น DOM node จริง ๆ คุณ query ได้ด้วย `document.querySelector` ดักฟัง event ของตัวเองด้วย `addEventListener` และตรวจสอบใน DevTools ได้ — เหมือนกับ element ที่มีมาในตัวทุกประการ
 
-## การรองรับของเบราว์เซอร์ในปัจจุบัน
+## การรองรับของ browser ในปัจจุบัน
 
 เอนจินเรนเดอร์หลักทั้งสี่ตัวรองรับสเปก Web Components v1 อย่างครบถ้วน:
 
@@ -80,23 +80,23 @@ export const wacHtml = `<my-greeting></my-greeting>`;
 <LivePreview client:visible html={wacHtml} js={wacJs} />
 
 <Tip title="class ที่ extend HTMLElement">
-Custom element ก็เป็นแค่ class ที่ extend `HTMLElement` แล้วลงทะเบียนผ่าน `customElements.define` ไม่ต้องมีเฟรมเวิร์ก ไม่ต้องมีเครื่องมือ build ไม่ต้องมี virtual DOM — มีแค่จุดต่อขยายของเบราว์เซอร์เองเท่านั้น
+Custom element ก็เป็นแค่ class ที่ extend `HTMLElement` แล้วลงทะเบียนผ่าน `customElements.define` ไม่ต้องมีเฟรมเวิร์ก ไม่ต้องมีเครื่องมือ build ไม่ต้องมี virtual DOM — มีแค่จุดต่อขยายของ browser เองเท่านั้น
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
-| Web Components (มาตรฐานเนทีฟ) | ไม่ผูกกับเฟรมเวิร์กใด ใช้งานได้ทุกที่ที่มีเบราว์เซอร์ ไม่ต้อง transpile หรือมี runtime library | DX สู้เฟรมเวิร์กอย่าง React/Vue ไม่ได้ — ไม่มี reactive state, JSX, หรือ ecosystem tooling ให้ในตัว |
-| Customized built-ins (ส่วนหนึ่งของสเปก) | สืบทอด semantics ของ element เนทีฟได้ฟรี | Safari ปฏิเสธที่จะรองรับ ทำให้ใช้งานจริงข้ามเบราว์เซอร์ไม่ได้เต็มที่ |
+| Web Components (มาตรฐานเนทีฟ) | ไม่ผูกกับเฟรมเวิร์กใด ใช้งานได้ทุกที่ที่มี browser ไม่ต้อง transpile หรือมี runtime library | DX สู้เฟรมเวิร์กอย่าง React/Vue ไม่ได้ — ไม่มี reactive state, JSX, หรือ ecosystem tooling ให้ในตัว |
+| Customized built-ins (ส่วนหนึ่งของสเปก) | สืบทอด semantics ของ element เนทีฟได้ฟรี | Safari ปฏิเสธที่จะรองรับ ทำให้ใช้งานจริงข้าม browser ไม่ได้เต็มที่ |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
-- **คิดว่า Web Components มาแทนที่เฟรมเวิร์กได้ทั้งหมด** — จริง ๆ แล้วมันเป็น building block ระดับเบราว์เซอร์ ไม่ได้มี routing, state management หรือ tooling ระดับแอปให้เหมือนเฟรมเวิร์ก
+- **คิดว่า Web Components มาแทนที่เฟรมเวิร์กได้ทั้งหมด** — จริง ๆ แล้ว Web Components เป็น building block ระดับ browser ไม่ได้มี routing, state management หรือ tooling ระดับแอปให้เหมือนเฟรมเวิร์ก
 - **ลืมกฎเครื่องหมายขีดตอนตั้งชื่อ tag** — ชื่อ tag ที่ไม่มีขีดจะไม่ถูกยอมรับเป็น custom element ที่ถูกต้องตามสเปก
-- **สมมติว่าทั้งสามมาตรฐาน (Custom Elements, Shadow DOM, Templates/Slots) รองรับเท่ากันทุกเบราว์เซอร์** — customized built-ins เป็นข้อยกเว้นสำคัญที่ Safari ไม่รองรับ ทั้งที่ส่วนอื่นรองรับครบแล้ว
+- **สมมติว่าทั้งสามมาตรฐาน (Custom Elements, Shadow DOM, Templates/Slots) รองรับเท่ากันทุก browser** — customized built-ins เป็นข้อยกเว้นสำคัญที่ Safari ไม่รองรับ ทั้งที่ส่วนอื่นรองรับครบแล้ว
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **YouTube** — สร้างฟรอนต์เอนด์ทั้งเว็บด้วย custom elements ของตัวเอง แสดงให้เห็นว่ามาตรฐานเนทีฟสเกลไปถึงระดับ production ขนาดใหญ่ได้โดยไม่ต้องพึ่งเฟรมเวิร์ก
 >
@@ -109,12 +109,12 @@ export const quizWac = [
       'component ของ React ที่ถูกคอมไพล์เป็น Web Component',
       'ES class ที่ extend HTMLElement และลงทะเบียนด้วยชื่อ tag',
       'attribute พิเศษของ HTML ที่เปิดใช้พฤติกรรมของเฟรมเวิร์ก',
-      'ปลั๊กอินของเบราว์เซอร์ที่ดักจับการเปลี่ยนแปลง DOM',
+      'ปลั๊กอินของ browser ที่ดักจับการเปลี่ยนแปลง DOM',
     ],
     answer: 1,
   },
   {
-    q: 'เบราว์เซอร์ตัวใดที่ไม่รองรับ customized built-in elements?',
+    q: 'browser ตัวใดที่ไม่รองรับ customized built-in elements?',
     options: [
       'Chrome',
       'Firefox',
@@ -137,9 +137,9 @@ export const quizWac = [
     q: 'หลังจากเรียก customElements.define แล้ว tag ที่ตรงกับชื่อซึ่งมีอยู่แล้วในเอกสารจะเกิดอะไรขึ้น?',
     options: [
       'ไม่มีอะไรเกิดขึ้น — มีผลเฉพาะกับ tag ในอนาคตเท่านั้น',
-      'มันจะโยน TypeError',
-      'มันจะถูกอัปเกรดเป็นอินสแตนซ์ของ class ที่ลงทะเบียนไว้',
-      'มันจะถูกลบออกแล้วแทรกเข้ามาใหม่',
+      'จะโยน TypeError',
+      'จะถูกอัปเกรดเป็นอินสแตนซ์ของ class ที่ลงทะเบียนไว้',
+      'จะถูกลบออกแล้วแทรกเข้ามาใหม่',
     ],
     answer: 2,
   },

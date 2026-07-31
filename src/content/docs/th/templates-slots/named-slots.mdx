@@ -12,7 +12,7 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ## Named slots
 
-**named slot** คือ `<slot>` element ที่มี `name` attribute อยู่ใน shadow tree จับคู่กับ `slot` attribute บนลูกใน light DOM browser จะจับคู่ทั้งสองด้วยชื่อ และ render ลูกแต่ละตัวจาก light DOM ที่จุดแทรกที่ตรงกัน การใช้ named slot หลายตัวช่วยให้คอมโพเนนต์ตัวเดียวเปิดเผยพื้นที่เนื้อหาที่แตกต่างกันได้หลายส่วน ซึ่งเป็นแพทเทิร์นที่พบบ่อยในคอมโพเนนต์ประเภท card, dialog และ layout
+**named slot** คือ `<slot>` element ที่มี `name` attribute อยู่ใน shadow tree จับคู่กับ `slot` attribute บนลูกใน light DOM browser จะจับคู่ทั้งสองด้วยชื่อ และ render ลูกแต่ละตัวจาก light DOM ที่จุดแทรกที่ตรงกัน การใช้ named slot หลายตัวช่วยให้คอมโพเนนต์ตัวเดียวเปิดเผยพื้นที่เนื้อหาที่แตกต่างกันได้หลายส่วน ที่เป็นแพทเทิร์นที่พบบ่อยในคอมโพเนนต์ประเภท card, dialog และ layout
 
 ```html
 <my-card>
@@ -43,7 +43,7 @@ customElements.define('my-card', MyCard);
 
 ## default และ named พร้อมกัน
 
-element หนึ่งสามารถมีทั้ง named slot และ default slot พร้อมกันได้ ลูกที่ตรงกับ named slot จะถูกกระจายไปยัง named slot ที่ตรงกัน ส่วนลูกที่เหลือซึ่งไม่มี `slot` attribute จะตกลงไปอยู่ใน default slot สิ่งนี้ทำให้สร้างคอมโพเนนต์ที่มีส่วนที่มีโครงสร้าง (header, footer) บวกกับพื้นที่เนื้อหาแบบอิสระได้อย่างง่ายดาย
+element หนึ่งสามารถมีทั้ง named slot และ default slot พร้อมกันได้ ลูกที่ตรงกับ named slot จะถูกกระจายไปยัง named slot ที่ตรงกัน ส่วนลูกที่เหลือซึ่งไม่มี `slot` attribute จะตกลงไปอยู่ใน default slot ทำให้สร้างคอมโพเนนต์ที่มีส่วนที่มีโครงสร้าง (header, footer) บวกกับพื้นที่เนื้อหาแบบอิสระได้อย่างง่ายดาย
 
 export const namedSlotsHtml = `<my-card>
   <span slot="header">My Card Title</span>
@@ -75,20 +75,20 @@ customElements.define('my-card', MyCard);`;
 มอง named slot เป็น public API ของคอมโพเนนต์ของคุณ ผู้ใช้งานเติม `slot='header'` และ `slot='body'` ส่วนคอมโพเนนต์เป็นผู้ควบคุมว่าจะนำเสนอชิ้นส่วนเหล่านั้นอย่างไร
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
 | Named slots หลายตัว | เปิดให้ผู้ใช้งานประกอบ layout เองได้อย่างยืดหยุ่น เหมาะกับคอมโพเนนต์ที่มีหลายส่วน เช่น card, dialog | เพิ่ม learning curve ให้ผู้ใช้งานต้องรู้ชื่อ slot ที่ถูกต้อง พิมพ์ผิดแล้วเนื้อหาหายไปเงียบ ๆ |
 | ผูก slot name ไว้ตัวเดียว (default slot เดี่ยว) | เรียนรู้ง่าย ไม่มีโอกาสพิมพ์ชื่อ slot ผิด | จำกัดความสามารถในการจัดวางหลายส่วนเนื้อหาแยกกัน |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **พิมพ์ชื่อ `slot` attribute ผิดหรือไม่ตรงกับ named slot ใน shadow tree** — เนื้อหานั้นจะไม่ถูก render เลยแบบเงียบ ๆ ไม่มี error ใด ๆ ให้เห็น ควรตรวจสอบชื่อให้ตรงกันเสมอ
-- **คาดหวังว่าจะสไตล์ descendant ของเนื้อหาที่ถูกฉายเข้า named slot ได้ทั้งหมดจาก shadow root** — `::slotted()` เลือกได้เฉพาะ element ระดับบนสุดที่ถูกฉายเข้ามาเท่านั้น ไม่ทะลุเข้าไปถึงลูกหลานของมัน
+- **คาดหวังว่าจะสไตล์ descendant ของเนื้อหาที่ถูกฉายเข้า named slot ได้ทั้งหมดจาก shadow root** — `::slotted()` เลือกได้เฉพาะ element ระดับบนสุดที่ถูกฉายเข้ามาเท่านั้น ไม่ทะลุเข้าไปถึงลูกหลานของตัวเอง
 - **ลืมกำหนด fallback content ให้ named slot ที่อาจไม่มีใครใส่ข้อมูลมา** — ทำให้ UI ว่างเปล่าโดยไม่มีคำอธิบายเมื่อผู้ใช้งานคอมโพเนนต์ลืมใส่ slot นั้น
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Shoelace** ใช้ named slots อย่างกว้างขวางในการออกแบบ API ของคอมโพเนนต์ เช่น slot `prefix`/`suffix` ใน `<sl-input>` หรือ slot `icon` ใน `<sl-button>` เพื่อให้ผู้ใช้งาน inject ไอคอนหรือเนื้อหาเสริมได้อย่างยืดหยุ่น
 >
@@ -108,10 +108,10 @@ export const quizNamedSlots = [
   {
     q: "เกิดอะไรขึ้นกับลูกใน light DOM ที่มี slot attribute ซึ่งไม่ตรงกับ named slot ใด ๆ ใน shadow tree?",
     options: [
-      "มันตกลงไปอยู่ใน default slot",
-      "มันถูก render ที่ตำแหน่งเดิม",
-      "มันไม่ถูก render",
-      "มันโยน SlotError"
+      "ตกลงไปอยู่ใน default slot",
+      "ถูก render ที่ตำแหน่งเดิม",
+      "ไม่ถูก render",
+      "โยน SlotError"
     ],
     answer: 2
   },

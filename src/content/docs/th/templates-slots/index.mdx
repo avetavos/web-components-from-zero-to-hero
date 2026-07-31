@@ -12,7 +12,7 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ## template element
 
-`<template>` element เก็บ markup ของ HTML ที่อยู่ในสถานะ inert คือเนื้อหาถูก parse โดย browser แต่ไม่เคยถูก render เลย และไม่มี side-effect ใด ๆ (script ไม่ทำงาน รูปไม่โหลด style ไม่ถูกนำมาใช้) จนกว่าคุณจะ clone มันออกมาอย่างชัดเจน ใช้ `templateEl.content.cloneNode(true)` เพื่อ stamp instance เข้าไปใน document จริง วิธีนี้มีประสิทธิภาพเพราะ browser parse markup เพียงครั้งเดียว ไม่ว่าคุณจะสร้าง instance กี่ตัวก็ตาม
+`<template>` element เก็บ markup ของ HTML ที่อยู่ในสถานะ inert คือเนื้อหาถูก parse โดย browser แต่ไม่เคยถูก render เลย และไม่มี side-effect ใด ๆ (script ไม่ทำงาน รูปไม่โหลด style ไม่ถูกนำมาใช้) จนกว่าคุณจะ clone ออกมาอย่างชัดเจน ใช้ `templateEl.content.cloneNode(true)` เพื่อ stamp instance เข้าไปใน document จริง วิธีนี้มีประสิทธิภาพเพราะ browser parse markup เพียงครั้งเดียว ไม่ว่าคุณจะสร้าง instance กี่ตัวก็ตาม
 
 ## Slots — การฉายเนื้อหาจาก light DOM
 
@@ -53,12 +53,12 @@ Browser parse markup ของ `<template>` element เพียงครั้�
 
 export const quizIndex = [
   {
-    q: "เกิดอะไรขึ้นกับเนื้อหาภายใน `<template>` element ก่อนที่มันจะถูก clone?",
+    q: "เกิดอะไรขึ้นกับเนื้อหาภายใน `<template>` element ก่อนที่จะถูก clone?",
     options: [
       "ถูก render ทันที",
       "ถูกเพิกเฉยทั้งหมด",
       "ถูก parse แต่อยู่ในสถานะ inert — ไม่ถูก render",
-      "มันโยน SyntaxError"
+      "โยน SyntaxError"
     ],
     answer: 2
   },

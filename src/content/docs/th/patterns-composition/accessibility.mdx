@@ -12,9 +12,9 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ## ทำไม custom element จึงต้องทำงานด้าน accessibility
 
-element แบบเนทีฟอย่าง `<button>` มี ARIA role, การจัดการ focus และการจัดการคีย์บอร์ดในตัวอยู่แล้ว แต่ custom element เริ่มต้นโดยไม่มีสิ่งเหล่านี้เลย คุณต้องเพิ่มสิ่งที่เบราว์เซอร์มักจัดให้ฟรีเข้าไปอย่างชัดเจน
+element แบบเนทีฟอย่าง `<button>` มี ARIA role, การจัดการ focus และการจัดการคีย์บอร์ดในตัวอยู่แล้ว แต่ custom element เริ่มต้นโดยไม่มีสิ่งเหล่านี้เลย คุณต้องเพิ่มสิ่งที่ browser มักจัดให้ฟรีเข้าไปอย่างชัดเจน
 
-เมื่อผู้ใช้นำทางด้วยคีย์บอร์ดหรือใช้ screen reader เบราว์เซอร์จะเปิดเผย accessibility tree ซึ่งเป็นภาพแทนของ DOM ที่ขนานกันไป สำหรับให้เทคโนโลยีสิ่งอำนวยความสะดวก (assistive technology) อ่าน element แบบเนทีฟจะเติมข้อมูลลงใน tree นี้โดยอัตโนมัติ แต่ `<div>` หรือ custom element จะไม่ทำ ซึ่งหมายความว่าผู้ใช้ screen reader อาจไม่ได้รับข้อมูลใด ๆ เกี่ยวกับว่า element นั้นคืออะไรหรือจะโต้ตอบกับมันอย่างไร
+เมื่อผู้ใช้นำทางด้วยคีย์บอร์ดหรือใช้ screen reader browser จะเปิดเผย accessibility tree ที่เป็นภาพแทนของ DOM ที่ขนานกันไป สำหรับให้เทคโนโลยีสิ่งอำนวยความสะดวก (assistive technology) อ่าน element แบบเนทีฟจะเติมข้อมูลลงใน tree นี้โดยอัตโนมัติ แต่ `<div>` หรือ custom element จะไม่ทำ ซึ่งหมายความว่าผู้ใช้ screen reader อาจไม่ได้รับข้อมูลใด ๆ เกี่ยวกับว่า element นั้นคืออะไรหรือต้องโต้ตอบอย่างไร
 
 ## ARIA role และ attribute บน host
 
@@ -29,7 +29,7 @@ class AccessibleCard extends HTMLElement {
 }
 ```
 
-การตั้งค่า `role="region"` บอก assistive technology ว่า element นี้คือ landmark region ส่วน `aria-label` ให้ชื่อที่เข้าถึงได้ (accessible name) แก่มัน attribute ทั้งสองจะถูกสะท้อนเข้าไปใน accessibility tree ทันที
+การตั้งค่า `role="region"` บอก assistive technology ว่า element นี้คือ landmark region ส่วน `aria-label` ให้ชื่อที่เข้าถึงได้ (accessible name) กับ element attribute ทั้งสองจะถูกสะท้อนเข้าไปใน accessibility tree ทันที
 
 ## delegatesFocus ใน attachShadow
 
@@ -98,26 +98,26 @@ customElements.define('focus-btn', FocusBtn);`;
 
 <LivePreview client:visible html={a11yHtml} js={a11yJs} />
 
-คลิกปุ่มด้วยเมาส์ของคุณ จากนั้นลองกด Tab เพื่อ focus ไปที่มันและเรียกใช้งานด้วย Enter หรือ Space ทั้งสองเส้นทางควรอัปเดตย่อหน้าด้านล่าง
+คลิกปุ่มด้วยเมาส์ของคุณ จากนั้นลองกด Tab เพื่อ focus ไปที่และเรียกใช้งานด้วย Enter หรือ Space ทั้งสองเส้นทางควรอัปเดตย่อหน้าด้านล่าง
 
 <Tip title="Test with a keyboard">
-หลังจากสร้าง custom element แบบโต้ตอบได้แล้ว ให้นำทางไปยังมันโดยใช้แค่ Tab และเรียกใช้งานด้วย Enter และ Space หากคุณเข้าถึงมันไม่ได้หรือกระตุ้นมันไม่ได้โดยไม่ใช้เมาส์ ผู้ใช้ของคุณที่พึ่งพาคีย์บอร์ดหรือเทคโนโลยีสิ่งอำนวยความสะดวกก็จะทำไม่ได้เช่นกัน
+หลังจากสร้าง custom element แบบโต้ตอบได้แล้ว ให้ลองนำทางไปหา element นั้นด้วย Tab อย่างเดียว แล้วเรียกใช้งานด้วย Enter และ Space หากคุณเข้าถึงหรือสั่งงานไม่ได้โดยไม่ใช้เมาส์ ผู้ใช้ของคุณที่พึ่งพาคีย์บอร์ดหรือเทคโนโลยีสิ่งอำนวยความสะดวกก็จะทำไม่ได้เช่นกัน
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
 | ตั้งค่า ARIA ผ่าน `setAttribute('role', ...)` บน host | เขียนง่าย ตรวจสอบผ่าน DOM inspector ได้ตรง ๆ | attribute อาจถูก override โดยผู้เขียน HTML ที่เรียกใช้ element ของคุณโดยไม่ตั้งใจ |
-| ตั้งค่า ARIA ผ่าน `internals.role` / `internals.ariaLabel` (ElementInternals) | ไม่ทำให้ attribute list ของ element รกและไม่ชนกับค่าที่ผู้เขียนตั้งเอง | ต้องเรียก `attachInternals()` ก่อน และเบราว์เซอร์รุ่นเก่ากว่าสนับสนุนได้จำกัดกว่า attribute ธรรมดา |
+| ตั้งค่า ARIA ผ่าน `internals.role` / `internals.ariaLabel` (ElementInternals) | ไม่ทำให้ attribute list ของ element รกและไม่ชนกับค่าที่ผู้เขียนตั้งเอง | ต้องเรียก `attachInternals()` ก่อน และ browser รุ่นเก่ากว่าสนับสนุนได้จำกัดกว่า attribute ธรรมดา |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **ลืม `delegatesFocus`** — เมื่อสร้าง custom input ที่มี focusable element อยู่ใน shadow DOM แต่ไม่ส่ง `delegatesFocus: true` ให้ `attachShadow` การคลิก host จะไม่ย้าย focus เข้าไปข้างใน ทำให้ผู้ใช้คีย์บอร์ดงงว่าทำไม tab ไม่ไปที่ element ที่คาดไว้
 - **ข้าม keyboard handling บน interactive element** — การทำให้ element ทำหน้าที่เหมือนปุ่มด้วย `role="button"` แต่ไม่จัดการ `keydown` สำหรับ Enter/Space ทำให้ element นั้นใช้ไม่ได้เลยสำหรับผู้ใช้คีย์บอร์ดและ screen reader แม้ดูเหมือนกดได้ด้วยเมาส์ก็ตาม
 - **ตั้ง ARIA role โดยไม่ตั้ง `tabindex`** — การใส่ `role="button"` เฉยๆ ไม่ได้ทำให้ element focus ได้อัตโนมัติเหมือน `<button>` เนทีฟ ต้องเพิ่ม `tabindex="0"` เองด้วย ไม่งั้น element จะถูกข้ามไปตอนกด Tab
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **GitHub** — ใช้ custom element (`<relative-time>`, `<clipboard-copy>` เป็นต้น) ที่ผ่านการทดสอบ accessibility อย่างเข้มงวด เพื่อให้ผู้ใช้ screen reader ใช้งานฟีเจอร์ทั้งหมดได้เท่าเทียมกับผู้ใช้เมาส์
 >

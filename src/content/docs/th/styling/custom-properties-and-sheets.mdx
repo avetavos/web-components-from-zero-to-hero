@@ -74,20 +74,20 @@ export const themedJs = 'class ThemedBadge extends HTMLElement {' +
 ออกแบบ components ของคุณด้วย custom properties แบบ `--component-name-property` สำหรับทุก visual token แล้วทำเอกสารกำกับไว้ วิธีนี้ทำให้ components ของคุณปรับธีมได้โดยไม่ต้องใช้ JavaScript เลย
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
 | CSS Custom Properties | เป็นช่องทาง theming ที่เรียบง่ายและยืดหยุ่น สืบทอดผ่าน shadow boundary ได้โดยไม่ต้องเขียน JavaScript | หน้าเว็บภายนอกไม่มีสิทธิ์ override ทุก style decision ภายใน — ธีมได้เฉพาะ token ที่ผู้เขียน component เปิดให้เท่านั้น |
 | Constructable Stylesheets | แชร์ `CSSStyleSheet` object เดียวข้ามหลาย shadow roots ได้ ลด memory และไม่ต้อง parse ซ้ำ | ต้องเขียนโค้ด JavaScript เพิ่มเพื่อสร้างและ adopt sheet ซับซ้อนกว่าการใส่ `<style>` ตรง ๆ ในแต่ละ instance |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **ทำซ้ำ `<style>` ในทุก instance** — ใส่บล็อก `<style>` เดิมซ้ำในทุก shadow root แทนที่จะสร้าง `CSSStyleSheet` เดียวแล้วแชร์ผ่าน `adoptedStyleSheets` ทำให้เปลืองหน่วยความจำและแก้ยากเมื่อต้อง update สไตล์
 - **ลืมใส่ fallback value** — เขียน `var(--badge-bg)` โดยไม่มีค่า fallback เมื่อ property ไม่ถูกตั้งค่าไว้ component จะพังแบบเงียบ ๆ ควรเขียนเป็น `var(--badge-bg, #6b7280)` เสมอ
 - **คาดหวังว่า custom properties จะ override ได้ทุกอย่าง** — custom properties เป็นเพียง token ที่ผู้เขียน component เลือกเปิดให้ผ่าน `var()` เท่านั้น ไม่ได้ให้สิทธิ์หน้าเว็บ override โครงสร้างหรือ layout ภายใน shadow root ทั้งหมด
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Shoelace** — เปิด CSS custom-property API ที่สม่ำเสมอทั่วทั้งชุด component ทำให้ผู้ใช้ปรับสีและ spacing ของทุก component ได้จากจุดเดียวโดยไม่ต้องแตะ shadow DOM ภายใน
 >
@@ -96,7 +96,7 @@ export const themedJs = 'class ThemedBadge extends HTMLElement {' +
 export const quizCustomProps = [
   {
     q: "CSS custom properties (--vars) ข้ามขอบเขตของ shadow DOM ได้หรือไม่?",
-    options: ["ไม่ได้ มันถูกบล็อกทั้งหมดเหมือนสไตล์ทั่วไป", "ได้ มันสืบทอดผ่าน shadow roots", "ได้เฉพาะเมื่อกำหนดด้วย !important", "ได้เฉพาะใน shadow roots แบบ open mode"],
+    options: ["ไม่ได้ ถูกบล็อกทั้งหมดเหมือนสไตล์ทั่วไป", "ได้ สืบทอดผ่าน shadow roots", "ได้เฉพาะเมื่อกำหนดด้วย !important", "ได้เฉพาะใน shadow roots แบบ open mode"],
     answer: 1,
   },
   {

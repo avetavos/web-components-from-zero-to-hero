@@ -14,7 +14,7 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 `slotchange` event จะ fire บน `<slot>` element ทุกครั้งที่ชุดของ assigned nodes เปลี่ยนแปลง ซึ่งรวมถึงตอนที่ element เชื่อมต่อกับ DOM เป็นครั้งแรกพร้อมกับมีลูกอยู่แล้ว, ตอนที่มีการเพิ่มหรือลบลูกออกจาก host element และตอนที่ `slot` attribute ของลูกเปลี่ยนแปลง
 
-ฟังมันได้โดยตรงบน slot element
+ฟัง event นี้ได้โดยตรงบน slot element
 
 ```js
 const slot = shadow.querySelector('slot');
@@ -27,7 +27,7 @@ slot.addEventListener('slotchange', () => {
 
 `slot.assignedNodes()` คืน node ทั้งหมดที่ถูกฉายเข้า slot นั้นในปัจจุบัน รวมถึง text node และ comment node ส่วน `slot.assignedElements()` คืนเฉพาะ Element node ซึ่งมักจะเป็นสิ่งที่คุณต้องการเมื่อวนลูปดูลูกที่ถูกฉายเข้ามา
 
-ทั้งสองเมธอดรับ options object ที่มี property `flatten` การส่ง `{ flatten: true }` จะขยาย nested slot element ทั้งหมดแบบเรียกซ้ำเพื่อรวม assigned nodes ของมันด้วย ซึ่งมีประโยชน์เมื่อคุณมี slot ซ้อนอยู่ใน slot
+ทั้งสองเมธอดรับ options object ที่มี property `flatten` การส่ง `{ flatten: true }` จะขยาย nested slot element ทั้งหมดแบบเรียกซ้ำเพื่อรวม assigned nodes ของตัวเองด้วย ซึ่งมีประโยชน์เมื่อคุณมี slot ซ้อนอยู่ใน slot
 
 ```js
 class MyList extends HTMLElement {
@@ -81,20 +81,20 @@ customElements.define('my-list', MyList);`;
 `slotchange` event จะ fire เมื่อ element เชื่อมต่อเป็นครั้งแรกพร้อมกับมีลูกอยู่ใน light DOM แล้ว คุณไม่จำเป็นต้องเรียก `connectedCallback` แยกต่างหากเพื่อ bootstrap สถานะเริ่มต้น — แค่พึ่งพา `slotchange` ครั้งแรกก็พอ
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
 | ฟัง `slotchange` event เพื่อซิงค์สถานะ | คอมโพเนนต์ตอบสนองต่อการเปลี่ยนแปลงเนื้อหาแบบ real-time โดยไม่ต้อง poll | ต้องเขียน event listener และจัดการ cleanup เพิ่มเติม เพิ่มความซับซ้อนของ lifecycle |
 | ใช้ `MutationObserver` แทน `slotchange` | ตรวจจับการเปลี่ยนแปลงได้ละเอียดกว่า เช่น การเปลี่ยน attribute หรือ text content ภายในลูก | มี overhead สูงกว่าและตั้งค่าซับซ้อนกว่า `slotchange` ซึ่งถูกออกแบบมาสำหรับ use case นี้โดยเฉพาะ |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **ลืมฟัง `slotchange` event เมื่อเนื้อหาที่ถูกฉายเข้า slot เปลี่ยนแปลงแบบไดนามิก** — ทำให้ UI ภายใน shadow DOM ค้างอยู่กับข้อมูลเก่า ไม่อัปเดตตามลูกที่ถูกเพิ่มหรือลบออกจริง
 - **ใช้ `slot.assignedNodes()` แล้วคาดหวังว่าจะได้เฉพาะ Element** — `assignedNodes()` คืน text node และ comment node ด้วย ถ้าต้องการเฉพาะ element ควรใช้ `slot.assignedElements()` แทน
 - **ลืมส่ง `{ flatten: true }` เมื่อมี slot ซ้อนอยู่ใน slot** — ทำให้ได้ assigned nodes ไม่ครบ เพราะ node ที่อยู่ใน nested slot จะไม่ถูกรวมเข้ามาโดย default
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Lit** ใช้แพทเทิร์นการฟัง `slotchange` ร่วมกับ `assignedElements()` ในคอมโพเนนต์ที่ต้องนับหรือตรวจสอบชนิดของลูกที่ถูกฉายเข้ามา เช่น tab list ที่ต้องรู้ว่ามี tab กี่ตัว
 >
@@ -125,7 +125,7 @@ export const quizSlotchange = [
     q: 'เมื่อส่ง { flatten: true } เข้าไปใน assignedNodes() จะทำอะไร?',
     options: [
       'เรียง assigned nodes ตามตัวอักษร',
-      'ขยาย nested slot element ทั้งหมดแบบเรียกซ้ำเพื่อรวม assigned nodes ของมัน',
+      'ขยาย nested slot element ทั้งหมดแบบเรียกซ้ำเพื่อรวม assigned nodes ของตัวเอง',
       'แปลง NodeList เป็น array',
       'ลบ node ที่ซ้ำกันออก',
     ],

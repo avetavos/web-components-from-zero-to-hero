@@ -14,7 +14,7 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 Form-Associated Custom Elements API ช่วยให้ custom element เข้าร่วมใน `<form>` ได้เหมือนกับ input แบบเนทีฟทุกประการ element สามารถรายงานค่า (value) และความถูกต้อง (validity) ของตัวเอง รวมถึงถูกรวมเข้าไปใน `FormData` และ `form.submit()` ได้
 
-หากไม่มี API นี้ custom element ที่วางอยู่ภายใน `<form>` จะมองไม่เห็นโดยกลไกการ submit form ของเบราว์เซอร์ ค่าที่มันเก็บไว้จะไม่ถูก serialise และการตรวจสอบความถูกต้องในตัว (built-in validation) ก็จะไม่ทำงานกับมัน แต่เมื่อใช้ API นี้ element ของคุณจะกลายเป็นผู้ร่วมใน form ระดับเฟิร์สคลาสที่แยกไม่ออกจาก `<input>` แบบเนทีฟ
+หากไม่มี API นี้ custom element ที่วางอยู่ภายใน `<form>` จะมองไม่เห็นโดยกลไกการ submit form ของ browser ค่าที่เก็บไว้จะไม่ถูก serialise และการตรวจสอบความถูกต้องในตัว (built-in validation) ก็จะไม่ทำงานกับ element นั้น แต่เมื่อใช้ API นี้ element ของคุณจะกลายเป็นผู้ร่วมใน form ระดับเฟิร์สคลาสที่แยกไม่ออกจาก `<input>` แบบเนทีฟ
 
 ## การเปิดใช้งาน API
 
@@ -30,7 +30,7 @@ class MyInput extends HTMLElement {
 }
 ```
 
-ต้องประกาศ property แบบ static นี้ก่อนที่จะเรียก `attachInternals()` เพราะเบราว์เซอร์จะอ่านค่ามันในตอนที่สร้าง element (construction time) เพื่อตัดสินใจว่าจะมอบความสามารถในการเข้าร่วม form ให้หรือไม่
+ต้องประกาศ property แบบ static นี้ก่อนที่จะเรียก `attachInternals()` เพราะ browser จะอ่านค่านี้ตอนที่สร้าง element (construction time) เพื่อตัดสินใจว่าจะมอบความสามารถในการเข้าร่วม form ให้หรือไม่
 
 ## method ของ ElementInternals
 
@@ -38,7 +38,7 @@ class MyInput extends HTMLElement {
 
 - `internals.setFormValue(value)` — กำหนดค่าที่จะถูกรวมเข้าไปใน `FormData` เมื่อ form ถูก submit
 - `internals.setValidity(flags, message, anchor)` — ควบคุมสถานะการตรวจสอบความถูกต้องของ element ส่ง object ว่างและ string ว่างเพื่อล้าง error ทั้งหมด
-- `internals.reportValidity()` — เรียก UI การตรวจสอบความถูกต้องในตัวของเบราว์เซอร์ (กล่อง tooltip) ในแบบเดียวกับที่ input แบบเนทีฟทำ
+- `internals.reportValidity()` — เรียก UI การตรวจสอบความถูกต้องในตัวของ browser (กล่อง tooltip) ในแบบเดียวกับที่ input แบบเนทีฟทำ
 - `internals.checkValidity()` — คืนค่า boolean ที่บอกว่าตอนนี้ element ผ่านการตรวจสอบความถูกต้องหรือไม่
 
 property `internals.role` และ property ที่สะท้อน (reflection) ค่า ARIA จะกล่าวถึงในบทเรียน Accessibility
@@ -63,7 +63,7 @@ property `internals.role` และ property ที่สะท้อน (reflec
 
 ## เดโมที่รันได้ — ตรวจจับฟีเจอร์ (feature-detected)
 
-เดโมด้านล่างตรวจจับฟีเจอร์ (feature-detect) ว่ารองรับ `attachInternals` และ `formAssociated` หรือไม่ หากเบราว์เซอร์ไม่รองรับ จะแสดงข้อความสำรอง (fallback) แทน
+เดโมด้านล่างตรวจจับฟีเจอร์ (feature-detect) ว่ารองรับ `attachInternals` และ `formAssociated` หรือไม่ หาก browser ไม่รองรับ จะแสดงข้อความสำรอง (fallback) แทน
 
 export const formHtml = `<form id="demo-form"><fancy-input name="myfield"></fancy-input></form><p id="fi-out">Form value: (empty)</p>`;
 
@@ -107,20 +107,20 @@ customElements.define('fancy-input', FancyInput);`;
 เรียก `this.attachInternals()` ใน `constructor` ไม่ใช่ใน `connectedCallback` object internals ต้องถูกสร้างเพียงครั้งเดียวต่อ element และ constructor คือที่ที่เหมาะสมในการทำเช่นนั้น
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
-| Native form-associated (`static formAssociated = true` + `ElementInternals`) | custom element เข้าร่วมกับ `<form>` ได้เหมือน native control เช่น validate, reset, submit ค่าไปพร้อม form โดยไม่ต้องเขียน JavaScript เพิ่ม | รองรับเฉพาะเบราว์เซอร์ที่ค่อนข้างใหม่ และ API ของ `ElementInternals` ยังมีรายละเอียดปลีกย่อยที่ต้องเรียนรู้ |
-| Polyfill / native `<input>` ที่ซ่อนอยู่ข้างใน shadow DOM | รองรับเบราว์เซอร์เก่าได้กว้างกว่า | เพิ่มความซับซ้อนของ DOM ต้อง sync ค่าระหว่าง custom element กับ input ที่ซ่อนไว้เอง และเสี่ยงเรื่อง accessibility ถ้า sync พลาด |
+| Native form-associated (`static formAssociated = true` + `ElementInternals`) | custom element เข้าร่วมกับ `<form>` ได้เหมือน native control เช่น validate, reset, submit ค่าไปพร้อม form โดยไม่ต้องเขียน JavaScript เพิ่ม | รองรับเฉพาะ browser ที่ค่อนข้างใหม่ และ API ของ `ElementInternals` ยังมีรายละเอียดปลีกย่อยที่ต้องเรียนรู้ |
+| Polyfill / native `<input>` ที่ซ่อนอยู่ข้างใน shadow DOM | รองรับ browser เก่าได้กว้างกว่า | เพิ่มความซับซ้อนของ DOM ต้อง sync ค่าระหว่าง custom element กับ input ที่ซ่อนไว้เอง และเสี่ยงเรื่อง accessibility ถ้า sync พลาด |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **ลืมตั้ง `static formAssociated = true`** — ถ้าไม่ตั้ง flag นี้ `attachInternals()` จะไม่คืนค่า `ElementInternals` ที่เข้าร่วม form ได้ และ `setFormValue()` จะไม่มีผลใด ๆ ทำให้ค่าของ custom input ไม่เคยถูก submit ไปพร้อม form เลย
 - **เรียก `attachInternals()` ใน `connectedCallback` แทน `constructor`** — object internals ต้องถูกสร้างเพียงครั้งเดียวต่อ element ถ้าเรียกซ้ำใน `connectedCallback` (ซึ่งอาจทำงานหลายครั้ง) จะได้ error เพราะเรียก `attachInternals` ซ้ำไม่ได้
 - **ไม่เรียก `setFormValue()` ทุกครั้งที่ค่าเปลี่ยน** — ถ้าอัปเดต internal state ของ element แต่ลืม sync ไปยัง form value ผ่าน `internals.setFormValue()` ฟอร์มจะ submit ค่าเก่าหรือค่าว่างแทนค่าที่ผู้ใช้เพิ่งกรอก
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Adobe Photoshop on the web** — ใช้ Lit ร่วมกับ form-associated custom elements เพื่อให้ custom input controls ของแอปเข้าร่วมกับ native `<form>` semantics ได้เต็มรูปแบบ
 >

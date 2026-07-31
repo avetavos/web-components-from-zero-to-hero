@@ -11,7 +11,7 @@ import Tip from '../../../../components/Tip.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-Web Components คือชุดมาตรฐานที่มาพร้อมกับเบราว์เซอร์ ซึ่งช่วยให้คุณนิยาม HTML element ของตัวเองได้ — นำกลับมาใช้ซ้ำได้ ห่อหุ้มเป็นเอกเทศ และไม่ผูกติดกับเฟรมเวิร์กใด ไม่ต้องมีขั้นตอน build ไม่ต้องมีไลบรารี มีแค่แพลตฟอร์มล้วน ๆ
+Web Components คือชุดมาตรฐานที่มาพร้อมกับ browser ซึ่งช่วยให้คุณนิยาม HTML element ของตัวเองได้ — นำกลับมาใช้ซ้ำได้ ห่อหุ้มเป็นเอกเทศ และไม่ผูกติดกับเฟรมเวิร์กใด ไม่ต้องมีขั้นตอน build ไม่ต้องมีไลบรารี มีแค่แพลตฟอร์มล้วน ๆ
 
 คอร์สนี้จะพาคุณไปทำความรู้จักกับสามเสาหลักที่เกี่ยวเนื่องกัน:
 
@@ -67,12 +67,12 @@ export const litHtml = `<lit-hi></lit-hi>`;
 <LivePreview client:visible html={litHtml} js={litJs} />
 
 <Tip title="ออกแบบมาให้ไม่ผูกกับเฟรมเวิร์ก">
-Web Components ถูกสร้างไว้ในเบราว์เซอร์ในตัวอยู่แล้ว element `hello-badge` ใช้งานได้ทั้งในแอป React แอป Svelte หรือไฟล์ HTML ธรรมดา — เพราะสุดท้ายแล้วทั้งหมดก็เรนเดอร์ออกมาเป็น HTML
+Web Components ถูกสร้างไว้ใน browser ในตัวอยู่แล้ว element `hello-badge` ใช้งานได้ทั้งในแอป React แอป Svelte หรือไฟล์ HTML ธรรมดา — เพราะสุดท้ายแล้วทั้งหมดก็เรนเดอร์ออกมาเป็น HTML
 </Tip>
 
 export const quizIndex = [
   {
-    q: 'API ของเบราว์เซอร์ตัวใดที่ใช้ลงทะเบียนชื่อ HTML tag ใหม่?',
+    q: 'API ของ browser ตัวใดที่ใช้ลงทะเบียนชื่อ HTML tag ใหม่?',
     options: [
       'document.createElement()',
       'customElements.define()',
@@ -92,7 +92,7 @@ export const quizIndex = [
     answer: 1,
   },
   {
-    q: 'Lit สร้างต่อยอดบนมาตรฐานที่มากับเบราว์เซอร์ตัวใด?',
+    q: 'Lit สร้างต่อยอดบนมาตรฐานที่มากับ browser ตัวใด?',
     options: [
       'กลไกภายในของ React และการแปลงด้วย Babel',
       'Service Workers และ IndexedDB',

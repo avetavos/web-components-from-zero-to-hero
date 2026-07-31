@@ -70,20 +70,20 @@ export const hostBoundaryHtml = '<host-badge label="Default"></host-badge> <host
 `:host` กำหนดเป้าหมาย host element จากภายใน shadow root เป็นวิธีเดียวที่จะสไตล์ box model ของ host element เอง (display, border, padding) จาก shadow CSS ของ component
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
 | Event retargeting ที่ shadow boundary | โค้ดภายนอกไม่เห็น internal structure ของ component ผ่าน `event.target` | debug event ยากขึ้น เพราะ `event.target` ที่ host ไม่ใช่ element จริงที่ถูกคลิกภายใน shadow tree |
 | สไตล์ host ผ่าน `:host` / `:host()` จากภายใน shadow CSS | component ควบคุม box model ของตัวเองได้ (display, border) โดยไม่ต้องพึ่งสไตล์ภายนอก | โค้ดภายนอกยังคง override บาง property จาก host element ได้ (เช่น inline style) ทำให้ผลลัพธ์ขึ้นกับใครเขียนทีหลัง |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **คาดหวังว่า `event.target` ในหน้าเว็บจะชี้ไปที่ element จริงภายใน shadow tree** — เพราะ event retargeting จะเปลี่ยน `event.target` ให้เป็น host element เสมอเมื่อ event ฟองออกมาถึง light DOM
 - **ใช้ selector ธรรมดาแทน `:host` เพื่อสไตล์ตัว host element เอง** — เขียน `host-badge { border: ... }` ใน shadow CSS แล้วสงสัยว่าทำไมไม่ทำงาน ต้องใช้ `:host` เท่านั้นเพราะ host element อยู่นอก shadow tree
 - **สับสนระหว่าง light DOM กับ shadow DOM** — คิดว่าเนื้อหาที่ project ผ่าน `<slot>` อยู่ใน shadow tree ทั้งที่จริงๆ light DOM content ยังคงเป็นของ caller และแก้ไขสไตล์จาก shadow root ไม่ได้โดยตรง
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **YouTube** — video player component ใช้ event retargeting เพื่อให้โค้ดภายนอกจัดการ event ระดับ component (เช่น click ที่ player) โดยไม่ต้องรู้โครงสร้าง internal ของปุ่มควบคุมต่างๆ
 >

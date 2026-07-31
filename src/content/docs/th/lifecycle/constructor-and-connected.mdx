@@ -90,20 +90,20 @@ customElements.define('ctor-demo', CtorDemo);`;
 บรรทัดแรกของ constructor ใน custom element ทุกตัวต้องเป็น `super()` เสมอ การเรียก `super()` จะเรียก constructor ของ `HTMLElement` และตั้งค่า internal state ของ element หากละเว้น `super()` จะเกิด `ReferenceError`
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
 | ตั้งค่าใน `constructor` | ทำงานเร็วที่สุด ก่อน element เข้า DOM เหมาะกับ internal state ล้วนๆ | เข้าถึง attribute, children, parent ไม่ได้เลย เพราะ element ยังไม่ถูกแทรกเข้า document |
 | ตั้งค่าใน `connectedCallback` | เข้าถึง attribute, light DOM children, parent ได้ครบ และ render ได้อย่างปลอดภัย | ถูกเรียกซ้ำได้หลายครั้งตลอดอายุ element ต้องเขียนโค้ดให้ทนต่อการเรียกซ้ำ (idempotent) |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **อ่าน attribute ใน `constructor`** — attribute ยังไม่ถูกกำหนดค่าตอนที่ constructor ทำงาน ให้ย้าย logic การอ่าน attribute ไปไว้ใน `connectedCallback` แทน
 - **แตะ children หรือ parent ใน `constructor`** — light DOM children ยังไม่ถูก parse ครบตอนนั้น การเข้าถึง `this.children` หรือ `this.parentNode` ใน constructor อาจได้ค่าที่ไม่ครบหรือ `null`
 - **สมมติว่า `connectedCallback` เรียกแค่ครั้งเดียว** — ถ้าย้าย element ด้วย `appendChild` ไปยัง parent ใหม่ browser จะเรียก `disconnectedCallback` แล้วตามด้วย `connectedCallback` อีกครั้ง ควรเขียนให้ re-run ได้โดยไม่พังหรือซ้ำซ้อน (เช่น เช็คก่อนเพิ่ม event listener ซ้ำ)
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **YouTube** — custom elements ของ YouTube ต้องรองรับกรณีที่ script โหลดแบบ async ทำให้ element อาจถูก construct และ connect ก่อนที่ dependency บางตัวจะพร้อม การแยก setup ระหว่าง constructor กับ connectedCallback อย่างถูกต้องจึงสำคัญมาก
 >
@@ -114,7 +114,7 @@ export const quizCtorConnected = [
     q: 'ทำไมจึงไม่ควรจัดการ DOM ภายใน constructor?',
     options: [
       'constructor ทำงานแบบ asynchronous',
-      'Element ยังไม่ได้เชื่อมต่อกับ document ในขณะที่ถูก construct',
+      'Element ยังไม่ได้เชื่อมต่อกับ document ตอนที่ถูก construct',
       'constructor ไม่สามารถเข้าถึง this ได้',
       'Browser จะโยน error ถ้าทำ',
     ],

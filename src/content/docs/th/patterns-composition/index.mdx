@@ -71,7 +71,7 @@ customElements.define('greeting-card', GreetingCard);`;
 <LivePreview client:visible html={indexHtml} js={indexJs} />
 
 <Tip title="คอมโพเนนต์ซ้อนกันลึกแค่ไหนก็ได้">
-คัสตอมเอลิเมนต์สามารถบรรจุคัสตอมเอลิเมนต์อื่น ๆ ได้ เบราว์เซอร์อัปเกรดตามลำดับเอกสาร ดังนั้นเอลิเมนต์ภายในจะถูกอัปเกรดก่อนที่ JavaScript ของเอลิเมนต์ภายนอกจะพึ่งพาพวกมัน — แต่ควรใช้ `connectedCallback` (ไม่ใช่ `constructor`) เพื่อความปลอดภัย
+คัสตอมเอลิเมนต์สามารถบรรจุคัสตอมเอลิเมนต์อื่น ๆ ได้ browser อัปเกรดตามลำดับเอกสาร ดังนั้นเอลิเมนต์ภายในจะถูกอัปเกรดก่อนที่ JavaScript ของเอลิเมนต์ภายนอกจะเรียกใช้ — แต่ควรใช้ `connectedCallback` (ไม่ใช่ `constructor`) เพื่อความปลอดภัย
 </Tip>
 
 export const quizIndex = [

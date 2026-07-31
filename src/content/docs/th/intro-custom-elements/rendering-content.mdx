@@ -12,9 +12,9 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ## ทำไมต้อง connectedCallback ไม่ใช่ constructor
 
-class ของ custom element มี `constructor` เหมือน ES class อื่น ๆ แต่ constructor เป็นที่ที่ผิดสำหรับการทำงานกับ DOM เมื่อเบราว์เซอร์เรียก constructor element จะมีอยู่ในรูปอ็อบเจกต์ JavaScript แต่ยังไม่ถูกเพิ่มเข้าไปในเอกสาร — มันยังไม่มี parent, attribute อาจยัง parse ไม่ครบ และ children ก็ยังไม่ปรากฏ
+class ของ custom element มี `constructor` เหมือน ES class อื่น ๆ แต่ constructor เป็นที่ที่ผิดสำหรับการทำงานกับ DOM เมื่อ browser เรียก constructor element จะมีอยู่ในรูปอ็อบเจกต์ JavaScript แต่ยังไม่ถูกเพิ่มเข้าไปในเอกสาร — ยังไม่มี parent, attribute อาจยัง parse ไม่ครบ และ children ก็ยังไม่ปรากฏ
 
-ให้ใช้ `connectedCallback` แทน มันจะถูกเรียกทุกครั้งที่ element ถูก **แทรกเข้าไปในเอกสารที่เชื่อมต่อแล้ว** ซึ่ง ณ จุดนั้น attribute และ light DOM children ของ element พร้อมใช้งานแล้ว:
+ให้ใช้ `connectedCallback` แทน จะถูกเรียกทุกครั้งที่ element ถูก **แทรกเข้าไปในเอกสารที่เชื่อมต่อแล้ว** ซึ่ง ณ จุดนั้น attribute และ light DOM children ของ element พร้อมใช้งานแล้ว:
 
 ```js
 class MyCard extends HTMLElement {
@@ -95,20 +95,20 @@ export const renderHtml = `<color-card
 อย่าแตะ `innerHTML`, `children` หรือ attribute ใน constructor — element ยังไม่อยู่ในเอกสาร ให้ทำงานกับ DOM ทั้งหมดใน `connectedCallback` ซึ่งจะถูกเรียกหลังจาก element ถูกแทรกเข้าไปและ attribute พร้อมแล้ว
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
 | `innerHTML` | เขียนเทมเพลตได้เร็วและกระชับ | เสี่ยง XSS ถ้าใส่ค่าที่ผู้ใช้ป้อนเข้ามาโดยไม่ sanitize |
 | DOM API (`createElement`, `textContent`) | ปลอดภัยจาก XSS เพราะ `textContent` ไม่ parse HTML | เขียนโค้ดยาวและอ่านยากกว่าเมื่อโครงสร้างซับซ้อน |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **จัดการ DOM ใน constructor แทน `connectedCallback`** — ตอนนั้น element ยังไม่ถูกแทรกเข้าเอกสาร attribute อาจยัง parse ไม่ครบ ทำให้ `getAttribute` คืนค่าไม่ตรงที่คาด
 - **ใส่ค่าจากผู้ใช้ลงใน `innerHTML` โดยตรง** — เช่น `this.innerHTML = userInput` เปิดช่องให้เกิด XSS ควรใช้ `textContent` หรือ sanitize ก่อนเสมอ
 - **ลืมว่า `getAttribute` คืน `null` ไม่ใช่สตริงว่าง** — ถ้าไม่ใส่ fallback ด้วย `|| 'default'` ค่าที่ต่อ string จะกลายเป็นคำว่า `"null"` ปนอยู่ในผลลัพธ์
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **GitHub** — `<clipboard-copy>` ใช้ DOM API และ `textContent` ในการอ่าน/เขียนเนื้อหาแทน `innerHTML` แบบดิบ เพื่อป้องกันความเสี่ยงด้านความปลอดภัยใน production
 >

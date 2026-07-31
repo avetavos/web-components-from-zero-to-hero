@@ -12,9 +12,9 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ## Web components คือ DOM elements ธรรมดา
 
-custom element ที่ลงทะเบียนด้วย `customElements.define` คือ DOM node มาตรฐาน framework ใดก็ตามที่สร้าง HTML สามารถใช้มันได้ คุณวางมันใน JSX, Vue template หรือ Angular template ได้เช่นเดียวกับที่คุณวาง `<div>`
+custom element ที่ลงทะเบียนด้วย `customElements.define` คือ DOM node มาตรฐาน framework ใดก็ตามที่สร้าง HTML ก็ใช้ได้ คุณวางไว้ใน JSX, Vue template หรือ Angular template ได้เช่นเดียวกับที่คุณวาง `<div>`
 
-เนื่องจาก frameworks สร้าง DOM nodes จริงในท้ายที่สุด ทุก framework จึงทำงานร่วมกับ custom elements ได้ในระดับเดียวกัน — element API ของเบราว์เซอร์เอง Properties, attributes และ events ทำงานเหมือนกันโดยไม่ขึ้นกับ framework ที่เรนเดอร์ tree โดยรอบ
+เนื่องจาก frameworks สร้าง DOM nodes จริงในท้ายที่สุด ทุก framework จึงทำงานร่วมกับ custom elements ได้ในระดับเดียวกัน — element API ของ browser เอง Properties, attributes และ events ทำงานเหมือนกันโดยไม่ขึ้นกับ framework ที่เรนเดอร์ tree โดยรอบ
 
 ## React
 
@@ -71,7 +71,7 @@ Vue แยกแยะโดยอัตโนมัติว่าจะตั�
 
 ## Angular
 
-Angular รองรับ custom elements ผ่าน `CUSTOM_ELEMENTS_SCHEMA` เพิ่มมันเข้าไปใน array `schemas` ของ module เพื่อปิด error ของ unknown-element:
+Angular รองรับ custom elements ผ่าน `CUSTOM_ELEMENTS_SCHEMA` เพิ่ม schema นี้เข้าไปใน array `schemas` ของ module เพื่อปิด error ของ unknown-element:
 
 ```ts
 import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
@@ -92,7 +92,7 @@ export class AppModule {}
 
 ## ตัวอย่างที่รันได้
 
-ตัวอย่างด้านล่างแสดง vanilla web component (`<demo-badge>`) ที่เรนเดอร์ใน HTML ธรรมดา — element เดียวกันนี้จะทำงานได้เหมือนกันทุกประการเมื่อวางใน React, Vue หรือ Angular tree เพราะมันเป็นแค่ DOM node
+ตัวอย่างด้านล่างแสดง vanilla web component (`<demo-badge>`) ที่เรนเดอร์ใน HTML ธรรมดา — element เดียวกันนี้จะทำงานได้เหมือนกันทุกประการเมื่อวางใน React, Vue หรือ Angular tree เพราะเป็นแค่ DOM node
 
 export const frameworkHtml = `<demo-badge name="Frameworks" role="React / Vue / Angular"></demo-badge>`;
 
@@ -122,20 +122,20 @@ export const frameworkJs = `(async () => {
 ใน React 18 และก่อนหน้านั้น การส่ง array หรือ object เป็น JSX attribute บน custom element จะถูกแปลงเป็น string ใช้ `ref` เพื่อตั้งค่า property ที่ซับซ้อนด้วยตนเอง หรืออัปเกรดเป็น React 19
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
-| ใช้ native interop ของ framework ตรงๆ (เช่น React 19 direct binding, Vue `:prop`) | ไม่มี dependency เพิ่ม, bundle เล็กลง และใช้ API มาตรฐานของเบราว์เซอร์ล้วนๆ | ต้องจัดการ complex props/events เอง โดยเฉพาะบน React 18 ที่ต้องพึ่ง `ref` |
+| ใช้ native interop ของ framework ตรงๆ (เช่น React 19 direct binding, Vue `:prop`) | ไม่มี dependency เพิ่ม, bundle เล็กลง และใช้ API มาตรฐานของ browser ล้วนๆ | ต้องจัดการ complex props/events เอง โดยเฉพาะบน React 18 ที่ต้องพึ่ง `ref` |
 | ใช้ wrapper library เช่น `@lit/react` | ได้ typed component พร้อม props/events ที่ผูกให้อัตโนมัติ ลด boilerplate ฝั่งผู้ใช้ | เพิ่ม dependency และ layer พิเศษที่ต้องดูแลให้ตรงกับเวอร์ชันของ element เดิม |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **สร้าง wrapper component ขึ้นมาเองทั้งที่ framework รองรับ native interop อยู่แล้ว** (เช่น React 19) — เพิ่ม layer และโค้ดดูแลรักษาที่ไม่จำเป็น ทั้งที่ผูก property/event ตรงได้เลย
 - **ส่ง array/object เป็น JSX attribute บน React 18 แล้วงงว่าทำไมค่าไม่ถูกต้อง** — React 18 และก่อนหน้าจะแปลงทุกอย่างเป็น string attribute ต้องใช้ `ref` ตั้งค่า property โดยตรง หรืออัปเกรดเป็น React 19
 - **ผูก custom event ด้วย attribute syntax ปกติแทน syntax เฉพาะของ framework** — ลืมใช้ `@event-name` ใน Vue หรือ `(event-name)` ใน Angular ทำให้ event handler ไม่ถูกเรียกเลย
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **Google Material Web** — เอกสารของโปรเจกต์สาธิตการใช้ component เดียวกันข้าม React, Angular และ Vue โดยไม่ต้องเขียน wrapper แยกสำหรับแต่ละ framework
 >

@@ -1,6 +1,6 @@
 ---
 title: 'Lit และ Tooling'
-description: 'ทำไม Lit ถึงมีอยู่ สิ่งที่มันเพิ่มให้กับ Custom Elements และสิ่งที่โมดูลนี้ครอบคลุม'
+description: 'ทำไม Lit ถึงมีอยู่ สิ่งที่เพิ่มให้กับ Custom Elements และสิ่งที่โมดูลนี้ครอบคลุม'
 sidebar:
   order: 1
 ---
@@ -83,7 +83,7 @@ Lit ตั้งเวลา microtask update ทุกครั้งที่ 
 | ทำไม Lit | จุดอ่อนของ Vanilla และเมื่อไหร่ที่ Lit ช่วยได้ |
 | LitElement | Reactive properties, render, scoped styles |
 | การใช้ใน Frameworks | นำ web components ไปใช้ใน React, Vue, Angular |
-| การเผยแพร่ | การเผยแพร่ npm, Custom Elements Manifest, รองรับเบราว์เซอร์ |
+| การเผยแพร่ | การเผยแพร่ npm, Custom Elements Manifest, รองรับ browser |
 
 ## ตัวอย่าง: Lit Hello World
 
@@ -92,7 +92,7 @@ Lit ตั้งเวลา microtask update ทุกครั้งที่ 
 <LivePreview client:visible js={litHelloJs} html={litHelloHtml} />
 
 <Tip title="Lit คือแพลตฟอร์มนั่นเอง">
-Lit ไม่ได้แทนที่ Custom Elements หรือ Shadow DOM แต่ห่อหุ้มมัน ทุก `LitElement` เป็น `HTMLElement` มาตรฐานที่ทำงานได้ในทุกเบราว์เซอร์และทุก framework
+Lit ไม่ได้แทนที่ Custom Elements หรือ Shadow DOM แต่ห่อหุ้มทั้งสองอย่างไว้ ทุก `LitElement` เป็น `HTMLElement` มาตรฐานที่ทำงานได้ในทุก browser และทุก framework
 </Tip>
 
 ## ทดสอบความเข้าใจ

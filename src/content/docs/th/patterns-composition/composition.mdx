@@ -12,7 +12,7 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ## การซ้อน custom element
 
-รูปแบบที่ง่ายที่สุดของ composition คือการซ้อน (nesting) นั่นคือ custom element ชั้นนอกสร้าง custom element ชั้นในหนึ่งตัวหรือมากกว่าไว้ภายใน `connectedCallback` ให้นิยาม element ชั้นในก่อน เพื่อให้ registry รู้จักมันก่อนที่ element ชั้นนอกจะพยายามนำไปใช้
+รูปแบบที่ง่ายที่สุดของ composition คือการซ้อน (nesting) นั่นคือ custom element ชั้นนอกสร้าง custom element ชั้นในหนึ่งตัวหรือมากกว่าไว้ภายใน `connectedCallback` ให้นิยาม element ชั้นในก่อน เพื่อให้ registry รู้จัก element ชั้นในก่อนที่ element ชั้นนอกจะเรียกใช้
 
 ```js
 // Inner element — defined first
@@ -33,7 +33,7 @@ class OuterWidget extends HTMLElement {
 customElements.define('outer-widget', OuterWidget);
 ```
 
-วาง element ชั้นนอกไว้ใน HTML แล้วเบราว์เซอร์จะจัดการส่วนที่เหลือให้เอง:
+วาง element ชั้นนอกไว้ใน HTML แล้ว browser จะจัดการส่วนที่เหลือให้เอง:
 
 ```html
 <outer-widget></outer-widget>
@@ -41,7 +41,7 @@ customElements.define('outer-widget', OuterWidget);
 
 ## การสื่อสารผ่าน attribute
 
-วิธีที่ตรงไปตรงมาที่สุดในการที่ element แม่ส่งข้อมูลให้ลูกคือผ่าน HTML attribute element แม่เรียก `setAttribute` บน element ลูกที่มันสร้างขึ้น ส่วน element ลูกอ่านค่านั้นด้วย `getAttribute` ภายใน `connectedCallback` ของตัวเอง
+วิธีที่ตรงไปตรงมาที่สุดในการที่ element แม่ส่งข้อมูลให้ลูกคือผ่าน HTML attribute element แม่เรียก `setAttribute` บน element ลูกที่สร้างขึ้น ส่วน element ลูกอ่านค่านั้นด้วย `getAttribute` ภายใน `connectedCallback` ของตัวเอง
 
 ```js
 // Parent sets the child's attribute
@@ -60,7 +60,7 @@ attribute เป็น string เสมอ ดังนั้นจึงต้�
 
 ## การสื่อสารผ่าน event
 
-เมื่อ element ลูกต้องการบอกแม่ว่ามีบางอย่างเกิดขึ้น เช่น ปุ่มถูกคลิก หรือมีค่าถูกเลือก มันจะส่ง (dispatch) `CustomEvent` ออกไป ส่วน element แม่จะคอยฟัง (listen) event นั้นภายใน `connectedCallback` ของตัวเอง
+เมื่อ element ลูกต้องการบอกแม่ว่ามีบางอย่างเกิดขึ้น เช่น ปุ่มถูกคลิก หรือมีค่าถูกเลือก จะส่ง (dispatch) `CustomEvent` ออกไป ส่วน element แม่จะคอยฟัง (listen) event นั้นภายใน `connectedCallback` ของตัวเอง
 
 มีสองออปชันบน constructor ของ event ที่สำคัญในที่นี้:
 
@@ -87,7 +87,7 @@ OuterWidget.prototype.connectedCallback = function() {
 };
 ```
 
-เพราะตั้งค่า `bubbles: true` ไว้ element แม่จึงสามารถผูก listener เพียงตัวเดียวบนตัวมันเอง และรับ event จาก element ลูกตัวใดก็ได้ที่ซ้อนอยู่ภายในโดยไม่ต้องอ้างอิงโดยตรง
+เพราะตั้งค่า `bubbles: true` ไว้ element แม่จึงสามารถผูก listener เพียงตัวเดียวบนตัวเอง และรับ event จาก element ลูกตัวใดก็ได้ที่ซ้อนอยู่ภายในโดยไม่ต้องอ้างอิงโดยตรง
 
 ## เดโมที่รันได้
 
@@ -138,23 +138,23 @@ customElements.define('star-rating', StarRating);`;
 <LivePreview client:visible html={compositionHtml} js={compositionJs} />
 
 <Tip title="bubbles + composed">
-ตั้งค่า `bubbles: true` เพื่อให้ event เดินทางขึ้นไปบน DOM tree และตั้งค่า `composed: true` เพื่อให้มันข้ามขอบเขตของ shadow DOM ได้ ทั้งสองค่ามีค่าเริ่มต้นเป็น `false`
+ตั้งค่า `bubbles: true` เพื่อให้ event เดินทางขึ้นไปบน DOM tree และตั้งค่า `composed: true` เพื่อให้ event ข้ามขอบเขตของ shadow DOM ได้ ทั้งสองค่ามีค่าเริ่มต้นเป็น `false`
 </Tip>
 
-## Trade-offs
+## ข้อแลกเปลี่ยน
 
 | ตัวเลือก | Benefit | Cost |
 |---|---|---|
 | สื่อสารผ่าน attribute (parent ตั้งค่า attribute ให้ child) | เขียนง่าย ตรวจสอบค่าได้ตรง ๆ ผ่าน DOM inspector | attribute เป็น string ล้วน ต้อง serialize/deserialize เองเมื่อข้อมูลซับซ้อนขึ้น |
 | สื่อสารผ่าน custom event (child dispatch event ขึ้นไปหา parent) | ส่งข้อมูลชนิดใดก็ได้ผ่าน `detail` และไม่ผูก parent เข้ากับ implementation ภายในของ child | ต้องตั้งค่า `bubbles`/`composed` ให้ถูกต้อง ไม่งั้น event จะไม่ไปถึงที่ที่ควรไปถึง |
 
-## Common Mistakes
+## ข้อผิดพลาดที่พบบ่อย
 
 - **ลืมตั้ง `composed: true`** — event ที่ dispatch จากภายใน shadow DOM แต่ไม่ตั้ง `composed` จะไม่ข้ามออกไปนอก shadow boundary ทำให้ parent ที่ listen อยู่ใน light DOM ไม่เคยได้รับ event เลย
 - **ส่งข้อมูลซับซ้อนผ่าน attribute แทน property หรือ event** — attribute เก็บได้แค่ string ทำให้ต้อง `JSON.stringify`/`parse` ไปมาโดยไม่จำเป็น ทั้งที่ควรส่งผ่าน property หรือ `event.detail` แทน
 - **Parent เข้าถึง internals ของ child ผ่าน `shadowRoot` โดยตรง** — ทำลาย encapsulation และผูก parent เข้ากับ implementation ภายในของ child เมื่อโครงสร้างภายในของ child เปลี่ยน parent จะพังตาม
 
-> 💡 Real World Example
+> 💡 ตัวอย่างจากของจริง
 >
 > **GitHub** — Catalyst elements ใช้ custom event เป็นช่องทางหลักในการสื่อสารระหว่าง component เพื่อคง encapsulation ไว้ ไม่ให้ parent เข้าไปยุ่งกับ internals ของ child โดยตรง
 >
