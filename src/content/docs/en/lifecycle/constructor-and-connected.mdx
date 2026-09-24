@@ -146,6 +146,23 @@ export const ctorJs = 'var savedEl = null;' +
 
 Notice that `constructor` appears in the log only once — at element creation — while `connectedCallback` appears every time the element is re-inserted into the DOM.
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Set up state in `constructor` | Runs the earliest, before the element enters the DOM — good for pure internal state | No access to attributes, children, or parent at all, since the element isn't inserted into the document yet |
+| Set up state in `connectedCallback` | Full access to attributes, light DOM children, and parent, and safe to render | Can be called more than once over the element's lifetime — your code has to tolerate being re-run (idempotent) |
+
+## Common mistakes
+
+- **Reading an attribute in the `constructor`** — attributes aren't set yet when the constructor runs; move that logic into `connectedCallback` instead.
+- **Touching children or the parent in the `constructor`** — light DOM children aren't fully parsed at that point, so `this.children` or `this.parentNode` may be incomplete or `null`.
+- **Assuming `connectedCallback` only fires once** — moving an element with `appendChild` to a new parent makes the browser call `disconnectedCallback` and then `connectedCallback` again. Write it so a re-run doesn't break or duplicate work (e.g. guard against adding the same listener twice).
+
+> 💡 Real-world examples
+>
+> **Stencil** (the compiler behind Ionic Framework's components) documents this exact split in its lifecycle guide: keep the constructor to internal state, and put logic that depends on attributes/DOM into `connectedCallback` or `componentWillLoad` so components survive being re-mounted in an SPA. ([stenciljs.com/docs/component-lifecycle](https://stenciljs.com/docs/component-lifecycle))
+
 export const quizCtorConnected = [
   {
     q: 'Why should you not manipulate the DOM inside the constructor?',

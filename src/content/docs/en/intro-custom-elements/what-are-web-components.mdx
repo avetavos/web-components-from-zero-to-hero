@@ -83,6 +83,25 @@ export const wacHtml = `<my-greeting></my-greeting>`;
 A custom element is just a class extending `HTMLElement`, registered via `customElements.define`. No framework, no build tool, no virtual DOM — just the browser's own extension point.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Web Components (native standard) | Not tied to any framework, works anywhere a browser exists, no transpilation or runtime library needed | DX doesn't match frameworks like React/Vue — no built-in reactive state, JSX, or ecosystem tooling |
+| Customized built-ins (part of the spec) | Inherits a native element's semantics for free | Safari refuses to support it, so it isn't fully usable cross-browser in practice |
+
+## Common mistakes
+
+- **Thinking Web Components can fully replace a framework** — in reality they are a browser-level building block; they have no routing, state management, or app-level tooling built in.
+- **Forgetting the hyphen rule when naming a tag** — a tag name without a hyphen is not accepted as a valid custom element under the spec.
+- **Assuming all three standards (Custom Elements, Shadow DOM, Templates/Slots) are equally supported everywhere** — customized built-ins are the notable exception Safari does not support, even though everything else is fully supported.
+
+> 💡 Real-world examples
+>
+> **Adobe Spectrum** — uses Web Components (Spectrum Web Components) as a design system shared across Adobe's products and frameworks, without being tied to React or Vue. ([opensource.adobe.com](https://opensource.adobe.com/spectrum-web-components/))
+>
+> **GitHub** — ships autonomous custom elements like `<relative-time>` and `<clipboard-copy>` as real open-source components, showing the platform-native model scales to production outside any single framework. ([github/relative-time-element](https://github.com/github/relative-time-element))
+
 export const quizWac = [
   {
     q: 'Which of the following is a correct description of a custom element?',

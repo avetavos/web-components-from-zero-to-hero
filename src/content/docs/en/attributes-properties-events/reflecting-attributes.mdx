@@ -167,6 +167,25 @@ After 1.2 seconds the element's `label` property is set from JavaScript. The `#l
 If your setter does any extra work before calling `setAttribute`, and `attributeChangedCallback` calls the setter again, you can get an infinite loop. Guard against it by checking `if (this.getAttribute(name) !== v)` before calling `setAttribute`, or by only reading from attributes in `_render` instead of calling the setter.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Reflect the property to an attribute | State is visible in DevTools, usable as a CSS attribute selector, and works with server-rendered HTML with no JavaScript on first load | Risks an infinite loop if the setter and `attributeChangedCallback` call each other, and the attribute can only ever hold a string |
+| Don't reflect (keep the value in a private field) | Avoids the infinite-loop risk entirely and supports any data type, not just strings | State doesn't appear in markup or DevTools, and you can't select elements by state with a CSS attribute selector |
+
+## Common mistakes
+
+- **Forgetting to declare the attribute name in `observedAttributes`** — if it's not in the list, `attributeChangedCallback` is never called, no matter whether the attribute changes from HTML, DevTools, or JavaScript.
+- **Having the setter call `setAttribute` without checking if the value actually changed** — this causes an infinite loop between the setter and `attributeChangedCallback` calling the setter again. Always check `if (this.getAttribute(name) !== v)` before writing.
+- **Reflecting rich data, like an array or object, back to an attribute** — an attribute is a string only; trying to reflect an object produces the useless `[object Object]`. Only reflect plain strings, booleans, or numbers.
+
+> 💡 Real-world examples
+>
+> The browser's native `<input>` element reflects properties like `disabled` and `checked` directly to their attribute, so `input:disabled` works as a CSS selector immediately with no extra JavaScript.
+>
+> **GitHub's Catalyst** framework provides an `@attr` decorator that generates this exact getter/setter reflection pattern automatically, cutting the boilerplate you'd otherwise repeat in every custom element. ([github.github.io/catalyst](https://github.github.io/catalyst/guide/attrs/))
+
 export const quizReflect = [
   {
     q: 'What does the `set label(v)` setter do in the reflection pattern?',

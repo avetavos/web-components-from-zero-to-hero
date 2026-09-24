@@ -109,6 +109,25 @@ export const customEventsJs = 'var _count = 0;' +
 Once you call `dispatchEvent`, the `detail` object you passed in is accessible on every listener's event object as `e.detail`. Mutating it inside a listener is technically possible but strongly discouraged — treat `detail` as an immutable snapshot of state at the moment of dispatch.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| `CustomEvent` + `detail` payload | Outgoing data has a clear structure, loosely coupled, multiple listeners can subscribe at once without the element knowing who's listening | No built-in type-checking — you rely on documenting the `detail` shape yourself, and consumers can misunderstand it without documentation |
+| Callback prop (passing a function as a property) | Direct call-back, can take a return value from the caller and use it further | Tightly coupled to one specific consumer, supports only one listener at a time, and the callback has to be set before the element uses it |
+
+## Common mistakes
+
+- **Forgetting `bubbles: true`** — dispatching a `CustomEvent` without setting `bubbles` means only the element that dispatched it ever sees the event; an ancestor or `document` will never see it at all.
+- **Mutating `e.detail` from a listener** — `detail` should be treated as an immutable snapshot of state at the moment of dispatch. Changing it from one listener unexpectedly affects any other listener receiving the same event.
+- **Naming an event in camelCase, like `countChange`** — use lowercase, hyphenated names like standard DOM events, e.g. `count-change`, to avoid case-sensitivity issues in HTML attribute event handlers.
+
+> 💡 Real-world examples
+>
+> **GitHub's Catalyst** framework — strictly uses the `CustomEvent` + `detail` convention for every custom element, so event payloads stay predictable and easy to test. ([github/catalyst](https://github.com/github/catalyst))
+>
+> **Shoelace / Web Awesome design system** — a component like `sl-select` dispatches an `sl-change` event with `detail` describing the selected item, so consumers can read the change without querying into the shadow DOM themselves. ([webawesome.com](https://webawesome.com/))
+
 export const quizCustomEvents = [
   {
     q: 'What property of `CustomEvent` carries the event payload?',

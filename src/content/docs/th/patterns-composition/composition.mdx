@@ -156,9 +156,9 @@ customElements.define('star-rating', StarRating);`;
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **GitHub** — Catalyst elements ใช้ custom event เป็นช่องทางหลักในการสื่อสารระหว่าง component เพื่อคง encapsulation ไว้ ไม่ให้ parent เข้าไปยุ่งกับ internals ของ child โดยตรง
+> **GitHub** — Catalyst elements ใช้ custom event เป็นช่องทางหลักในการสื่อสารระหว่าง component เพื่อคง encapsulation ไว้ ไม่ให้ parent เข้าไปยุ่งกับ internals ของ child โดยตรง ([github/catalyst](https://github.com/github/catalyst))
 >
-> **Ionic Framework** — component ที่ซ้อนกัน (เช่น `<ion-select>` กับ `<ion-select-option>`) dispatch custom event ขึ้นไปหา parent เพื่อรายงานการเปลี่ยนแปลง state แทนที่จะให้ parent poll ค่าจาก child เอง
+> **Ionic Framework** — component ที่ซ้อนกัน (เช่น `<ion-select>` กับ `<ion-select-option>`) dispatch custom event `ionChange` ขึ้นไปหา parent เพื่อรายงานการเปลี่ยนแปลง state แทนที่จะให้ parent poll ค่าจาก child เอง ([ionicframework.com/docs/api/select](https://ionicframework.com/docs/api/select))
 
 export const quizComposition = [
   {

@@ -87,7 +87,9 @@ npx cem analyze --globs "src/**/*.js"
 
 ข้อยกเว้นหนึ่งเดียว: customized built-ins (element ที่ `extend` built-in อย่าง `HTMLButtonElement` ด้วย `is="..."`) **ไม่** รองรับใน Safari ควรเลือกใช้ autonomous custom elements (`extends HTMLElement`) เพื่อความเข้ากันได้สูงสุด
 
-ตัว Lit เองรองรับ Chrome 104+, Firefox 121+, Safari 16.4+ สำหรับแอปที่ใช้งานจริงซึ่งต้องรองรับ browser เก่า แพ็กเกจ `@webcomponents/polyfills` จะช่วยอุดช่องว่างเหล่านั้นได้
+Lit ไม่ใช่ตัวเลือกเดียวในพื้นที่นี้ **Polymer** (ไลบรารี Web Components ตัวแรกของ Google) ถูก deprecated ไปแล้ว — repository ของมันเองแนะนำให้โปรเจกต์ใหม่ใช้ `LitElement` แทน **Stencil** (compiler ที่อยู่เบื้องหลัง component ของ Ionic Framework) และ **FAST** ของ Microsoft (`FAST Element` + `FAST Foundation`) ต่างก็ยังได้รับการดูแลอยู่ในฐานะโปรเจกต์แยกกัน — ข้อสังเกตคือ Fluent UI web components รุ่นใหม่ของ Microsoft (`@fluentui/web-components`) เผยแพร่เป็น package ของตัวเอง แยกจาก FAST Foundation ดังนั้นควรเช็คให้ดีว่า tutorial ที่กำลังอ่านอยู่พูดถึงตัวไหนก่อนจะคัดลอกโค้ดไปใช้
+
+Lit เองไม่มีตารางเวอร์ชันขั้นต่ำที่ตายตัว เอกสารของ Lit เองอธิบายว่าทดสอบกับ "browser สมัยใหม่" — เวอร์ชันปัจจุบันของ Chromium, Safari และ Firefox บวกอีกสองเวอร์ชันหลักก่อนหน้าสำหรับ Chromium/Safari และ Extended Support Release ของ Firefox — และเลิกรองรับ browser รุ่นเก่าอย่าง Internet Explorer 11 อย่างชัดเจน เพราะไม่เคยรองรับ web components ตั้งแต่แรก ([lit.dev/docs/tools/requirements](https://lit.dev/docs/tools/requirements/)) สำหรับแอปที่ใช้งานจริงซึ่งต้องรองรับ browser เก่ากว่านั้น แพ็กเกจ `@webcomponents/polyfills` จะช่วยอุดช่องว่างเหล่านั้นได้
 
 ## เดโมที่รันได้
 
@@ -153,9 +155,11 @@ export const distJs = `(async () => {
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Home Assistant** — เผยแพร่และดูแล custom elements จำนวนมากที่ใช้ Lit เป็น shared dependency ตัวเดียวทั่วทั้งแอป แทนที่จะ bundle Lit แยกในแต่ละ element
+> **Home Assistant** — เผยแพร่และดูแล custom elements จำนวนมากที่ใช้ Lit เป็น shared dependency ตัวเดียวทั่วทั้งแอป แทนที่จะ bundle Lit แยกในแต่ละ element ([home-assistant/frontend](https://github.com/home-assistant/frontend))
 >
-> **Google Material Web** — เผยแพร่แต่ละ component เป็น unbundled ES module แยกตัว ทำให้ consumer เลือก import และ tree-shake เฉพาะส่วนที่ใช้ได้
+> **Google Material Web** — เผยแพร่แต่ละ component เป็น unbundled ES module แยกตัว ทำให้ consumer เลือก import และ tree-shake เฉพาะส่วนที่ใช้ได้ ([material-components/material-web](https://github.com/material-components/material-web))
+
+## ทดสอบความเข้าใจ
 
 export const quizDistributingAndSupport = [
   {

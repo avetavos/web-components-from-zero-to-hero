@@ -50,6 +50,25 @@ export const slottedJs = 'class CardSlot extends HTMLElement {\n' +
 `::slotted(selector)` can only match the direct slotted children — it cannot reach into their subtree. To style deeper content, either restructure your HTML or use CSS custom properties passed from outside.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| `::slotted()` from the shadow root | The component author can set default styles for slotted content, so consumers don't have to write any CSS themselves | Only matches top-level slotted nodes directly — can't reach into a subtree, and low specificity means page CSS overrides it easily |
+| Let the page style light DOM itself / pass in custom properties | Consumers already have full control over styling their own content since it's light DOM — no dependency on `::slotted()` at all | The component author loses control over default appearance if no baseline is set — slotted content may look inconsistent with the component |
+
+## Common mistakes
+
+- **Expecting a descendant selector inside `::slotted()` to work** — writing `::slotted(p) span {}` expecting to style a `span` nested inside a slotted `p`. This syntax is **invalid** — `::slotted()` only matches the top-level slotted element itself, not its descendants.
+- **Using a deep compound selector like `::slotted(div span)`** — expecting to target a `span` nested inside a slotted `div`, but the spec only allows matching a compound selector at the same level as the slotted node.
+- **Forgetting `::slotted()` has low specificity** — equivalent to only `(0,0,1,0)`, so a page style directly targeting the same element can silently win, with no `!important` needed.
+
+> 💡 Real-world examples
+>
+> **Shoelace** — a component like `<sl-card>` uses `::slotted()` to set default margins on content the consumer slots in, in case they didn't set their own style, accepting the limitation that it can only adjust top-level nodes.
+>
+> **Adobe Spectrum (Spectrum Web Components)** — chooses to pass CSS custom properties into some components instead of relying on deep `::slotted()`, because the structure of slotted content is often too complex for a shallow selector to handle.
+
 export const quizSlotted = [
   {
     q: "What does ::slotted(p) target?",

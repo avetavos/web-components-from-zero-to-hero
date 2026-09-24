@@ -11,7 +11,11 @@ import Tip from '../../../../components/Tip.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-Vanilla Custom Elements are powerful but verbose — updating the DOM on every state change requires manual work. Lit is a ~5 KB library that adds three things: reactive properties (declare once, re-render automatically), declarative `lit-html` templates (efficient DOM diffing), and scoped styles (Shadow DOM CSS with zero leakage).
+## What this module is
+
+The vanilla Custom Elements API lets you build your own HTML elements, but as a component grows more complex, managing state, re-rendering the DOM, and scoped styles by hand gets increasingly tedious.
+
+**Lit** is a small library (~5 KB, verified against [lit.dev](https://lit.dev/), Lit 3.x) from Google that sits on top of standard Custom Elements. Lit adds reactive properties, declarative templates via tagged template literals, and scoped styles, in a concise and efficient package.
 
 ## How Lit updates the DOM
 
@@ -59,6 +63,8 @@ export const litHelloJs = `(async () => {
 <Tip title="Lit is just the platform">
 Lit does not replace Custom Elements or Shadow DOM — it wraps them. Every `LitElement` is a standard `HTMLElement` that works in any browser and any framework.
 </Tip>
+
+## Test your understanding
 
 export const quizLitIndex = [
   {

@@ -22,12 +22,17 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 เหตุผลคือเมื่อ `constructor` ถูกเรียก element ยังไม่ได้อยู่ใน document และ attribute ยังไม่ได้ถูกกำหนดค่า
 
 ```js
-class MyElement extends HTMLElement {
+class MyWidget extends HTMLElement {
   constructor() {
-    super(); // ต้องมาก่อนเสมอ
-    this._count = 0; // ตั้งค่า internal state ได้
-    this._data = null;
-    // ห้ามทำ: this.getAttribute('foo') หรือ this.innerHTML = '...'
+    super(); // MUST be first — gives you access to `this`
+    // Good: set up internal state
+    this._count = 0;
+    this._listeners = [];
+    // Good: attach shadow root
+    this.attachShadow({ mode: 'open' });
+    // BAD — do NOT do this in constructor:
+    // this.innerHTML = '<p>hello</p>';     // may throw
+    // this.getAttribute('label');          // always null here
   }
 }
 ```
@@ -44,13 +49,43 @@ class MyElement extends HTMLElement {
 สิ่งที่ต้องระวังคือ `connectedCallback` จะถูกเรียกซ้ำ**ทุกครั้ง**ที่ element ถูกแทรกเข้าไปใหม่ ถ้าย้าย element ไปยัง parent อื่นด้วย `appendChild` callback นี้จะถูกเรียกอีกครั้ง
 
 ```js
-class MyElement extends HTMLElement {
+class MyWidget extends HTMLElement {
+  constructor() {
+    super();
+    this._initialized = false;
+  }
+
   connectedCallback() {
-    // อ่าน attribute ได้อย่างปลอดภัย
+    if (this._initialized) return; // guard against re-connection
+    this._initialized = true;
     var label = this.getAttribute('label') || 'default';
-    this.textContent = label;
-    // เพิ่ม listener ได้
-    this.addEventListener('click', this._handleClick);
+    this.innerHTML = '<span>' + label + '</span>';
+    this.addEventListener('click', this._handleClick.bind(this));
+  }
+}
+```
+
+## ผิดกับถูก
+
+```js
+// WRONG — DOM manipulation in constructor
+class BadWidget extends HTMLElement {
+  constructor() {
+    super();
+    this.innerHTML = '<p>' + this.getAttribute('title') + '</p>'; // title is null here!
+  }
+}
+
+// RIGHT — DOM manipulation in connectedCallback
+class GoodWidget extends HTMLElement {
+  constructor() {
+    super();
+    // only internal state
+    this._title = '';
+  }
+  connectedCallback() {
+    this._title = this.getAttribute('title') || 'Untitled';
+    this.innerHTML = '<p>' + this._title + '</p>'; // attribute is available now
   }
 }
 ```
@@ -105,9 +140,7 @@ customElements.define('ctor-demo', CtorDemo);`;
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **YouTube** — custom elements ของ YouTube ต้องรองรับกรณีที่ script โหลดแบบ async ทำให้ element อาจถูก construct และ connect ก่อนที่ dependency บางตัวจะพร้อม การแยก setup ระหว่าง constructor กับ connectedCallback อย่างถูกต้องจึงสำคัญมาก
->
-> **Ionic Framework** — ใช้ pattern นี้อย่างเคร่งครัดในทุก component โดยเก็บเฉพาะ state เริ่มต้นไว้ใน constructor และย้าย logic ที่ต้องพึ่งพา DOM หรือ attribute ทั้งหมดไปไว้ใน connectedCallback เพื่อรองรับการถูก re-mount ซ้ำในแอปแบบ SPA
+> **Stencil** (compiler ที่อยู่เบื้องหลัง component ของ Ionic Framework) เอกสาร lifecycle ของมันระบุการแบ่งงานแบบนี้ไว้ชัดเจน: เก็บเฉพาะ internal state ไว้ใน constructor และย้าย logic ที่ต้องพึ่งพา attribute/DOM ไปไว้ใน `connectedCallback` หรือ `componentWillLoad` เพื่อให้ component ทนต่อการถูก re-mount ซ้ำในแอปแบบ SPA ([stenciljs.com/docs/component-lifecycle](https://stenciljs.com/docs/component-lifecycle))
 
 export const quizCtorConnected = [
   {

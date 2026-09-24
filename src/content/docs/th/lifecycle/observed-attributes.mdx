@@ -28,9 +28,9 @@ static get observedAttributes() {
 
 ```js
 attributeChangedCallback(name, oldValue, newValue) {
-  // name     — ชื่อ attribute เช่น 'color'
-  // oldValue — ค่าเดิมเป็น string หรือ null เมื่อตั้งค่าครั้งแรก
-  // newValue — ค่าใหม่เป็น string หรือ null เมื่อถูกลบออก
+  // name     — the attribute name, e.g. 'color'
+  // oldValue — the previous value string, or null on first set
+  // newValue — the new value string, or null when removed
 }
 ```
 
@@ -118,9 +118,9 @@ customElements.define('attr-color', AttrColor);`;
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **GitHub** — element `<relative-time>` ใช้ `attributeChangedCallback` เพื่อ re-render ข้อความเมื่อ attribute `datetime` ถูกอัปเดตจาก server-rendered HTML หรือ JavaScript ภายนอก
+> **GitHub** — element `<relative-time>` ใช้ `attributeChangedCallback` เพื่อ re-render ข้อความเมื่อ attribute `datetime` ถูกอัปเดตจาก server-rendered HTML หรือ JavaScript ภายนอก ([github/relative-time-element](https://github.com/github/relative-time-element))
 >
-> **Shoelace / Web Awesome** — design system component library ใช้ `observedAttributes` อย่างกว้างขวางเพื่อให้ property ของ component (เช่น `size`, `variant`, `disabled`) sync กับ attribute ใน HTML ได้แบบ two-way โดยอัตโนมัติ
+> **Shoelace / Web Awesome** — design system component library ใช้ `observedAttributes` อย่างกว้างขวางเพื่อให้ property ของ component (เช่น `size`, `variant`, `disabled`) sync กับ attribute ใน HTML ได้แบบ two-way โดยอัตโนมัติ ([webawesome.com](https://webawesome.com/))
 
 export const quizObservedAttributes = [
   {

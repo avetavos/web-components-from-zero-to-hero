@@ -137,6 +137,27 @@ export const frameworkJs = `(async () => {
 In React 18 and earlier, passing an array or object as a JSX attribute on a custom element will be stringified. Always use a `ref` to set complex properties imperatively, or upgrade to React 19.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Use the framework's native interop directly (e.g. React 19 direct binding, Vue `:prop`) | No added dependency, smaller bundle, and relies purely on the browser's standard API | You handle complex props/events yourself, especially on React 18 where you have to rely on `ref` |
+| Use a wrapper library like `@lit/react` | Gives a typed component with props/events already bound for you, less boilerplate for consumers | Adds a dependency and an extra layer you have to keep in sync with the underlying element's version |
+
+## Common mistakes
+
+- **Building your own wrapper component when the framework already has native interop** (e.g. React 19) — adds an unnecessary layer and maintenance burden when you could bind the property/event directly.
+- **Passing an array/object as a JSX attribute on React 18 and being confused why the value is wrong** — React 18 and earlier stringifies everything as an attribute. Use a `ref` to set the property directly, or upgrade to React 19.
+- **Binding a custom event with plain attribute syntax instead of the framework's specific syntax** — forgetting `@event-name` in Vue or `(event-name)` in Angular means the event handler never gets called at all.
+
+> 💡 Real-world examples
+>
+> **Google Material Web** — the project's documentation demonstrates using the same component across React, Angular, and Vue without writing a separate wrapper for each framework. ([material-components/material-web](https://github.com/material-components/material-web))
+>
+> **Home Assistant** — embeds Lit-built custom elements directly into its dashboard UI, mixed with other frontend code, through native DOM interop. ([home-assistant/frontend](https://github.com/home-assistant/frontend))
+
+## Test your understanding
+
 export const quizUsingInFrameworks = [
   {
     q: 'In React 18, what is the recommended way to listen to a custom event fired by a web component?',

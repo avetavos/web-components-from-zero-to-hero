@@ -81,6 +81,25 @@ customElements.define('my-list', MyList);`;
 The `slotchange` event fires when the element first connects with children already in the light DOM. You do not need a separate `connectedCallback` call to bootstrap the initial state — just rely on the first `slotchange`.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Listen to the `slotchange` event to sync state | The component reacts to content changes in real time with no polling | Requires writing and cleaning up an event listener, adding lifecycle complexity |
+| Use `MutationObserver` instead of `slotchange` | Detects finer-grained changes, like an attribute or text content changing inside a child | Higher overhead and more setup than `slotchange`, which was designed specifically for this use case |
+
+## Common mistakes
+
+- **Forgetting to listen for `slotchange` when projected content changes dynamically** — leaves the shadow DOM's UI stuck on stale data, not updating as children are actually added or removed.
+- **Using `slot.assignedNodes()` and expecting only elements** — `assignedNodes()` also returns text and comment nodes; use `slot.assignedElements()` if you only want elements.
+- **Forgetting to pass `{ flatten: true }` when a slot is nested inside another slot** — you get an incomplete list of assigned nodes, since nodes inside a nested slot aren't included by default.
+
+> 💡 Real-world examples
+>
+> **Lit** uses the pattern of listening to `slotchange` together with `assignedElements()` in components that need to count or check the type of projected children, such as a tab list that needs to know how many tabs it has.
+>
+> **Shoelace** uses `slotchange` inside a component like `<sl-select>` to detect when the projected options change, then syncs the selected state to match.
+
 export const quizSlotchange = [
   {
     q: 'When does the slotchange event fire on a slot element?',

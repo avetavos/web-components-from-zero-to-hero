@@ -21,11 +21,11 @@ Shadow root ทุกตัวเป็นขอบเขตของ event โ�
 ### ไม่มี `composed` — event หยุดที่ shadow root
 
 ```js
-// ภายใน shadow root — event นี้จะไม่ถึง document
+// Inside shadow root — this event will NOT reach the document
 this._shadow.querySelector('button').addEventListener('click', () => {
   this.dispatchEvent(new CustomEvent('shadow-click', {
     bubbles: true,
-    // composed เป็น false โดยค่าเริ่มต้น — event หยุดที่ shadow boundary
+    // composed is false by default — event stops at shadow boundary
   }));
 });
 ```
@@ -35,11 +35,11 @@ this._shadow.querySelector('button').addEventListener('click', () => {
 ### มี `composed: true` — event ข้าม shadow boundary
 
 ```js
-// Composed — event นี้จะข้าม shadow boundary
+// Composed — this event WILL cross the shadow boundary
 this._shadow.querySelector('button').addEventListener('click', () => {
   this.dispatchEvent(new CustomEvent('shadow-click', {
     bubbles: true,
-    composed: true,   // ← อนุญาตให้ข้าม shadow boundary
+    composed: true,   // ← allows crossing the shadow boundary
   }));
 });
 ```
@@ -51,10 +51,10 @@ this._shadow.querySelector('button').addEventListener('click', () => {
 `composedPath()` คืนค่า array เต็มของ node ที่ event เดินทางผ่าน รวมถึง node ภายใน shadow root ด้วย สิ่งนี้มีประโยชน์เฉพาะขณะที่ event กำลัง dispatch อยู่เท่านั้น — เมื่อ event handler return แล้ว array จะถูกล้าง
 
 ```js
-// อ่าน composedPath
+// Reading composedPath
 document.addEventListener('shadow-click', (e) => {
-  console.log(e.composedPath()); // รวม shadow nodes ด้วย
-  console.log(e.target);         // retarget ไปยัง host element จากภายนอก
+  console.log(e.composedPath()); // includes shadow nodes
+  console.log(e.target);         // retargeted to the host element from outside
 });
 ```
 
@@ -180,9 +180,7 @@ export const composedJs = 'var ComposedDemo = (function() {\n' +
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Shoelace / Web Awesome design system** — component อย่าง `sl-dialog` dispatch event เช่น `sl-show`, `sl-hide` ด้วย `composed: true` เสมอ เพื่อให้ framework ภายนอกอย่าง React หรือ Vue ผูก event handler ได้ตามปกติโดยไม่ต้องเจาะเข้าไปใน shadow tree
->
-> **YouTube web components** — ปุ่ม like และ subscribe ที่อยู่ภายใน shadow DOM dispatch custom event ด้วย `composed: true` เพื่อให้ analytics script ระดับหน้าเว็บดักฟังการโต้ตอบของผู้ใช้ได้
+> **Shoelace / Web Awesome design system** — `emit` helper ของ base component เรียกใช้ค่าเริ่มต้น `composed: true` กับทุก custom event (เช่น `sl-show`/`sl-hide` บน `sl-dialog`) เพื่อให้ framework ภายนอกอย่าง React หรือ Vue ผูก event handler ได้ตามปกติโดยไม่ต้องเจาะเข้าไปใน shadow tree ([shoelace-style/shoelace](https://github.com/shoelace-style/shoelace))
 
 export const quizComposed = [
   {

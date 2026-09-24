@@ -74,6 +74,25 @@ export const themedJs = 'class ThemedBadge extends HTMLElement {' +
 Design your components with named `--component-name-property` custom properties for every visual token. Document them. This makes your components themeable without any JavaScript.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| CSS custom properties | A simple, flexible theming channel that inherits through the shadow boundary with no JavaScript needed | The outside page can't override every internal style decision — only the tokens the component author chose to expose |
+| Constructable Stylesheets | Shares a single `CSSStyleSheet` object across many shadow roots, saving memory and avoiding re-parsing | Requires extra JavaScript to create and adopt the sheet — more complex than just dropping a `<style>` tag into each instance |
+
+## Common mistakes
+
+- **Duplicating a `<style>` tag in every instance** — repeating the same style block in every shadow root instead of creating one `CSSStyleSheet` and sharing it via `adoptedStyleSheets`, wasting memory and making style updates harder.
+- **Forgetting a fallback value** — writing `var(--badge-bg)` with no fallback means the component silently breaks when the property isn't set. Always write `var(--badge-bg, #6b7280)`.
+- **Expecting custom properties to override everything** — custom properties are only the tokens the component author chose to expose via `var()`; they don't give the page permission to override the shadow root's internal structure or layout.
+
+> 💡 Real-world examples
+>
+> **Shoelace** — exposes a consistent CSS custom-property API across its entire component set, so consumers can adjust colors and spacing for every component from one place without touching the internal shadow DOM.
+>
+> **Lit** — Lit's `css` tagged template creates a `CSSStyleSheet` shared at the class level, then adopts it into every instance's shadow root automatically — exactly the Constructable Stylesheets idea covered in this lesson.
+
 export const quizCustomProps = [
   {
     q: "Do CSS custom properties (--vars) cross the shadow DOM boundary?",

@@ -65,6 +65,25 @@ customElements.define('my-box', MyBox);`;
 The content placed inside a `<slot>` element acts as fallback when nothing is projected. It doubles as in-place documentation for component consumers.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| A single default slot | Simple, easy to use for a single-content use case, no extra syntax to learn | Can't separate content into multiple areas — switch to named slots if you need multiple layout spots |
+| Fallback content inside `<slot>` | Provides built-in documentation and a non-empty UI when no children are projected | Adds a little extra markup to every `<slot>`, and you have to keep it matching the real design |
+
+## Common mistakes
+
+- **Thinking content projected into a slot is moved out of the light DOM** — the node actually stays in the same light DOM; only its render position changes. Querying with `document.querySelector` still returns the same node.
+- **Forgetting fallback content only shows when no children are projected at all** — if even one child is projected, the fallback is hidden entirely, not shown alongside it.
+- **Trying to style all slotted content from the shadow root with a deep `::slotted()`** — `::slotted()` can only select the top-level projected element, not its descendants.
+
+> 💡 Real-world examples
+>
+> **Lit** uses the default slot as the basic pattern for content projection in components with free-form child content, like a wrapper or container component.
+>
+> **Shoelace** combines a default slot with named slots in a component like `<sl-card>`, so the main content falls into the default slot while the header/footer use separate named slots.
+
 export const quizDefaultSlot = [
   {
     q: "Which light-DOM children are projected into the default slot?",

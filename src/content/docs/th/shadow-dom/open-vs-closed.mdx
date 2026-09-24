@@ -24,8 +24,16 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 ด้วยโหมด `open` shadow root จะเข้าถึงได้จากภายนอก component:
 
 ```js
+class OpenBox extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({ mode: 'open' });
+    this.shadowRoot.innerHTML = '<p>Open shadow root</p>';
+  }
+}
+customElements.define('open-box', OpenBox);
+
 var el = document.querySelector('open-box');
-console.log(el.shadowRoot); // ShadowRoot object
+console.log(el.shadowRoot); // ShadowRoot { ... }
 ```
 
 ซึ่งทำให้ DevTools, test frameworks และ libraries อย่าง Lit สามารถ inspect และ interact กับ shadow tree ได้
@@ -35,6 +43,15 @@ console.log(el.shadowRoot); // ShadowRoot object
 ด้วยโหมด `closed` property `.shadowRoot` จะคืนค่า `null` สำหรับ JavaScript ภายนอก:
 
 ```js
+class ClosedBox extends HTMLElement {
+  connectedCallback() {
+    var root = this.attachShadow({ mode: 'closed' });
+    // store root internally if you still need it
+    root.innerHTML = '<p>Closed shadow root</p>';
+  }
+}
+customElements.define('closed-box', ClosedBox);
+
 var el = document.querySelector('closed-box');
 console.log(el.shadowRoot); // null
 ```
@@ -94,9 +111,7 @@ export const openClosedHtml = '<open-box></open-box><closed-box></closed-box><pr
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Salesforce Lightning (LWC)** — เลือกใช้ `mode: 'open'` เป็นค่าเริ่มต้นสำหรับ component เพื่อให้ DevTools และ automated test เข้าถึง shadow tree ได้ในระดับ enterprise
->
-> **YouTube** — video player component ใช้ `mode: 'open'` เพื่อให้ยังคง debug และ inspect ได้ผ่าน DevTools แม้จะ encapsulate style และ DOM ไว้
+> **Salesforce Lightning (LWC)** — เลือกใช้ `mode: 'open'` เป็นค่าเริ่มต้นสำหรับ component เพื่อให้ DevTools และ automated test เข้าถึง shadow tree ได้ในระดับ enterprise ([salesforce/lwc](https://github.com/salesforce/lwc))
 
 export const quizOpenVsClosed = [
   {

@@ -10,41 +10,84 @@ import Tip from '../../../../components/Tip.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-## selector :host
+## Host element คืออะไร
 
-CSS selector `:host` กำหนดเป้าหมายไปที่ host element — element ที่เป็นเจ้าของ shadow root — จากภายใน shadow CSS นี่เป็นวิธีเดียวที่จะสไตล์ box model ของ host element เอง (display, border, padding) จาก shadow CSS ของ component
+**Host element** คือ element ที่เป็นเจ้าของ shadow root — เช่น `<my-badge>` หรือ `<host-badge>` จากภายใน shadow tree คุณสามารถกำหนดเป้าหมายและสไตล์ host element ได้ด้วย pseudo-class selector `:host`
+
+เรื่องนี้สำคัญเพราะ host element เองอยู่ใน light DOM ตามปกติ shadow CSS จะเข้าไม่ถึง light DOM เลย — แต่ `:host` คือข้อยกเว้นพิเศษที่ให้ shadow tree สไตล์ container ของตัวเองได้
+
+## Selector `:host`
+
+`:host` กำหนดเป้าหมายไปที่ host element จากภายใน shadow root:
 
 ```css
+/* inside shadow root <style> */
 :host {
-  display: inline-block;
+  display: inline-flex;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
   border: 2px solid #6366f1;
+  background: #eef2ff;
 }
 ```
 
-## :host กับ selector
+ถ้าไม่มี `:host { display: ... }` custom element จะใช้ค่าเริ่มต้น `display: inline` ซึ่งอาจไม่ใช่สิ่งที่คุณต้องการ
 
-`:host(selector)` ใช้สไตล์เฉพาะเมื่อ host element ตรงกับ selector ที่ระบุ ซึ่งมีประโยชน์สำหรับการตอบสนองต่อ attribute หรือ class:
+## Functional selector `:host()`
+
+`:host(selector)` ให้คุณสไตล์ host แบบมีเงื่อนไข ตาม attribute, class หรือ state ของมันเอง:
 
 ```css
-/* ใช้เมื่อ host element มี attribute highlight */
-:host([highlight]) {
-  background: #fef08a;
-  border-color: #ca8a04;
+/* style the host when it has a [disabled] attribute */
+:host([disabled]) {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
-/* ใช้เมื่อ host element มี class .large */
-:host(.large) {
-  font-size: 1.25rem;
+/* style the host when it has a specific class */
+:host(.primary) {
+  background: #4f46e5;
+  color: white;
 }
 ```
 
-## Shadow boundary และ events
+pattern นี้พบได้บ่อยมาก — สถานะของ component (active, disabled, highlighted) มักถูกสื่อสารผ่าน attribute และ `:host([attr])` คือวิธีที่ถูกต้องในการตอบสนองต่อมันจากภายใน shadow CSS
 
-เมื่อ event เกิดขึ้นภายใน shadow tree และฟอง (bubble) ออกไปสู่ light DOM browser จะทำ **event retargeting** — `event.target` จะถูกเปลี่ยนเป็น host element แทนที่จะเป็น element จริงภายใน shadow tree ซึ่งป้องกันไม่ให้โค้ดภายนอกเห็น internal structure
+## Shadow boundary สำหรับ selector
 
-## Light DOM และ slots
+Shadow boundary เข้มงวดกับ CSS selector ทั้งสองทิศทาง:
 
-**Light DOM** คือเนื้อหาที่วางไว้ภายใน element จากภายนอก — เนื้อหาที่ส่งเป็น children ให้ custom element สามารถ project เนื้อหา light DOM เข้าสู่ shadow tree ได้โดยใช้ `<slot>` elements
+```css
+/* page CSS — CANNOT reach inside <my-badge> shadow root */
+my-badge p { color: red; } /* no effect on shadow tree */
+
+/* shadow CSS — CANNOT reach outside into the light DOM */
+p { color: blue; } /* only affects <p> inside this shadow tree */
+```
+
+ข้อยกเว้นมีเพียง CSS custom properties (ตัวแปร) และ pseudo-element `::part()` ซึ่งถูกออกแบบมาให้ข้ามขอบเขตได้โดยเฉพาะ
+
+## Event และ Retargeting
+
+Event ส่วนใหญ่ bubble ผ่าน shadow boundary ได้ แต่เมื่อทำเช่นนั้น browser จะทำ **retarget** — `event.target` ที่ listener ใน light DOM เห็นจะเป็น host element ไม่ใช่ element จริงภายใน shadow tree ที่ยิง event นั้นออกมา
+
+```js
+document.querySelector('my-badge').addEventListener('click', function(e) {
+  console.log(e.target); // <my-badge> — not the <button> inside the shadow
+});
+```
+
+สิ่งนี้รักษา encapsulation ไว้: โค้ดใน light DOM มองไม่เห็นโครงสร้างภายในของ component ผ่าน event target
+
+## Light DOM เทียบกับ Shadow DOM
+
+| | Light DOM | Shadow DOM |
+|---|---|---|
+| นิยาม | children ที่คุณวางไว้ใน element จากภายนอก | shadow tree ส่วนตัวที่ element แนบไว้เอง |
+| การมองเห็น | อยู่ใน document tree ปกติ | ถูก encapsulate เข้าถึงผ่าน shadow root |
+| การสไตล์ | สไตล์ด้วย page CSS | สไตล์ด้วย shadow CSS |
+| Slots | ถูก project เข้า shadow ผ่าน `<slot>` | เป็นที่อยู่ของ `<slot>` element เอง |
 
 ## ตัวอย่างที่รันได้
 
@@ -53,7 +96,7 @@ export const hostBoundaryJs = 'class HostBadge extends HTMLElement {\n' +
   '    this.attachShadow({ mode: \'open\' });\n' +
   '    this.shadowRoot.innerHTML =\n' +
   '      \'<style>\' +\n' +
-  '      \':host { display:inline-flex; align-items:center; gap:.5rem; padding:.25rem .75rem; border-radius:9999px; border:2px solid #6366f1; background:#eef2ff; font-family:sans-serif; }\' +\n' +
+  '      \':host { display:inline-flex; align-items:center; gap:.5rem; padding:.25rem .75rem; border-radius:9999px; border:2px solid #6366f1; background:#eef2ff; font-family:sans-serif; margin:.25rem; }\' +\n' +
   '      \':host([highlight]) { background:#fef08a; border-color:#ca8a04; }\' +\n' +
   '      \'span { font-weight:bold; color:#4f46e5; }\' +\n' +
   '      \'</style>\' +\n' +
@@ -85,9 +128,7 @@ export const hostBoundaryHtml = '<host-badge label="Default"></host-badge> <host
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **YouTube** — video player component ใช้ event retargeting เพื่อให้โค้ดภายนอกจัดการ event ระดับ component (เช่น click ที่ player) โดยไม่ต้องรู้โครงสร้าง internal ของปุ่มควบคุมต่างๆ
->
-> **Salesforce Lightning (LWC)** — ใช้ `:host` styling อย่างเป็นระบบเพื่อให้ทุก component ควบคุม layout ของตัวเองได้โดยไม่ต้องพึ่ง global CSS ของหน้า
+> **Salesforce Lightning (LWC)** — ใช้ `:host` styling อย่างเป็นระบบเพื่อให้ทุก component ควบคุม layout ของตัวเองได้โดยไม่ต้องพึ่ง global CSS ของหน้า ([salesforce/lwc](https://github.com/salesforce/lwc))
 
 export const quizHostBoundary = [
   {

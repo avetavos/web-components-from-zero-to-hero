@@ -108,6 +108,16 @@ The `<pre>` output shows `[object ShadowRoot]` for the open element and `null` f
 Use `mode: 'open'` for components you want other code (DevTools, tests, Lit) to introspect. Closed mode is rarely needed and provides no real security guarantee.
 </Tip>
 
+## Common mistakes
+
+- **Choosing `mode: 'closed'` thinking it's more secure** — closed mode only hides the reference from `.shadowRoot`; the DOM can still be inspected through `document.querySelector` and some dev tools regardless. It is not a real security boundary — don't use it as a substitute for actual data protection.
+- **Using `mode: 'closed'` and forgetting to keep your own reference to the shadow root** — since `this.shadowRoot` will be `null`, you must store the value `attachShadow` returns in a variable or instance field yourself.
+- **Choosing closed mode without considering tooling** — test frameworks, DevTools inspectors, and many libraries (like Lit) expect `mode: 'open'`. Choosing closed unnecessarily makes debugging and testing your component harder for no real benefit.
+
+> 💡 Real-world example
+>
+> **Salesforce Lightning (LWC)** — defaults components to `mode: 'open'` so DevTools and automated tests can reach the shadow tree at enterprise scale. ([salesforce/lwc](https://github.com/salesforce/lwc))
+
 export const quizOpenVsClosed = [
   {
     q: 'What does `element.shadowRoot` return when the shadow root was attached with `mode: "closed"`?',

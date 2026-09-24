@@ -141,6 +141,25 @@ customElements.define('star-rating', StarRating);`;
 Set `bubbles: true` so the event travels up the DOM tree. Set `composed: true` so it crosses shadow-DOM boundaries. Both are `false` by default.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Communicate via attribute (parent sets an attribute on the child) | Easy to write, values are directly inspectable via DOM inspector | Attributes are strings only — you have to serialize/deserialize yourself once data gets more complex |
+| Communicate via custom event (child dispatches an event up to the parent) | Sends any data type via `detail`, and doesn't tie the parent to the child's internal implementation | Must set `bubbles`/`composed` correctly, or the event never reaches where it needs to go |
+
+## Common mistakes
+
+- **Forgetting `composed: true`** — an event dispatched from inside shadow DOM without `composed` never crosses the shadow boundary, so a parent listening in the light DOM never receives it at all.
+- **Sending complex data through an attribute instead of a property or event** — attributes only hold strings, forcing unnecessary `JSON.stringify`/`parse` round-trips, when a property or `event.detail` should be used instead.
+- **A parent reaching into a child's internals via `shadowRoot` directly** — this breaks encapsulation and ties the parent to the child's internal implementation; when the child's internal structure changes, the parent breaks along with it.
+
+> 💡 Real-world examples
+>
+> **GitHub** — Catalyst elements use custom events as their primary channel for inter-component communication, keeping encapsulation intact so a parent never reaches into a child's internals directly. ([github/catalyst](https://github.com/github/catalyst))
+>
+> **Ionic Framework** — a nested component pair like `<ion-select>` and `<ion-select-option>` dispatches a custom `ionChange` event up to the parent to report a state change, instead of having the parent poll the child for its value. ([ionicframework.com/docs/api/select](https://ionicframework.com/docs/api/select))
+
 export const quizComposition = [
   {
     q: 'What property on CustomEvent options makes the event cross shadow-DOM boundaries?',

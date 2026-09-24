@@ -102,6 +102,25 @@ export const cbiHtml = `<x-button label="Autonomous element" color="#059669"></x
 Autonomous custom elements (`extends HTMLElement`) work in every major browser. Customized built-ins (`extends HTMLButtonElement`, used with `is="..."`) are not supported in Safari — use them only if you can polyfill or target Chromium/Firefox exclusively.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Customized built-in (`is="..."`) | Inherits the original element's native semantics in full (focus, form submission, accessibility) with no code of your own | Safari permanently declines to support it, so it isn't portable cross-browser |
+| Autonomous element (`extends HTMLElement`) | Fully supported in every major browser | You have to write the native semantics yourself (e.g. `role`, keyboard handling) |
+
+## Common mistakes
+
+- **Forgetting `{ extends: 'button' }`** — without the third argument to `customElements.define`, the browser doesn't know this is a customized built-in and `is="fancy-button"` does nothing.
+- **Not testing in Safari before shipping** — the failure is silent, no console error, just a plain unstyled `<button>` — easy to miss if you only test Chrome/Firefox.
+- **Adding a polyfill without weighing the cost** — `@ungap/custom-elements` fixes the gap, but it adds bundle size and complexity to every request, even in browsers that already support it natively.
+
+> 💡 Real-world examples
+>
+> **GitHub** — chose to build `<relative-time>` and `<clipboard-copy>` as autonomous elements instead of customized built-ins, so they work in every browser including Safari. ([github/relative-time-element](https://github.com/github/relative-time-element))
+>
+> **Adobe Spectrum** — the Spectrum Web Components design system uses autonomous elements as its default, for the same cross-browser portability reason. ([opensource.adobe.com](https://opensource.adobe.com/spectrum-web-components/))
+
 export const quizCbi = [
   {
     q: 'How do you activate a customized built-in element in HTML?',

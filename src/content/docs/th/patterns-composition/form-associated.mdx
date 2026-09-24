@@ -122,9 +122,9 @@ customElements.define('fancy-input', FancyInput);`;
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Adobe Photoshop on the web** — ใช้ Lit ร่วมกับ form-associated custom elements เพื่อให้ custom input controls ของแอปเข้าร่วมกับ native `<form>` semantics ได้เต็มรูปแบบ
+> **Adobe Photoshop on the web** — ทั้งแอปสร้างขึ้นด้วย Lit-based Web Components โดยใช้ Spectrum Web Components เป็น UI library หลัก แสดงให้เห็นว่าแอประดับ production ขนาดใหญ่วางรากฐานบน custom elements ได้ ([web.dev/ps-on-the-web](https://web.dev/ps-on-the-web/))
 >
-> **Shoelace** — form control อย่าง `<sl-input>` และ `<sl-checkbox>` implement form-associated custom elements เพื่อให้ทำงานร่วมกับ native `<form>` submission และ validation ได้เหมือน native element
+> **Shoelace** — form control อย่าง `<sl-input>` และ `<sl-checkbox>` เข้าร่วมกับ native `<form>` submission โดยไม่ได้ใช้ `ElementInternals`/form-associated custom elements แต่ใช้วิธี intercept event `formdata` และ `submit` ของฟอร์มแทน ([shoelace.style](https://shoelace.style/getting-started/form-controls))
 
 export const quizFormAssociated = [
   {

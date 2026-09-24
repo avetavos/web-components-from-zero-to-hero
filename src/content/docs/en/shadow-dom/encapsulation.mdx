@@ -81,6 +81,23 @@ Both `div` elements carry `class="box"`, but they are styled independently becau
 The shadow boundary is a two-way barrier — styles inside cannot escape, and styles outside cannot enter (except CSS custom properties and `::part`).
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Style encapsulation (shadow boundary) | The component's styles never accidentally clash with the page's — safe to reuse anywhere | Outside theming can't reach internals directly — you have to rely on CSS custom properties or `::part` instead |
+| No Shadow DOM (plain global CSS) | Free to style from outside, no extra API to expose | Class names risk colliding, and styles can leak in or out unintentionally as the project grows |
+
+## Common mistakes
+
+- **Expecting a plain page CSS selector to style inside a shadow root** — writing `.my-widget .title { color: red }` and wondering why it doesn't work. The shadow boundary is deliberately designed to block exactly this.
+- **Forgetting that class names inside and outside a shadow root are separate scopes** — naming `.box` on both sides and worrying they'll collide, when in fact they don't, thanks to encapsulation.
+- **Not knowing about the escape hatches** — CSS custom properties and `::part` — and giving up on Shadow DOM entirely when styling from the outside doesn't just work, instead of designing a controlled custom-property API for theming.
+
+> 💡 Real-world example
+>
+> **Salesforce Lightning (LWC)** — uses style encapsulation so thousands of components from different teams don't clash styles in a large enterprise app. ([salesforce/lwc](https://github.com/salesforce/lwc))
+
 export const quizEncapsulation = [
   {
     q: 'A page stylesheet declares `.title { color: red; }`. Does this rule apply to a `.title` element inside a shadow root?',

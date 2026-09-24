@@ -119,6 +119,23 @@ Click **Remove timer** to remove the element from the DOM — the log line confi
 Use `this._intervalId`, `this._observer`, or similar instance properties to hold any handle you will need in `disconnectedCallback`. Storing them on the element guarantees you can always find them, even if the element is moved between documents.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Clean up everything in `disconnectedCallback` | Prevents memory leaks, CPU leaks, and dangling event listeners completely — a clean symmetry with `connectedCallback` | Always requires paired setup/teardown logic — more boilerplate and a risk of forgetting the matching half |
+| Let the garbage collector handle it | Shorter code, no `disconnectedCallback` to write | Listeners, timers, and observers that still reference the element aren't collected until every reference is gone — causing memory and CPU leaks, especially for elements created/destroyed repeatedly (e.g. in a scrolling list) |
+
+## Common mistakes
+
+- **Not implementing `disconnectedCallback` at all** — event listeners, `setInterval`/`setTimeout`, and observers set up in `connectedCallback` keep running even after the element is removed from the DOM, accumulating memory leaks as elements are created and destroyed repeatedly.
+- **Forgetting to disconnect a `MutationObserver`/`ResizeObserver`/`IntersectionObserver`** — these observers hold a reference to the element and its callback, so the garbage collector can't reclaim them until you call `.disconnect()` explicitly.
+- **Assuming `disconnectedCallback` fires on page unload** — it isn't reliably called when the user closes the tab or refreshes. If you need to save data before the page goes away, use the `beforeunload` or `pagehide` event instead of relying on `disconnectedCallback`.
+
+> 💡 Real-world example
+>
+> **GitHub** — the `<relative-time>` element uses `setInterval` to keep updating text like "3 minutes ago", and must clear that interval in `disconnectedCallback` every time so it doesn't leak when a timeline is scrolled and elements are created/destroyed in bulk. ([github/relative-time-element](https://github.com/github/relative-time-element))
+
 export const quizDisconnectedCleanup = [
   {
     q: 'When does disconnectedCallback fire?',

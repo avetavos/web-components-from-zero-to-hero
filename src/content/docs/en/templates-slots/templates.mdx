@@ -12,6 +12,8 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
 ## What is the template element
 
+When you need to stamp out the same DOM structure over and over (like cards in a list), building elements with an `innerHTML` string every time is both slow and risks XSS — `<template>` solves this by letting you define markup once, parsed a single time, then cloned as many times as you need.
+
 The `<template>` element holds HTML markup that is NOT rendered when the page loads. Unlike a hidden `<div>`, template content has no side-effects: scripts inside it do not execute, images do not load, and styles do not apply. Its `content` property exposes the markup as a `DocumentFragment` — a lightweight container of parsed nodes that lives outside the live document tree until you explicitly insert it.
 
 ## Accessing and cloning
@@ -67,6 +69,25 @@ The `<template>` lives in the light DOM and is accessed by ID. Each `my-card` in
 <Tip title="One template, many instances">
 Because `cloneNode(true)` copies the DocumentFragment cheaply, you can stamp dozens of instances without re-parsing the HTML string each time.
 </Tip>
+
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| `<template>` + `cloneNode(true)` | Parses the markup only once, then clones are fast and safe from XSS since there's no repeated string parsing | Requires extra code to grab and clone the content — not as short as concatenating a string directly |
+| Building markup with an `innerHTML` string repeatedly | Easy to write, quick to see results for a prototype | Slower, since the HTML has to be re-parsed every time, and risks XSS if user data ends up in the string |
+
+## Common mistakes
+
+- **Forgetting to call `.cloneNode(true)` before using a template's content** — `template.content` is a single shared `DocumentFragment`. Inserting it directly without cloning moves the original fragment out, leaving the next instance with an empty fragment.
+- **Calling `cloneNode()` without `true`** — this produces a shallow clone with no descendant nodes at all. Always pass `true` for a deep copy.
+- **Expecting scripts or styles inside a `<template>` to run immediately on page load** — template content is inert until it's cloned and inserted into the real document; scripts won't run and styles won't apply until then.
+
+> 💡 Real-world examples
+>
+> **Lit** uses a similar internal concept to `<template>` to cache parsed markup and clone it on re-render, reducing repeated parsing cost.
+>
+> **Shoelace** and other web component libraries commonly pair `<template>` with `cloneNode(true)` in components that need to stamp the same structure repeatedly, such as list items or menu options.
 
 export const quizTemplates = [
   {

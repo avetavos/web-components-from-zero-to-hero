@@ -28,7 +28,7 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 `customElements.whenDefined(tagName)` คืน `Promise` ที่ resolve เป็น class constructor ทันทีที่ tag name นั้นได้รับการลงทะเบียน ใช้เพื่อเลื่อนโค้ดที่ต้องพึ่งพา interface ของ element ที่ถูก upgrade แล้ว:
 
 ```js
-// แบบ Promise / .then()
+// Promise / .then() style
 customElements.whenDefined('my-el').then(function(Ctor) {
   console.log('my-el is now defined:', Ctor);
   document.querySelector('my-el').doSomething();
@@ -36,7 +36,7 @@ customElements.whenDefined('my-el').then(function(Ctor) {
 ```
 
 ```js
-// แบบ async / await
+// async / await style
 async function init() {
   const Ctor = await customElements.whenDefined('my-el');
   console.log('my-el is now defined:', Ctor);
@@ -75,7 +75,7 @@ pattern การป้องกัน FOUC ที่สมบูรณ์ยิ
 ```
 
 ```css
-/* เพิ่ม animation การเปิดเผยได้ */
+/* Optionally animate the reveal */
 upgrade-demo {
   transition: opacity 0.3s ease;
 }
@@ -139,8 +139,6 @@ export const upgradeJs = `setTimeout(function() {
 > 💡 ตัวอย่างจากของจริง
 >
 > **CSS `:defined` pattern** — เว็บไซต์จำนวนมากที่ใช้ custom elements ใช้ `my-el:not(:defined) { visibility: hidden; }` ร่วมกับ loading placeholder เพื่อป้องกัน Flash of Undefined Content ระหว่างรอ script โหลดและ define element
->
-> **YouTube** — custom elements บนหน้า YouTube ต้องรองรับกรณีที่ script โหลดแบบ async ทำให้ element ปรากฏใน DOM ก่อนที่ definition จะพร้อม การจัดการ upgrade timing อย่างถูกต้องจึงจำเป็นต่อการไม่ให้ UI พังหรือกระพริบ
 
 export const quizUpgradeAndTiming = [
   {

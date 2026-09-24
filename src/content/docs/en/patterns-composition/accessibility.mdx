@@ -62,6 +62,8 @@ Via `ElementInternals`, you can set ARIA properties directly without polluting t
 
 ARIA reflection via `ElementInternals` requires `attachInternals()`, which in turn requires `static formAssociated = true` only if you also need form participation — for pure ARIA reflection you can call `attachInternals()` without `formAssociated`.
 
+**A real limitation to know about:** ID-reference ARIA attributes — `aria-labelledby`, `aria-describedby`, `aria-activedescendant`, and the `<label for="">` attribute — can only point to an element in the *same* node tree. An ID inside a shadow root cannot be referenced from the light DOM, and vice versa, so a light-DOM `<label for="my-id">` cannot label an `<input>` hidden inside your shadow root. The WICG "Reference Target" proposal aims to fix this with a `referenceTarget` option on `attachShadow` (or a `shadowrootreferencetarget` attribute on `<template>`) that forwards ID references arriving at the host to one designated element inside the shadow root — but as of this writing it is still a proposal under development, not a shipped browser feature. Until it lands, set `role`/`aria-label` directly on the host, or use `ElementInternals`, to avoid needing a cross-root ID reference at all.
+
 ## Runnable demo
 
 The demo below defines a `<focus-btn>` element that attaches a shadow root with `delegatesFocus: true`, places a `<button>` inside it, sets `role="button"` on the host, and handles keyboard Enter and Space.
@@ -103,6 +105,25 @@ Click the button with your mouse, then try pressing Tab to focus it and activati
 <Tip title="Test with a keyboard">
 After building a custom interactive element, navigate to it using only Tab and activate it with Enter and Space. If you cannot reach it or trigger it without a mouse, your users who rely on keyboards or assistive technology cannot either.
 </Tip>
+
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Set ARIA via `setAttribute('role', ...)` on the host | Easy to write, directly inspectable via the DOM inspector | The attribute can be unintentionally overridden by whoever authors the HTML that uses your element |
+| Set ARIA via `internals.role` / `internals.ariaLabel` (`ElementInternals`) | Doesn't clutter the element's attribute list and can't clash with author-set attributes | Requires calling `attachInternals()` first, and older browsers support it less broadly than a plain attribute |
+
+## Common mistakes
+
+- **Forgetting `delegatesFocus`** — building a custom input with a focusable element inside shadow DOM but not passing `delegatesFocus: true` to `attachShadow` means clicking the host never moves focus inside, leaving keyboard users confused about why Tab doesn't reach the expected element.
+- **Skipping keyboard handling on an interactive element** — making an element act like a button with `role="button"` but not handling `keydown` for Enter/Space makes it completely unusable for keyboard and screen-reader users, even though it looks clickable with a mouse.
+- **Setting an ARIA role without setting `tabindex`** — adding `role="button"` alone doesn't automatically make the element focusable the way a native `<button>` is; you also need `tabindex="0"`, or the element gets skipped when tabbing.
+
+> 💡 Real-world examples
+>
+> **GitHub** — ships custom elements (`<relative-time>`, `<clipboard-copy>`, etc.) that go through rigorous accessibility testing, so screen reader users get the same functionality as mouse users. ([github/relative-time-element](https://github.com/github/relative-time-element))
+>
+> **Adobe Spectrum Web Components** — designs every component to support `delegatesFocus` and ARIA reflection via `ElementInternals`, so it's usable in enterprise design systems that must meet accessibility standards. ([opensource.adobe.com](https://opensource.adobe.com/spectrum-web-components/))
 
 export const quizA11y = [
   {

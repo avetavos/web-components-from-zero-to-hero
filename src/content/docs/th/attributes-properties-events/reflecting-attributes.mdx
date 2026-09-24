@@ -50,9 +50,9 @@ browser อ่านรายการนี้ครั้งเดียวเ
 
 ```js
 attributeChangedCallback(name, oldValue, newValue) {
-  // name     — attribute ไหนที่เปลี่ยน เช่น 'label'
-  // oldValue — สตริงค่าก่อนหน้า หรือ null เมื่อกำหนดครั้งแรก
-  // newValue — สตริงค่าใหม่ หรือ null เมื่อถูกลบ
+  // name     — which attribute changed, e.g. 'label'
+  // oldValue — previous value string, or null on first set
+  // newValue — new value string, or null when removed
   this._render();
 }
 ```
@@ -184,7 +184,7 @@ customElements.define('reflect-badge', ReflectBadge);`;
 >
 > Element `<input>` ดั้งเดิมของ browser reflect property อย่าง `disabled` และ `checked` ไปยัง attribute โดยตรง ทำให้ `input:disabled` ใช้เป็น CSS selector ได้ทันทีโดยไม่ต้องเขียน JavaScript เพิ่ม
 >
-> **GitHub's Catalyst** framework ใช้ decorator `@attr` เพื่อ generate getter/setter reflection pattern นี้อัตโนมัติ ลดโค้ด boilerplate ที่ต้องเขียนซ้ำในทุก custom element
+> **GitHub's Catalyst** framework ใช้ decorator `@attr` เพื่อ generate getter/setter reflection pattern นี้อัตโนมัติ ลดโค้ด boilerplate ที่ต้องเขียนซ้ำในทุก custom element ([github.github.io/catalyst](https://github.github.io/catalyst/guide/attrs/))
 
 export const quizReflect = [
   {

@@ -95,6 +95,25 @@ Try adding a second `<color-card>` tag with a different `color` and `label` in t
 Never touch `innerHTML`, `children`, or attributes in the constructor — the element is not yet in the document. Do all DOM work in `connectedCallback`, which fires after the element is inserted and its attributes are ready.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| `innerHTML` | Fast and concise to stamp out a template | Risks XSS if user-supplied values are inserted without sanitizing |
+| DOM API (`createElement`, `textContent`) | Safe from XSS because `textContent` never parses HTML | More verbose and harder to read once the structure gets complex |
+
+## Common mistakes
+
+- **Doing DOM work in the constructor instead of `connectedCallback`** — the element isn't inserted into the document yet, and attributes may not be fully parsed, so `getAttribute` can return something you didn't expect.
+- **Putting a user-supplied value directly into `innerHTML`** — e.g. `this.innerHTML = userInput` opens the door to XSS. Use `textContent` or sanitize first.
+- **Forgetting that `getAttribute` returns `null`, not an empty string** — without a `|| 'default'` fallback, the literal word `"null"` ends up concatenated into your output.
+
+> 💡 Real-world examples
+>
+> **GitHub** — `<clipboard-copy>` uses DOM APIs and `textContent` to read/write content instead of raw `innerHTML`, to avoid the security risk in production. ([github/clipboard-copy-element](https://github.com/github/clipboard-copy-element))
+>
+> **Adobe Spectrum** — components in Spectrum Web Components render their content in `connectedCallback`, the spec's standard pattern, so attributes are always ready before the DOM is touched. ([opensource.adobe.com](https://opensource.adobe.com/spectrum-web-components/))
+
 export const quizRender = [
   {
     q: 'Why should you avoid setting innerHTML in the constructor?',

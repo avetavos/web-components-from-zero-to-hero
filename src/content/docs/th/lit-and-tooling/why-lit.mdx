@@ -87,16 +87,31 @@ Lit ใช้ `html` tagged template literal เพื่อสร้าง `Tem
 ## ตัวอย่าง: Counter ด้วย Lit
 
 ```js
-class LitCounter extends LitElement {
-  static properties = { count: { type: Number } };
-  constructor() { super(); this.count = 0; }
-  render() {
-    return html`
-      <p>Count: <span>${this.count}</span></p>
-      <button @click=${() => this.count++}>+</button>
-    `;
+class VanillaCounter extends HTMLElement {
+  constructor() {
+    super();
+    this._count = 0;
+    this.attachShadow({ mode: 'open' });
+  }
+  connectedCallback() {
+    this._render();
+  }
+  _render() {
+    this.shadowRoot.innerHTML =
+      '<p>Count: <b>' + this._count + '</b></p>' +
+      '<button id="inc">+</button>' +
+      '<button id="dec">-</button>';
+    this.shadowRoot.querySelector('#inc').addEventListener('click', () => {
+      this._count++;
+      this._render();
+    });
+    this.shadowRoot.querySelector('#dec').addEventListener('click', () => {
+      this._count--;
+      this._render();
+    });
   }
 }
+customElements.define('vanilla-counter', VanillaCounter);
 ```
 
 ลองใช้งาน counter ด้านล่างนี้:
@@ -133,9 +148,9 @@ Lit รองรับ tree-shaking อย่างสมบูรณ์ หา�
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Google Material Web** — ชุด component มาตรฐานของ Google (Material Design) สร้างด้วย Lit และใช้งานจริงในโปรดักต์ของ Google หลายตัว
+> **Google Material Web** — ชุด component มาตรฐานของ Google (Material Design) สร้างด้วย Lit และใช้งานจริงในโปรดักต์ของ Google หลายตัว ([material-components/material-web](https://github.com/material-components/material-web))
 >
-> **Home Assistant** — แพลตฟอร์ม home automation แบบ open-source ที่ได้รับความนิยมสูง สร้าง frontend UI ทั้งหมดด้วย custom elements ที่อิง Lit
+> **Home Assistant** — แพลตฟอร์ม home automation แบบ open-source ที่ได้รับความนิยมสูง สร้าง frontend UI ทั้งหมดด้วย custom elements ที่อิง Lit ([home-assistant/frontend](https://github.com/home-assistant/frontend))
 
 ## ทดสอบความเข้าใจ
 

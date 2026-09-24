@@ -10,11 +10,11 @@ import Tip from '../../../../components/Tip.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-The `:host` pseudo-class lets you style the custom element itself from inside its own shadow root. There are three forms you'll use regularly:
+The `:host` pseudo-class lets you style the custom element itself from inside its own shadow root. There are two forms you'll use regularly, plus a third one to avoid:
 
 - **`:host`** — always applies to the host element, regardless of context
 - **`:host(.modifier)`** — applies only when the host element carries a specific class
-- **`:host-context(selector)`** — applies when any ancestor of the host matches the given selector
+- **`:host-context(selector)`** — applies when any ancestor of the host matches the given selector, but see the warning below before reaching for it
 
 ```css
 :host { display: block; }
@@ -26,7 +26,7 @@ The `:host` rule is the right place to establish the element's layout participat
 
 The conditional form `:host(.modifier)` is the idiomatic way to handle variants (primary, danger, small, large) without JavaScript toggling internal styles. The host's class list drives the shadow styles.
 
-`:host-context(selector)` is useful for automatic theming: a component can adapt to a dark-mode ancestor class without the page needing to know the component's internals.
+`:host-context(selector)` looks tempting for automatic theming — adapting to a dark-mode ancestor class without the page needing to know the component's internals — but it only ever shipped in Chromium browsers, never in Firefox or Safari, and the CSS Working Group has since removed it from the specification entirely. Treat it as a legacy, Chromium-only feature: don't add it to new components. Use CSS custom properties for theming instead (covered in the next lesson), or `@container style()` container style queries where broad support isn't a concern.
 
 export const hostHtml = '<badge-host>Default</badge-host>\n' +
   '<badge-host class="primary">Primary</badge-host>\n' +
@@ -48,6 +48,25 @@ export const hostJs = 'class BadgeHost extends HTMLElement {\n' +
 <Tip title="Host selector scope">
 `:host` styles apply to the outer custom element tag as seen in the document. They have lower specificity than page styles targeting the same element — so a page rule like `badge-host { background: pink }` will override `:host { background: blue }`.
 </Tip>
+
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| `:host` / `:host()` | Writes the component's own layout and variant styles right next to the shadow tree, with no dependency on outside classes | Lower specificity than a page rule targeting the same element by tag or class, so page CSS can override it unintentionally |
+| `:host-context()` | Adapts automatically to ancestor context (e.g. dark mode) without the page needing to know the component's internals | Chromium-only and removed from the spec — ties the component to a specific ancestor class name, a hidden dependency on the consuming page's structure |
+
+## Common mistakes
+
+- **Thinking `:host` always beats page styles** — forgetting that `:host` has lower specificity than a page selector that directly targets the same element, e.g. `badge-host { background: pink }` unexpectedly overrides `:host { background: blue }`.
+- **Reaching for `:host-context()` instead of custom properties for theming** — tying styling directly to an ancestor's class name makes a component fragile and hard to reuse on another page, and the feature is Chromium-only and deprecated from the spec besides. CSS custom properties are the portable choice for theming.
+- **Forgetting to set `display` on `:host`** — not setting `:host { display: ... }` up front leaves the custom element at its default `display: inline`, which usually breaks the layout once it's embedded in a real page.
+
+> 💡 Real-world examples
+>
+> **Adobe Spectrum (Spectrum Web Components)** — uses `:host` together with CSS custom properties to set each component's default layout in line with the design system, without depending on `:host-context()` tying it directly to page structure. ([opensource.adobe.com](https://opensource.adobe.com/spectrum-web-components/))
+>
+> **Shoelace** — every component sets `:host { display: ... }` explicitly from the start, to prevent the default `display: inline` from breaking the layout once embedded in a real page.
 
 export const quizHost = [
   {

@@ -95,6 +95,23 @@ export const attachShadowHtml = '<scoped-card></scoped-card>';
 Call `attachShadow` before setting `shadowRoot.innerHTML`. Once a shadow root is attached it is permanent — you cannot remove or replace it.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Call `attachShadow` in the constructor | The shadow root is ready immediately as soon as the instance is created | You still can't read attributes from HTML at this point |
+| Call `attachShadow` in `connectedCallback` | You can read attributes declared in HTML from the very first time the element enters the DOM | You have to check whether a shadow root already exists in case the element is reconnected |
+
+## Common mistakes
+
+- **Calling `attachShadow` more than once** — if the element is moved in the DOM (`disconnectedCallback` followed by `connectedCallback` again) and your code calls `attachShadow` again every time, you get an error, because a shadow root can only be attached once per element. Check `this.shadowRoot` before calling it again.
+- **Setting `innerHTML` before calling `attachShadow`** — `this.shadowRoot` stays `null` until `attachShadow` has been called; always call it first.
+- **Concatenating HTML strings by hand from user input** — building `innerHTML` like the example above is convenient for a demo, but if the data comes from outside, use `textContent` or sanitize it first, or you risk XSS.
+
+> 💡 Real-world example
+>
+> **Salesforce Lightning (LWC)** — calls `attachShadow` as part of every component's lifecycle, to encapsulate enterprise-scale UI built by many teams at once. ([salesforce/lwc](https://github.com/salesforce/lwc))
+
 export const quizAttachShadow = [
   {
     q: 'What does `this.attachShadow({ mode: "open" })` return?',

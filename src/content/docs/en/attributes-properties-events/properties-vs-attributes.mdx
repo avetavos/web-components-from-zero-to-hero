@@ -163,6 +163,25 @@ The HTML sets the `premium` attribute directly in markup. The JavaScript then as
 | Value set from HTML markup only | Attribute |
 | Value set from JavaScript | Either — prefer property for non-strings |
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Attribute | Visible directly in HTML markup and DevTools, usable as a CSS attribute selector, works with server-rendered HTML with no JavaScript needed | Always a string — you can't pass rich data like an array or object directly |
+| Property | Accepts any JS type — object, array, or function — and is faster to access via dot notation | Doesn't show up in HTML markup or the DevTools Elements panel, making it harder to debug from markup alone |
+
+## Common mistakes
+
+- **Comparing `getAttribute('disabled') === 'true'`** — a boolean attribute works by presence, not by its string value. Always use `hasAttribute` instead.
+- **Using `JSON.stringify()` to cram an object into an attribute string**, e.g. `data='{"a":1}'` — an attribute can only hold a string, which is fragile and easy to parse incorrectly. Pass it through a property setter directly instead.
+- **Expecting the attribute to update automatically after setting a property** — without writing your own reflection pattern (a getter/setter that calls `setAttribute`), setting a bare property never syncs back to the attribute, leaving the markup and the JS state out of sync.
+
+> 💡 Real-world examples
+>
+> The browser's native `<input>` element is the clearest example of this distinction — the `value` attribute is the default value set from HTML, while the `.value` property is the current value the user is typing right now. The two diverge the moment the user starts typing.
+>
+> **GitHub's Catalyst** framework recommends custom elements always expose a property for rich data, and reserve attributes only for simple string config values. ([github/catalyst](https://github.com/github/catalyst))
+
 export const quizPropAttr = [
   {
     q: 'What type does `getAttribute` always return?',

@@ -165,6 +165,23 @@ The grey button dispatches a `not-composed-click` event without `composed: true`
 `event.composedPath()` only returns nodes while an event handler is actively running. Store the array in a variable if you need it later — after the handler returns the array is empty.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| `composed: true` | The event escapes the shadow boundary, so outside code like analytics or a parent app can listen without knowing the component's internal structure | Widens your public event surface — renaming or re-timing the event later affects any outside consumer that has already attached a listener |
+| Leave `composed` unset (defaults to `false`) | The event stays an internal implementation detail you can change or remove freely | Outside code, including tests that query from `document`, can never listen to it, even with `bubbles: true` set |
+
+## Common mistakes
+
+- **Setting `bubbles: true` but forgetting `composed: true`** — assuming the event escapes the shadow root because it bubbles, when it's actually still stopped at the shadow boundary. Both flags are needed together for a listener outside the shadow tree to hear it.
+- **Setting `composed: true` on every internal event indiscriminately** — this leaks unnecessary implementation detail to the outside world. Reserve it for events that are genuinely part of the public API.
+- **Holding onto the result of `composedPath()` for later** — `composedPath()` only returns a valid array while the event handler is actively running. Store a reference to use it in an async callback later and you'll get an empty array.
+
+> 💡 Real-world example
+>
+> **Shoelace / Web Awesome design system** — its base component's `emit` helper dispatches every custom event (like `sl-show`/`sl-hide` on `sl-dialog`) with `composed: true` by default, so an outside framework like React or Vue can attach a normal event listener without reaching into the shadow tree. ([shoelace-style/shoelace](https://github.com/shoelace-style/shoelace))
+
 export const quizComposed = [
   {
     q: 'What option must be set for a CustomEvent to cross the shadow DOM boundary?',

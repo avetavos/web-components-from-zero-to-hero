@@ -19,9 +19,41 @@ Shadow boundary คือเส้นกั้นที่ป้องกัน�
 
 ลักษณะนี้เรียกว่า **style encapsulation** และเป็นหนึ่งในคุณประโยชน์หลักของ Shadow DOM
 
-## ตัวอย่าง: สไตล์ที่ขัดแย้งกัน
+## สไตล์ใน shadow ไม่รั่วออก
 
-ตัวอย่างด้านล่างกำหนด `.box` สองแบบ: หนึ่งในหน้า (สีน้ำเงิน) และอีกหนึ่งภายใน shadow root (สีแดง) เนื่องจาก shadow boundary แต่ละอันจะใช้เฉพาะกับ element ของตัวเอง
+ลองดู shadow element ที่ประกาศ `.box { color: red; }` ไว้ภายใน shadow root:
+
+```js
+class EncDemo extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({ mode: 'open' });
+    this.shadowRoot.innerHTML =
+      '<style>.box { color: red; font-weight: bold; }</style>' +
+      '<div class="box">Red — shadow style</div>';
+  }
+}
+```
+
+กฎ `.box { color: red; }` นี้ไม่มีผลใดๆ เลยต่อ element `.box` ที่อยู่นอก component ตัวนี้
+
+## สไตล์ของหน้าอยู่แค่ภายนอก
+
+ลองดู CSS ระดับหน้าที่กำหนดเป้าหมายไปที่ `.box`:
+
+```css
+/* page stylesheet */
+.box {
+  color: blue;
+  font-weight: bold;
+  border: 2px solid blue;
+}
+```
+
+กฎนี้ใช้กับ `.box` ทุกตัวใน light DOM แต่**ไม่**ใช้กับ `.box` ที่อยู่ภายใน shadow root ของ `<enc-demo>` shadow boundary กันมันไว้
+
+## หลักฐานเชิงภาพ
+
+ตัวอย่างด้านล่างมี `.box` สอง element ที่ใช้ class name เดียวกัน ตัวที่อยู่นอก custom element ถูกสไตล์เป็นสีฟ้าโดย page CSS ส่วนตัวที่อยู่ใน shadow root ถูกสไตล์เป็นสีแดงโดย shadow CSS ไม่มีสไตล์ไหนข้ามขอบเขตไปหาอีกฝั่งเลย
 
 export const encapCss = `.box { color: #0ea5e9; font-weight: bold; border: 2px solid #0ea5e9; padding: 0.5rem; margin: 0.5rem 0; }`;
 
@@ -62,9 +94,7 @@ export const encapHtml = '<div class="box">Blue — page style (outside shadow)<
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Salesforce Lightning (LWC)** — ใช้ style encapsulation เพื่อให้ component นับพันตัวจากทีมต่างๆ ไม่ชนสไตล์กันใน enterprise app ขนาดใหญ่
->
-> **YouTube** — video player component ใช้ encapsulation กันไม่ให้สไตล์ของหน้าเว็บ YouTube ที่เปลี่ยนบ่อยไปกระทบ UI ของ player
+> **Salesforce Lightning (LWC)** — ใช้ style encapsulation เพื่อให้ component นับพันตัวจากทีมต่างๆ ไม่ชนสไตล์กันใน enterprise app ขนาดใหญ่ ([salesforce/lwc](https://github.com/salesforce/lwc))
 
 export const quizEncapsulation = [
   {

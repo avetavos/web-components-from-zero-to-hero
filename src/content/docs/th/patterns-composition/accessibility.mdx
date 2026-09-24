@@ -62,6 +62,8 @@ this.addEventListener('keydown', function(e) {
 
 ARIA reflection ผ่าน `ElementInternals` ต้องใช้ `attachInternals()` ซึ่งในทางกลับกันก็ต้องใช้ `static formAssociated = true` เฉพาะเมื่อคุณต้องการการเข้าร่วม form ด้วยเท่านั้น สำหรับ ARIA reflection ล้วน ๆ คุณสามารถเรียก `attachInternals()` ได้โดยไม่ต้องมี `formAssociated`
 
+**ข้อจำกัดจริงที่ควรรู้:** ARIA attribute ที่อ้างอิงด้วย ID — `aria-labelledby`, `aria-describedby`, `aria-activedescendant` และ attribute `<label for="">` — ชี้ไปยัง element ได้เฉพาะใน node tree **เดียวกัน** เท่านั้น ID ที่อยู่ใน shadow root จะถูกอ้างอิงจาก light DOM ไม่ได้ และในทางกลับกันก็เช่นกัน ดังนั้น `<label for="my-id">` ใน light DOM จะ label ให้กับ `<input>` ที่ซ่อนอยู่ใน shadow root ของคุณไม่ได้ ข้อเสนอ "Reference Target" ของ WICG พยายามแก้ปัญหานี้ด้วย option `referenceTarget` บน `attachShadow` (หรือ attribute `shadowrootreferencetarget` บน `<template>`) ที่ส่งต่อ ID reference ที่มาถึง host ไปยัง element ที่กำหนดไว้หนึ่งตัวภายใน shadow root — แต่ ณ เวลาที่เขียนนี้ยังเป็นแค่ข้อเสนอที่กำลังพัฒนาอยู่ ยังไม่ใช่ฟีเจอร์ของ browser ที่ใช้งานได้จริง จนกว่าจะมาถึงจุดนั้น ให้ตั้งค่า `role`/`aria-label` ตรงบน host หรือใช้ `ElementInternals` แทน เพื่อไม่ต้องพึ่งการอ้างอิง ID ข้าม root เลย
+
 ## เดโมที่รันได้
 
 เดโมด้านล่างนิยาม element `<focus-btn>` ที่แนบ shadow root ด้วย `delegatesFocus: true` วาง `<button>` ไว้ภายใน ตั้งค่า `role="button"` บน host และจัดการคีย์บอร์ด Enter กับ Space
@@ -119,9 +121,9 @@ customElements.define('focus-btn', FocusBtn);`;
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **GitHub** — ใช้ custom element (`<relative-time>`, `<clipboard-copy>` เป็นต้น) ที่ผ่านการทดสอบ accessibility อย่างเข้มงวด เพื่อให้ผู้ใช้ screen reader ใช้งานฟีเจอร์ทั้งหมดได้เท่าเทียมกับผู้ใช้เมาส์
+> **GitHub** — ใช้ custom element (`<relative-time>`, `<clipboard-copy>` เป็นต้น) ที่ผ่านการทดสอบ accessibility อย่างเข้มงวด เพื่อให้ผู้ใช้ screen reader ใช้งานฟีเจอร์ทั้งหมดได้เท่าเทียมกับผู้ใช้เมาส์ ([github/relative-time-element](https://github.com/github/relative-time-element))
 >
-> **Adobe Spectrum Web Components** — ออกแบบทุก component ให้รองรับ `delegatesFocus` และ ARIA reflection ผ่าน `ElementInternals` เพื่อให้ใช้งานได้ในระบบ design system ระดับ enterprise ที่ต้องผ่านมาตรฐาน accessibility
+> **Adobe Spectrum Web Components** — ออกแบบทุก component ให้รองรับ `delegatesFocus` และ ARIA reflection ผ่าน `ElementInternals` เพื่อให้ใช้งานได้ในระบบ design system ระดับ enterprise ที่ต้องผ่านมาตรฐาน accessibility ([opensource.adobe.com](https://opensource.adobe.com/spectrum-web-components/))
 
 export const quizA11y = [
   {

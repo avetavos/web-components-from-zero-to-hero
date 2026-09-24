@@ -52,7 +52,7 @@ customElements.define('my-card', MyCard);
 
 ## หมายเหตุเรื่องการรองรับของ browser
 
-Declarative Shadow DOM รองรับใน Chrome 90+, Edge 90+, Safari 16.4+ และ Firefox 123+ ใน browser รุ่นเก่า attribute `<template shadowrootmode>` จะไม่เป็นที่รู้จัก และ template จะยังคงเฉื่อย (inert) อยู่ ให้ใส่ polyfill สำหรับ browser รุ่นเก่า:
+Declarative Shadow DOM (attribute มาตรฐาน `shadowrootmode`) รองรับใน Chrome 111+, Edge 111+, Safari 16.4+ และ Firefox 123+ — ข้าม browser หลักทั้งหมดตั้งแต่ต้นปี 2024 เมื่อ Firefox เริ่มรองรับ (ก่อนหน้านั้นมี attribute `shadowroot` แบบไม่เป็นมาตรฐานใน Chrome 90–110 เท่านั้น ซึ่งถูกลบไปแล้วและแทนที่ด้วย `shadowrootmode` — อย่าสับสนกับ tutorial เก่า) ใน browser รุ่นเก่า attribute `<template shadowrootmode>` จะไม่เป็นที่รู้จัก และ template จะยังคงเฉื่อย (inert) อยู่ ให้ใส่ polyfill สำหรับ browser รุ่นเก่า:
 
 ```js
 // Polyfill for older browsers
@@ -62,6 +62,8 @@ document.querySelectorAll('template[shadowrootmode]').forEach(function(t) {
   t.remove();
 });
 ```
+
+method คู่หนึ่งที่เกี่ยวข้องกันคือ `shadowRoot.getHTML()` และ `shadowRoot.setHTMLUnsafe()` ซึ่งรองรับข้าม browser หลัก (Baseline) ตั้งแต่เดือนกันยายน 2024 `getHTML()` แปลง shadow root กลับเป็น HTML string — เป็นด้าน "อ่าน" ที่คู่กับ declarative shadow DOM — ส่วน `setHTMLUnsafe()` ช่วยให้คุณ parse string ที่มี markup `<template shadowrootmode>` ให้กลายเป็น shadow tree จริงได้ ซึ่ง `innerHTML` เพียงอย่างเดียวทำไม่ได้
 
 ## เดโมที่รันได้
 
@@ -107,9 +109,9 @@ Declarative Shadow DOM โดดเด่นในสถานการณ์ se
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Lit SSR (`@lit-labs/ssr`)** — render component เป็น Declarative Shadow DOM บนฝั่ง server แล้วส่ง HTML ที่มี shadow tree ครบไปให้ browser ทันที ลด time-to-first-paint และไม่ต้อง render ซ้ำตอน hydrate
+> **Lit SSR (`@lit-labs/ssr`)** — render component เป็น Declarative Shadow DOM บนฝั่ง server แล้วส่ง HTML ที่มี shadow tree ครบไปให้ browser ทันที ลด time-to-first-paint และไม่ต้อง render ซ้ำตอน hydrate ([lit.dev/docs/ssr](https://lit.dev/docs/ssr/overview/))
 >
-> **Adobe Spectrum Web Components** — ออกแบบให้ compatible กับ SSR และ Declarative Shadow DOM เพื่อให้ design system ขนาดใหญ่ render ได้เร็วตั้งแต่ first paint โดยไม่ต้องรอ JavaScript hydrate
+> **Adobe Spectrum Web Components** — ออกแบบให้ compatible กับ SSR และ Declarative Shadow DOM เพื่อให้ design system ขนาดใหญ่ render ได้เร็วตั้งแต่ first paint โดยไม่ต้องรอ JavaScript hydrate ([opensource.adobe.com](https://opensource.adobe.com/spectrum-web-components/))
 
 export const quizDsd = [
   {

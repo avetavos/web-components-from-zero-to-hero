@@ -52,7 +52,7 @@ customElements.define('my-card', MyCard);
 
 ## Browser support note
 
-Declarative Shadow DOM is supported in Chrome 90+, Edge 90+, Safari 16.4+, and Firefox 123+. In older browsers, the `<template shadowrootmode>` attribute is unknown and the template remains inert. Include a polyfill for older browsers:
+Declarative Shadow DOM (the standardized `shadowrootmode` attribute) is supported in Chrome 111+, Edge 111+, Safari 16.4+, and Firefox 123+ — cross-browser since early 2024, once Firefox shipped it. (An earlier, non-standard `shadowroot` attribute existed in Chrome 90–110 only; it was removed and replaced by `shadowrootmode` — don't confuse the two if you find old tutorials.) In older browsers, the `<template shadowrootmode>` attribute is unknown and the template remains inert. Include a polyfill for older browsers:
 
 ```js
 // Polyfill for older browsers
@@ -62,6 +62,8 @@ document.querySelectorAll('template[shadowrootmode]').forEach(function(t) {
   t.remove();
 });
 ```
+
+A related pair of methods, `shadowRoot.getHTML()` and `shadowRoot.setHTMLUnsafe()`, reached Baseline (cross-browser support) in September 2024. `getHTML()` serializes a shadow root back to an HTML string — the read-side counterpart to declarative shadow DOM — and `setHTMLUnsafe()` lets you parse a string containing `<template shadowrootmode>` markup into a live shadow tree, which `innerHTML` alone does not do.
 
 ## Runnable demo
 
@@ -91,6 +93,25 @@ document.body.appendChild(out);`;
 <Tip title="Great for SSR">
 Declarative Shadow DOM shines in server-side rendering scenarios. Ship the shadow tree as HTML, and the browser renders it instantly — before any JavaScript is downloaded, parsed, or executed. JavaScript hydration then adds interactivity without re-rendering.
 </Tip>
+
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Declarative Shadow DOM (`<template shadowrootmode>`) | The shadow root exists as soon as HTML is parsed — no waiting for JavaScript to load to render — critical for SSR and first paint | The server has to duplicate the template markup for every instance of the component, growing the HTML payload with the number of components on the page |
+| Regular JavaScript `attachShadow` | Smaller server-side markup, no duplicated template | Has to wait for JavaScript to load and run first — users may see unstyled content (FOUC) or no content at all in the meantime |
+
+## Common mistakes
+
+- **Confusing whether you need to call `attachShadow` again in `connectedCallback`** — if a shadow root is already attached declaratively, the browser just skips it silently, no error thrown. But if your logic assumes it must always create one itself, you can write initialization in the wrong place and accidentally clobber the existing shadow root.
+- **Not checking browser support before deploying** — a browser that doesn't support DSD renders the `<template>` as a plain visible element, so its inner markup leaks out and shows directly on the page.
+- **Not checking `this.shadowRoot` before hydrating on the client** — if client-side code creates a new shadow root over the existing one without checking first, the server-rendered content is lost and gets needlessly re-rendered, throwing away the whole benefit of DSD.
+
+> 💡 Real-world examples
+>
+> **Lit SSR (`@lit-labs/ssr`)** — renders components as Declarative Shadow DOM on the server and ships the browser complete HTML with the shadow tree included immediately, reducing time-to-first-paint with no re-render needed at hydration. ([lit.dev/docs/ssr](https://lit.dev/docs/ssr/overview/))
+>
+> **Adobe Spectrum Web Components** — is designed to be compatible with SSR and Declarative Shadow DOM so a large design system renders quickly from first paint without waiting for JavaScript to hydrate. ([opensource.adobe.com](https://opensource.adobe.com/spectrum-web-components/))
 
 export const quizDsd = [
   {

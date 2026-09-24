@@ -117,6 +117,23 @@ The first badge uses the default `:host` styles. The second badge has the `highl
 `:host` targets the host element from INSIDE the shadow root. It is the only way to style the host element's own box model (display, border, padding) from within the component's shadow CSS.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Event retargeting at the shadow boundary | Outside code can't see the component's internal structure through `event.target` | Debugging events is harder, since `event.target` at the host isn't the actual element that was clicked inside the shadow tree |
+| Style the host via `:host` / `:host()` from inside shadow CSS | The component controls its own box model (display, border) without depending on outside styles | Outside code can still override some properties on the host element (e.g. an inline style), so the outcome depends on who writes last |
+
+## Common mistakes
+
+- **Expecting `event.target` in the page to point to the real element inside the shadow tree** — event retargeting always rewrites `event.target` to the host element once the event bubbles out to the light DOM.
+- **Using a plain selector instead of `:host` to style the host element itself** — writing `host-badge { border: ... }` in shadow CSS and wondering why it doesn't work. You must use `:host`, because the host element sits outside the shadow tree.
+- **Confusing light DOM with shadow DOM** — assuming content projected via `<slot>` lives in the shadow tree, when in fact the light DOM content still belongs to the caller and can't be styled directly from the shadow root.
+
+> 💡 Real-world example
+>
+> **Salesforce Lightning (LWC)** — systematically uses `:host` styling so every component controls its own layout without depending on the page's global CSS. ([salesforce/lwc](https://github.com/salesforce/lwc))
+
 export const quizHostBoundary = [
   {
     q: 'What does the `:host` selector target inside a shadow root stylesheet?',

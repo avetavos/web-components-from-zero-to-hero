@@ -31,10 +31,10 @@ class ScopedCard extends HTMLElement {
 หลังจากเรียก `attachShadow` แล้ว shadow root จะเข้าถึงได้ 2 วิธี:
 
 ```js
-// คืนค่าโดยตรงจากการเรียก
+// returned directly by the call
 var root = this.attachShadow({ mode: 'open' });
 
-// เก็บไว้เป็น property บน element ด้วย
+// also stored as a property on the element
 var root = this.shadowRoot;
 ```
 
@@ -112,9 +112,7 @@ export const attachShadowHtml = '<scoped-card></scoped-card>';
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **YouTube** — ใช้ `attachShadow` ในการสร้าง video player component (`<yt-icon-button>` และองค์ประกอบอื่นๆ) เพื่อแยกโครงสร้างภายในออกจากหน้าเว็บหลัก
->
-> **Salesforce Lightning (LWC)** — เรียก `attachShadow` เป็นส่วนหนึ่งของ lifecycle ของทุก component เพื่อ encapsulate UI ระดับ enterprise ที่มีหลายทีมพัฒนาพร้อมกัน
+> **Salesforce Lightning (LWC)** — เรียก `attachShadow` เป็นส่วนหนึ่งของ lifecycle ของทุก component เพื่อ encapsulate UI ระดับ enterprise ที่มีหลายทีมพัฒนาพร้อมกัน ([salesforce/lwc](https://github.com/salesforce/lwc))
 
 export const quizAttachShadow = [
   {

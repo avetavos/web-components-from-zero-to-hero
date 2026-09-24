@@ -52,7 +52,7 @@ Custom element tag names **must contain at least one hyphen**. This is how the b
 <mybadge></mybadge>
 ```
 
-Reserved prefixes you cannot use: `annotation-xml`, `color-profile`, `font-face`, `font-face-*`.
+Reserved names you cannot use, even though they contain a hyphen (they belong to SVG/MathML): `annotation-xml`, `color-profile`, `font-face`, `font-face-src`, `font-face-uri`, `font-face-format`, `font-face-name`, `missing-glyph`.
 
 ## Using the element in HTML
 
@@ -86,6 +86,25 @@ Try changing the `name` attribute value in the HTML panel and watch the output u
 <Tip title="The hyphen is mandatory">
 The tag name must contain a hyphen — for example `hello-badge`. This is how the browser distinguishes custom elements from built-in elements. A name without a hyphen is silently treated as an `HTMLUnknownElement`.
 </Tip>
+
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Native custom elements (`customElements.define`) | Not tied to any framework, works anywhere there's a DOM, no build step required | DX isn't as smooth as a framework like React/Vue — no JSX, no built-in reactive state, you wire it up yourself |
+| Naming the tag by the hyphen rule | Lets the browser clearly distinguish your element from any current or future native element | You always have to think of a hyphenated name — a small tax on your naming convention |
+
+## Common mistakes
+
+- **Naming a tag without a hyphen** — e.g. `mybadge`. The browser rejects the registration or silently treats it as an `HTMLUnknownElement`.
+- **Calling `customElements.define()` twice with the same tag name** — this throws immediately. Check `customElements.get(tagName)` first if you're not sure it's already registered.
+- **Using a reserved name** — e.g. `font-face-src` or `annotation-xml` cannot be registered because the spec reserves them for SVG/MathML.
+
+> 💡 Real-world examples
+>
+> **GitHub** — registers elements like `<relative-time>` with a hyphenated name per spec, then uses it directly in real page HTML. ([github/relative-time-element](https://github.com/github/relative-time-element))
+>
+> **Google Material Web** — ships each Material Design component as its own module that calls `customElements.define` independently, so consumers import and register only the components they use. ([material-components/material-web](https://github.com/material-components/material-web))
 
 export const quizDef = [
   {

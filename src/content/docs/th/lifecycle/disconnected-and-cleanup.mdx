@@ -28,17 +28,17 @@ import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 ```js
 class TimerDemo extends HTMLElement {
   connectedCallback() {
-    // เริ่มทำงาน
+    // start work
     this._intervalId = setInterval(this._tick.bind(this), 1000);
   }
 
   disconnectedCallback() {
-    // หยุดทำงาน — สมมาตรกับ connectedCallback
+    // stop work — mirror of connectedCallback
     clearInterval(this._intervalId);
   }
 
   _tick() {
-    // ถูกเรียกทุก 1 วินาทีขณะที่ connected
+    // called every second while connected
   }
 }
 ```
@@ -128,9 +128,7 @@ customElements.define('timer-demo', TimerDemo);`;
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **GitHub** — `<relative-time>` element ของ GitHub ใช้ `setInterval` เพื่ออัปเดตข้อความ "3 minutes ago" และต้อง clear interval ใน `disconnectedCallback` ทุกครั้งเพื่อไม่ให้ leak เมื่อ timeline ถูก scroll และ element ถูกสร้าง/ลบซ้ำจำนวนมาก
->
-> **X (Twitter)** — timeline แบบ virtualized ของ X สร้างและทำลาย custom element จำนวนมากขณะ scroll การไม่ cleanup listener ใน disconnectedCallback อย่างถูกต้องจะทำให้ memory ค่อยๆ โตขึ้นเรื่อยๆ จนหน้าเว็บหน่วง
+> **GitHub** — `<relative-time>` element ของ GitHub ใช้ `setInterval` เพื่ออัปเดตข้อความ "3 minutes ago" และต้อง clear interval ใน `disconnectedCallback` ทุกครั้งเพื่อไม่ให้ leak เมื่อ timeline ถูก scroll และ element ถูกสร้าง/ลบซ้ำจำนวนมาก ([github/relative-time-element](https://github.com/github/relative-time-element))
 
 export const quizDisconnectedCleanup = [
   {

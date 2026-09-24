@@ -30,6 +30,14 @@ In the playground runner on this site we use a CDN dynamic import (the async IIF
 const { LitElement, html, css } = await import('https://esm.sh/lit');
 ```
 
+## What LitElement gives you
+
+`LitElement` is a base class that extends the standard `HTMLElement`, adding three main things:
+
+1. **Reactive properties** — declared in `static properties`; Lit watches them and schedules a re-render on change.
+2. **Declarative render** — the `render()` method returns a `TemplateResult` from the `html` tagged template literal.
+3. **Scoped styles** — declared in `static styles` with the `css` tagged template literal, adopted into the Shadow DOM by Lit.
+
 ## static properties
 
 Declare reactive properties with the static class field `static properties`. Each key is a property name; the value is an options object with at minimum a `type` hint:
@@ -43,6 +51,27 @@ static properties = {
 ```
 
 When any of these properties changes, Lit automatically schedules an asynchronous re-render.
+
+## The decorator alternative
+
+If your project has a build step (TypeScript or Babel), Lit also offers a decorator-based API that is equivalent to `static properties` and registers the tag in one step with `@customElement`:
+
+```ts
+import { LitElement, html } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+
+@customElement('my-counter')
+export class MyCounter extends LitElement {
+  @property({ type: Number })
+  count = 0;
+
+  render() {
+    return html`<p>Count: ${this.count}</p>`;
+  }
+}
+```
+
+TypeScript needs `"experimentalDecorators": true` in `tsconfig.json` (currently the recommended setting for production); Babel needs `@babel/plugin-proposal-decorators`. Because the playground on this page runs without a build step, its examples use the `static properties` field syntax instead — both compile down to the exact same reactive-property behavior.
 
 ## render()
 
@@ -129,6 +158,27 @@ export const litCardJs = `(async () => {
 <Tip title="Properties vs attributes">
 Lit keeps a property (`this.count`) and an attribute (`count="0"`) in sync automatically when `reflect: true` is set in the property options. Without `reflect`, the property is the source of truth and the attribute is only used at initialisation.
 </Tip>
+
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Lit's reactive properties (`static properties`) | Lit handles dirty-checking, batching, and re-rendering automatically, cutting a lot of boilerplate compared to writing it yourself | Adds roughly +5-6KB of runtime, plus some behavior (like microtask scheduling) you have to learn |
+| Manage state and re-render yourself in `HTMLElement` | Full control over every bit of timing, no added runtime | You write attribute parsing, dirty-checking, and DOM diffing entirely by hand |
+
+## Common mistakes
+
+- **Forgetting to declare a property in `static properties`** — without declaring it, Lit doesn't track the value, so setting it doesn't trigger a re-render of the UI.
+- **Mutating an array/object property directly**, e.g. `this.items.push(x)`, instead of assigning a new reference — Lit compares with `!==` by default, so it can't detect the change and won't re-render.
+- **Putting heavy logic directly inside `render()`** instead of computing/caching it ahead of time — `render()` can be called more often than you'd expect, so this needlessly hurts performance.
+
+> 💡 Real-world examples
+>
+> **Home Assistant** — this home automation platform's entire frontend is built from custom elements that extend `LitElement` directly. ([home-assistant/frontend](https://github.com/home-assistant/frontend))
+>
+> **Google Material Web** — Material Design's components use `LitElement`'s reactive properties and scoped styles as the core of every component's implementation. ([material-components/material-web](https://github.com/material-components/material-web))
+
+## Test your understanding
 
 export const quizLitElement = [
   {

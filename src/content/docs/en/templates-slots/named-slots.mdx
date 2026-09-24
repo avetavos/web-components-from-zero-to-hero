@@ -75,6 +75,25 @@ customElements.define('my-card', MyCard);`;
 Treat named slots as the public API of your component. A consumer fills `slot='header'` and `slot='body'` — the component controls how those pieces are presented.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Multiple named slots | Lets consumers compose the layout flexibly — great for multi-part components like cards or dialogs | Adds a learning curve — consumers must know the exact slot names, and a typo makes content disappear silently |
+| A single slot name (default slot only) | Easy to learn, no chance of a slot-name typo | Limits your ability to lay out multiple separate content areas |
+
+## Common mistakes
+
+- **Mistyping a `slot` attribute so it doesn't match any named slot in the shadow tree** — that content is silently never rendered, with no error at all. Always double-check the names match.
+- **Expecting to style every descendant of content projected into a named slot from the shadow root** — `::slotted()` only selects the top-level projected element, it doesn't reach into its own descendants.
+- **Forgetting fallback content for a named slot that might go unfilled** — leaves the UI empty with no explanation when a consumer forgets to fill that slot.
+
+> 💡 Real-world examples
+>
+> **Shoelace** uses named slots extensively in its component API design — like the `prefix`/`suffix` slots in `<sl-input>` or the `icon` slot in `<sl-button>` — so consumers can inject icons or extra content flexibly.
+>
+> **Lit** recommends the named-slots pattern for building composable components, such as a layout component with separate `header`, `content`, and `footer` slots.
+
 export const quizNamedSlots = [
   {
     q: "How do you assign a light-DOM child to a named slot called 'header'?",

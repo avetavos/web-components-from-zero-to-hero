@@ -124,6 +124,23 @@ Watch the element start as a plain placeholder, then flip to its upgraded state 
 Hide custom elements with `my-el:not(:defined) { visibility: hidden; }` until they are upgraded. This prevents the browser from briefly flashing unstyled or partially rendered markup before the element's `connectedCallback` has a chance to run. Pair it with a CSS transition on `opacity` for a smooth reveal.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Define before parse (blocking script in `<head>`) | Elements are constructed and upgraded the moment the parser finds the tag — no "unknown element" period to see | The blocking script slows down page rendering, especially with a large bundle |
+| Define after parse (`defer` or lazy load) | Doesn't block the initial render, loads the script only when needed | There's a window where the element is an unknown element (no behavior, no special styling) — you have to handle FOUC yourself, e.g. with `:not(:defined)` |
+
+## Common mistakes
+
+- **Accessing an element's custom API before checking it's upgraded** — calling a method or reading a property specific to the custom element right after querying it, without waiting on `customElements.whenDefined()`, can hit a plain `HTMLElement` that doesn't have that method yet, throwing a `TypeError`.
+- **Not handling FOUC with `:not(:defined)`** — without hiding elements that aren't upgraded yet, users briefly see raw, unstyled content or a placeholder before the script finishes loading, causing the UI to flash.
+- **Assuming every element is upgraded at the same moment** — an element added to the DOM via JavaScript after `define` is upgraded synchronously right away, but elements that existed before `define` are upgraded as a batch. Missing this distinction makes timing bugs hard to debug.
+
+> 💡 Real-world example
+>
+> **The CSS `:defined` pattern** — many sites that use custom elements pair `my-el:not(:defined) { visibility: hidden; }` with a loading placeholder to prevent a Flash of Undefined Content while a script loads and defines the element.
+
 export const quizUpgradeAndTiming = [
   {
     q: 'What does "upgrading" a custom element mean?',

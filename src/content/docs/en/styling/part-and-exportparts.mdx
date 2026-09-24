@@ -66,6 +66,25 @@ export const partJs = 'class ThemeCard extends HTMLElement {\n' +
 Only elements explicitly marked with `part='name'` can be styled from outside. This is intentional — component authors decide what is styleable, preserving encapsulation for everything else.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| `part` + `::part()` | A clear, opt-in styling API — only elements you mark can be styled from outside, preserving encapsulation for everything else | The part name becomes a public contract you have to maintain like an API — renaming or removing it later is a breaking change for anyone depending on `::part()` |
+| `exportparts` | Re-exports the parts of a nested composed component without exposing its entire shadow tree | Adds a layer of mapping you must keep in sync by hand — if the inner component renames its part, the outer component's `exportparts` breaks |
+
+## Common mistakes
+
+- **Treating a part as just an internal detail** — renaming or removing `part="name"` without considering it a version of a public API that outside CSS depends on, silently breaking any `::part()` a consumer wrote.
+- **Forgetting `exportparts` when composing a component** — the parts of a nested custom element aren't automatically exposed to the outer host; you must always declare `exportparts="inner: outer-name"` explicitly.
+- **Putting `part` in the wrong place** — `part` must be on an element inside the shadow root only; you can't use `::part()` to reference the host itself — use `:host` / `:host()` for host styling instead.
+
+> 💡 Real-world examples
+>
+> **Adobe Spectrum (Spectrum Web Components)** — uses `::part` extensively as the styling API for theming internals of every component, with each part name formally documented like a real public API. ([opensource.adobe.com](https://opensource.adobe.com/spectrum-web-components/))
+>
+> **Shoelace** — documents every component's part names on its docs page and treats renaming a part in a later version as a breaking change.
+
 export const quizPart = [
   {
     q: "Where is the part='name' attribute placed?",

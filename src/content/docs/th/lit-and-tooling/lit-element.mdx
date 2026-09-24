@@ -68,6 +68,26 @@ export const quizLitElement = [
   },
 ];
 
+## การ import LitElement
+
+Lit เผยแพร่เป็น npm package เดียว ในโปรเจกต์ที่มี build tool คุณติดตั้งครั้งเดียว:
+
+```bash
+npm install lit
+```
+
+จากนั้น import ส่วนที่ต้องการ:
+
+```js
+import { LitElement, html, css } from 'lit';
+```
+
+ใน playground runner ของเว็บไซต์นี้ เราใช้ CDN dynamic import (แพทเทิร์น async IIFE ที่คุณเคยเห็นในบทก่อนหน้า):
+
+```js
+const { LitElement, html, css } = await import('https://esm.sh/lit');
+```
+
 ## LitElement คืออะไร
 
 `LitElement` คือ base class ที่ extend จาก `HTMLElement` มาตรฐาน ซึ่งให้สามสิ่งหลัก:
@@ -82,12 +102,34 @@ export const quizLitElement = [
 
 ```js
 static properties = {
-  label: { type: String },
   count: { type: Number },
+  label: { type: String },
+  active: { type: Boolean },
 };
 ```
 
 เมื่อ `this.count` เปลี่ยนค่า Lit จะ schedule microtask update และเรียก `render()` โดยอัตโนมัติ
+
+## ทางเลือกแบบ decorator
+
+ถ้าโปรเจกต์ของคุณมี build step (TypeScript หรือ Babel) Lit ยังมี API แบบ decorator ที่เทียบเท่ากับ `static properties` และลงทะเบียน tag ในขั้นตอนเดียวด้วย `@customElement`:
+
+```ts
+import { LitElement, html } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+
+@customElement('my-counter')
+export class MyCounter extends LitElement {
+  @property({ type: Number })
+  count = 0;
+
+  render() {
+    return html`<p>Count: ${this.count}</p>`;
+  }
+}
+```
+
+TypeScript ต้องตั้งค่า `"experimentalDecorators": true` ใน `tsconfig.json` (ปัจจุบันเป็นค่าที่แนะนำสำหรับ production) ส่วน Babel ต้องใช้ `@babel/plugin-proposal-decorators` เนื่องจาก playground ในหน้านี้ทำงานโดยไม่มี build step ตัวอย่างในหน้านี้จึงใช้ syntax แบบ `static properties` field แทน — ทั้งสองแบบ compile ออกมาให้พฤติกรรม reactive property เหมือนกันทุกประการ
 
 ## เมธอด render()
 
@@ -96,9 +138,8 @@ static properties = {
 ```js
 render() {
   return html`
-    <h3>${this.label}</h3>
-    <span>${this.count}</span>
-    <button @click=${() => this.count++}>+1</button>
+    <p>${this.label}: ${this.count}</p>
+    <button @click=${() => this.count++}>Increment</button>
   `;
 }
 ```
@@ -111,12 +152,17 @@ Lit จะ diff `TemplateResult` นี้กับ DOM ที่มีอยู
 
 ```js
 static styles = css`
-  :host { display: block; padding: 12px; }
-  button { background: #6200ee; color: #fff; }
+  :host { display: block; padding: 1rem; font-family: sans-serif; }
+  button { background: #6200ee; color: white; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; }
+  p { margin: 0 0 8px; }
 `;
 ```
 
 Lit จะนำ stylesheet นี้เข้าสู่ Shadow DOM ของ element ทำให้ styles ไม่รั่วออกไปหรือถูกรบกวนจากภายนอก
+
+## Reactive update เมื่อ property เปลี่ยนค่า
+
+เมื่อคุณเขียน `this.count++` setter ที่ Lit สร้างให้จะเรียก `requestUpdate()` ภายในให้เอง การอัปเดตจะถูก batch ที่จังหวะ microtask ทำให้การเปลี่ยนแปลง property หลายครั้งใน tick เดียวกันสร้าง render pass เพียงครั้งเดียว
 
 ## ตัวอย่าง: LitCard
 
@@ -143,9 +189,9 @@ Lit ซิงค์ property (`this.count`) กับ attribute (`count="0"`) �
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **Home Assistant** — frontend ทั้งหมดของแพลตฟอร์ม home automation นี้สร้างจาก custom elements ที่ extend `LitElement` โดยตรง
+> **Home Assistant** — frontend ทั้งหมดของแพลตฟอร์ม home automation นี้สร้างจาก custom elements ที่ extend `LitElement` โดยตรง ([home-assistant/frontend](https://github.com/home-assistant/frontend))
 >
-> **Google Material Web** — component ของ Material Design ใช้ reactive properties และ scoped styles ของ `LitElement` เป็นแกนหลักในการ implement ทุกตัว
+> **Google Material Web** — component ของ Material Design ใช้ reactive properties และ scoped styles ของ `LitElement` เป็นแกนหลักในการ implement ทุกตัว ([material-components/material-web](https://github.com/material-components/material-web))
 
 ## ทดสอบความเข้าใจ
 

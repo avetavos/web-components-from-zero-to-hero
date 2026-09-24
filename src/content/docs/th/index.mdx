@@ -61,3 +61,13 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
     ภาษาอังกฤษและไทย, แบบทดสอบที่บันทึกความคืบหน้า และโหมดอ่านแบบไร้สิ่งรบกวน
   </Card>
 </CardGrid>
+
+## ตรวจสอบล่าสุดกับ (2026)
+
+- **Custom Elements v1 / Shadow DOM v1 / HTML Templates** — Baseline Widely Available รองรับใน Chrome, Firefox, Safari และ Edge เวอร์ชันปัจจุบันทุกตัว
+- **Customized built-ins (`is=`)** — ยังไม่รองรับใน Safari; autonomous elements (`extends HTMLElement`) คือตัวเลือกที่พกพาได้
+- **Declarative Shadow DOM** (`shadowrootmode`) — ข้าม browser หลักตั้งแต่ Chrome/Edge 111, Safari 16.4, Firefox 123 (ต้นปี 2024) อย่าสับสนกับ attribute `shadowroot` แบบเก่าที่ไม่เป็นมาตรฐานซึ่งมีแค่ใน Chrome 90–110 เท่านั้น
+- **`:host-context()`** — รองรับเฉพาะ Chromium และถูกตัดออกจากสเปก CSS แล้ว ให้ใช้ CSS custom properties หรือ container style query แทน
+- **Lit** — เวอร์ชัน 3.x ขนาด ~5 KB ส่วน Polymer (ไลบรารีรุ่นก่อนของ Google) ถูก deprecated ไปแล้วเพื่อให้ทุกคนย้ายไปใช้ Lit
+
+

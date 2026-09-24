@@ -52,7 +52,7 @@ customElements.define('hello-badge', HelloBadge);
 <mybadge></mybadge>
 ```
 
-คำนำหน้าที่สงวนไว้และคุณใช้ไม่ได้: `annotation-xml`, `color-profile`, `font-face`, `font-face-*`
+ชื่อที่สงวนไว้และใช้ไม่ได้ แม้จะมีขีดอยู่ก็ตาม (เป็นของ SVG/MathML): `annotation-xml`, `color-profile`, `font-face`, `font-face-src`, `font-face-uri`, `font-face-format`, `font-face-name`, `missing-glyph`
 
 ## การนำ element ไปใช้ใน HTML
 
@@ -98,13 +98,13 @@ export const defHtml = `<hello-badge name="Web Components"></hello-badge>`;
 
 - **ตั้งชื่อ tag โดยไม่มีเครื่องหมายขีด** — เช่น `mybadge` browser จะปฏิเสธการลงทะเบียนหรือถือว่าเป็น `HTMLUnknownElement` แบบเงียบ ๆ
 - **เรียก `customElements.define()` ซ้ำด้วยชื่อ tag เดิม** — จะโยน error ทันที ต้องเช็คด้วย `customElements.get(tagName)` ก่อนถ้าไม่แน่ใจว่าลงทะเบียนไปแล้วหรือยัง
-- **ใช้คำนำหน้าที่สงวนไว้** — เช่น `font-face-*` หรือ `annotation-xml` จะลงทะเบียนไม่ได้เพราะสเปกกันไว้ให้ใช้ในอนาคต
+- **ใช้ชื่อที่สงวนไว้** — เช่น `font-face-src` หรือ `annotation-xml` จะลงทะเบียนไม่ได้เพราะสเปกกันชื่อเหล่านี้ไว้ให้ SVG/MathML
 
 > 💡 ตัวอย่างจากของจริง
 >
-> **YouTube** — ฟรอนต์เอนด์ทั้งเว็บสร้างขึ้นบน custom elements ภายในระบบของตัวเอง ผ่านการเรียก `customElements.define` จำนวนมากสำหรับแต่ละ component
+> **GitHub** — ลงทะเบียน element อย่าง `<relative-time>` ด้วยชื่อที่มีขีดตามกฎสเปก แล้วนำไปใช้ตรง ๆ ใน HTML ของหน้าเว็บจริง ([github/relative-time-element](https://github.com/github/relative-time-element))
 >
-> **GitHub** — ลงทะเบียน element อย่าง `<relative-time>` ด้วยชื่อที่มีขีดตามกฎสเปก แล้วนำไปใช้ตรง ๆ ใน HTML ของหน้าเว็บจริง
+> **Google Material Web** — แต่ละ component ของ Material Design แยกเป็นโมดูลของตัวเองที่เรียก `customElements.define` เอง ทำให้ผู้ใช้ import และลงทะเบียนเฉพาะ component ที่ต้องการ ([material-components/material-web](https://github.com/material-components/material-web))
 
 export const quizDef = [
   {

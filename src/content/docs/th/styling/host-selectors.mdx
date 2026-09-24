@@ -10,11 +10,11 @@ import Tip from '../../../../components/Tip.astro';
 import Quiz from '../../../../components/Quiz.tsx';
 import ProgressTracker from '../../../../components/ProgressTracker.tsx';
 
-pseudo-class `:host` ช่วยให้คุณจัดสไตล์ตัว custom element เองจากภายใน shadow root ของตัวเอง มีสามรูปแบบที่คุณจะใช้เป็นประจำ:
+pseudo-class `:host` ช่วยให้คุณจัดสไตล์ตัว custom element เองจากภายใน shadow root ของตัวเอง มีสองรูปแบบที่คุณจะใช้เป็นประจำ บวกอีกหนึ่งรูปแบบที่ควรเลี่ยง:
 
 - **`:host`** — มีผลกับ host element เสมอ ไม่ว่าจะอยู่ในบริบทใด
 - **`:host(.modifier)`** — มีผลเฉพาะเมื่อ host element มี class ที่ระบุ
-- **`:host-context(selector)`** — มีผลเมื่อ ancestor ใดๆ ของ host ตรงกับ selector ที่กำหนด
+- **`:host-context(selector)`** — มีผลเมื่อ ancestor ใดๆ ของ host ตรงกับ selector ที่กำหนด แต่อ่านคำเตือนด้านล่างก่อนเลือกใช้
 
 ```css
 :host { display: block; }
@@ -26,7 +26,7 @@ rule `:host` เป็นที่ที่เหมาะสมในการ�
 
 รูปแบบแบบมีเงื่อนไข `:host(.modifier)` เป็นวิธีที่เป็นมาตรฐานในการจัดการ variants (primary, danger, small, large) โดยไม่ต้องใช้ JavaScript สลับสไตล์ภายใน รายการ class ของ host เป็นตัวขับเคลื่อนสไตล์ของ shadow
 
-`:host-context(selector)` มีประโยชน์สำหรับการทำ theming อัตโนมัติ: component สามารถปรับตัวเข้ากับ class ของ ancestor ที่เป็นโหมดมืดได้ โดยที่หน้าไม่จำเป็นต้องรู้ internals ของ component
+`:host-context(selector)` ดูน่าใช้สำหรับการทำ theming อัตโนมัติ — ปรับตัวเข้ากับ class ของ ancestor ที่เป็นโหมดมืดได้โดยที่หน้าไม่ต้องรู้ internals ของ component — แต่มันรองรับเฉพาะใน Chromium เท่านั้น ไม่เคยรองรับใน Firefox หรือ Safari และ CSS Working Group ได้ตัดออกจากสเปกไปแล้ว ให้ถือว่านี่เป็นฟีเจอร์เก่าที่ใช้ได้แค่ Chromium — อย่าใช้ในคอมโพเนนต์ใหม่ ใช้ CSS custom properties สำหรับ theming แทน (จะพูดถึงในบทถัดไป) หรือ `@container style()` container style query ในกรณีที่ไม่ต้องกังวลเรื่อง browser support กว้าง
 
 export const hostHtml = '<badge-host>Default</badge-host>\n' +
   '<badge-host class="primary">Primary</badge-host>\n' +

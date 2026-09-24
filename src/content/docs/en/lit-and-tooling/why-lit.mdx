@@ -97,6 +97,27 @@ export const whyLitJs = `(async () => {
 Lit is fully tree-shakeable. If you use only `LitElement` and `html`, only those modules are bundled.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Use `LitElement` (Lit) | Much better developer experience from reactive properties and template diffing, so you don't write DOM updates by hand | Adds roughly +5-6KB (gzip) of runtime to every component's bundle |
+| Use raw `HTMLElement` (no library) | No added runtime at all, and relies purely on web standards, giving it the longest possible shelf life | You have to write all the boilerplate yourself — attribute parsing, dirty-checking, and DOM diffing by hand |
+
+## Common mistakes
+
+- **Choosing Lit when the element has no state at all** — if a component is purely static structure, pulling in Lit adds +5-6KB for no benefit. A bare `HTMLElement` is enough.
+- **Worrying that Lit "locks you in" long term** — `LitElement` compiles down to a plain standard custom element; it doesn't lock in a runtime the way a typical framework does, so migrating away later isn't as hard as it might seem.
+- **Hand-rolling your own diffing when state gets complex** — managing re-renders by hand once you have several pieces of state usually ends up heavier and buggier than using Lit's well-tested template diffing.
+
+> 💡 Real-world examples
+>
+> **Google Material Web** — Google's standard Material Design component set is built with Lit and used in production across several Google products. ([material-components/material-web](https://github.com/material-components/material-web))
+>
+> **Home Assistant** — this popular open-source home automation platform builds its entire frontend UI with Lit-based custom elements. ([home-assistant/frontend](https://github.com/home-assistant/frontend))
+
+## Test your understanding
+
 export const quizWhyLit = [
   {
     q: 'What is a key problem with using innerHTML for re-renders in vanilla Custom Elements?',

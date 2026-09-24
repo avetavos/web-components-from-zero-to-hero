@@ -112,6 +112,25 @@ Try editing `color="#4f46e5"` to another CSS color value, or change the `label` 
 Because `observedAttributes` is a static getter, the browser evaluates it when the class is registered — not each time an element is created. You cannot make the list dynamic per-instance. If you need conditional attribute watching, handle it inside `attributeChangedCallback` by checking `name`.
 </Tip>
 
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Use `observedAttributes` + `attributeChangedCallback` | Automatically reactive to attribute changes from outside (e.g. a framework or dev tools) — fits a declarative API | You have to parse the string value yourself every time, and risk re-rendering needlessly if you don't check `oldValue`/`newValue` first |
+| Have consumers call a method/setter instead of setting an attribute | Gives you real typed control (not always a string) and avoids re-rendering on every attribute change | Not reactive to editing the attribute directly in HTML or dev tools — consumers have to know the element's specific API |
+
+## Common mistakes
+
+- **Forgetting to declare static `observedAttributes`** — without this getter, or with it returning an empty array, `attributeChangedCallback` never fires no matter how many times the attribute changes, with no error to warn you, making it hard to debug.
+- **Forgetting that `observedAttributes` must be static** — it has to be `static get observedAttributes()`, not an instance method. Put it in the wrong place and the getter is never called, behaving as if it wasn't declared at all.
+- **Not checking `oldValue === newValue` before re-rendering** — the browser can call `attributeChangedCallback` even when the value hasn't actually changed (e.g. while `connectedCallback` syncs the initial value). Rendering without that check wastes CPU for no reason.
+
+> 💡 Real-world examples
+>
+> **GitHub** — the `<relative-time>` element uses `attributeChangedCallback` to re-render its text whenever the `datetime` attribute is updated from server-rendered HTML or external JavaScript. ([github/relative-time-element](https://github.com/github/relative-time-element))
+>
+> **Shoelace / Web Awesome** — this design-system component library uses `observedAttributes` extensively so a component's properties (e.g. `size`, `variant`, `disabled`) stay two-way synced with their HTML attributes automatically. ([webawesome.com](https://webawesome.com/))
+
 export const quizObservedAttributes = [
   {
     q: 'What must static get observedAttributes() return?',

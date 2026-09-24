@@ -87,7 +87,9 @@ As of 2026, Custom Elements v1, Shadow DOM v1, and HTML Templates are supported 
 
 The one exception: customized built-ins (elements that `extend` a built-in like `HTMLButtonElement` with `is="..."`) are **not** supported in Safari. Prefer autonomous custom elements (`extends HTMLElement`) for maximum portability.
 
-Lit itself supports Chrome 104+, Firefox 121+, Safari 16.4+. For production apps targeting older browsers, the `@webcomponents/polyfills` package fills gaps.
+Lit isn't the only compiler/library option in this space. **Polymer** (Google's original Web Components library) is deprecated — its own repository tells new projects to use `LitElement` instead. **Stencil** (the compiler behind Ionic Framework's components) and Microsoft's **FAST** (`FAST Element` + `FAST Foundation`) are both still actively maintained as separate projects — note that Microsoft's newer Fluent UI web components (`@fluentui/web-components`) ship as their own package, distinct from FAST Foundation, so check which one a given tutorial is actually referring to before copying code.
+
+Lit itself doesn't publish a fixed minimum-version table. Its own docs describe testing "modern browsers" — the current version of Chromium, Safari, and Firefox plus two major versions prior for Chromium/Safari, and Firefox's Extended Support Release — and explicitly dropping support for legacy browsers like Internet Explorer 11, which never supported web components. ([lit.dev/docs/tools/requirements](https://lit.dev/docs/tools/requirements/)) For production apps that must reach further back, the `@webcomponents/polyfills` package fills gaps.
 
 ## Runnable demo
 
@@ -137,6 +139,27 @@ export const distJs = `(async () => {
 <Tip title="Side-effect imports">
 Importing a web component module (e.g., `import 'my-counter'`) is a side-effect import — it runs the file's top-level code (which calls `customElements.define`) without importing any exported names. It is the standard pattern for registering third-party components.
 </Tip>
+
+## Trade-offs
+
+| Option | Benefit | Cost |
+|---|---|---|
+| Publish as an unbundled ES module and declare Lit as a `peerDependencies` | The consumer's bundler can fully dedupe and tree-shake Lit, reducing the chance of loading it twice | Depends on the consumer having a bundler that resolves ESM correctly |
+| Bundle/minify Lit into your own package file | Works immediately even for a consumer with no build step | Risks loading multiple copies of the Lit runtime when a single page uses components from several vendors, bloating the bundle |
+
+## Common mistakes
+
+- **Bundling the Lit runtime into every published component** instead of declaring it as a shared dependency — if a page uses components from multiple vendors, users unknowingly load Lit multiple times, bloating the bundle unnecessarily.
+- **Publishing only a minified/bundled file** with no unbundled ESM option — this destroys the consumer's bundler's ability to tree-shake and code-split.
+- **Forgetting to document browser support or polyfill requirements in the README** — consumers who need to support older browsers won't know they have to install `@webcomponents/polyfills` themselves.
+
+> 💡 Real-world examples
+>
+> **Home Assistant** — publishes and maintains many custom elements that share Lit as a single dependency across the whole app, instead of bundling Lit separately into each element. ([home-assistant/frontend](https://github.com/home-assistant/frontend))
+>
+> **Google Material Web** — publishes each component as its own unbundled ES module, so consumers can import and tree-shake only the parts they use. ([material-components/material-web](https://github.com/material-components/material-web))
+
+## Test your understanding
 
 export const quizDistributingAndSupport = [
   {
